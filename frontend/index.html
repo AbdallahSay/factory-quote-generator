@@ -8,6 +8,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- SortableJS CDN for Drag & Drop Reordering -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="config.js"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; }
@@ -91,30 +93,33 @@
             </div>
         </div>
 
-        <!-- Products Table Card -->
+        <!-- Products Table Card: Dynamic Data Grid -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    الأصناف والكميات المطلوبة
-                </h2>
-                <button type="button" id="addRowBtn" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    إضافة صنف
-                </button>
+            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                        جدول بنود عرض السعر (Dynamic Data Grid)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">💡 اسحب الأعمدة لإعادة ترتيبها (Drag & Drop) • انقر على اسم أي عمود لتعديله • أضف أو احذف أعمدة بحرية</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="addColumnBtn" class="text-xs bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        + إضافة عمود
+                    </button>
+                    <button type="button" id="addRowBtn" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        + إضافة صنف (صف)
+                    </button>
+                </div>
             </div>
 
             <div class="p-4 sm:p-6 overflow-x-auto">
-                <table class="w-full text-right border-collapse">
+                <table class="w-full text-right border-collapse min-w-[700px]">
                     <thead>
-                        <tr class="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase bg-slate-50">
-                            <th class="py-2.5 px-3">الصنف / النوع</th>
-                            <th class="py-2.5 px-3">المقاس</th>
-                            <th class="py-2.5 px-3">الحمولة / الوحدة</th>
-                            <th class="py-2.5 px-3">سعر الألف (ج.م)</th>
-                            <th class="py-2.5 px-3">الكمية (بالألف)</th>
-                            <th class="py-2.5 px-3">الإجمالي (ج.م)</th>
-                            <th class="py-2.5 px-2 text-center">إجراء</th>
+                        <tr id="headerRow" class="border-b border-slate-200 text-xs font-bold text-slate-600 uppercase bg-slate-50 select-none">
+                            <!-- Injected dynamically via JS: draggable th elements -->
                         </tr>
                     </thead>
                     <tbody id="productRowsContainer" class="divide-y divide-slate-100 text-sm">
@@ -175,16 +180,25 @@
         </div>
     </main>
 
-    <!-- VanillaJS Application Logic -->
+    <!-- VanillaJS Dynamic Data Grid Application Logic -->
     <script>
         let clientsList = [];
         let productsList = [];
-        let rowCounter = 0;
+        let columns = ["النوع", "المقاس", "الحمولة", "سعر الالف", "الكمية", "الإجمالي"];
+        let sortableInstance = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            renderHeaders();
             await Promise.all([loadClients(), loadProducts()]);
-            // Add initial empty row
-            addProductRow('طوب الي مصمت', 10, 1450, '25*12*6', '1000');
+            // Add initial default row
+            addRow({
+                "النوع": "طوب الي مصمت",
+                "المقاس": "25*12*6",
+                "الحمولة": "1000",
+                "سعر الالف": "1450.00",
+                "الكمية": "10",
+                "الإجمالي": "14500.00"
+            });
         });
 
         async function loadClients() {
@@ -245,99 +259,243 @@
             }
         }
 
-        function addProductRow(defaultName = '', defaultQty = 10, defaultPrice = 0, defaultSize = '25*12*6', defaultCap = '1000') {
-            rowCounter++;
-            const container = document.getElementById('productRowsContainer');
-            const rowId = `prodRow_${rowCounter}`;
+        function renderHeaders() {
+            const tr = document.getElementById('headerRow');
+            tr.innerHTML = '';
 
-            const tr = document.createElement('tr');
-            tr.id = rowId;
-            tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+            columns.forEach((colName, idx) => {
+                const th = document.createElement('th');
+                th.className = "draggable-col py-2.5 px-3 bg-slate-100 hover:bg-slate-200/90 transition border border-slate-200 cursor-move";
+                th.dataset.colIndex = idx;
+                th.innerHTML = `
+                    <div class="flex items-center justify-between gap-1.5 min-w-[120px]">
+                        <span class="col-drag-handle text-slate-400 hover:text-slate-700 cursor-grab font-bold select-none text-xs" title="اسحب لإعادة ترتيب العمود">⋮⋮</span>
+                        <span class="col-title flex-1 font-bold text-slate-800 outline-none px-1 py-0.5 rounded hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 cursor-text text-xs" contenteditable="true" spellcheck="false" title="انقر لتعديل اسم العمود">${colName}</span>
+                        <button type="button" class="del-col-btn text-slate-400 hover:text-red-600 font-bold px-1 transition text-sm leading-none" title="حذف العمود">&times;</button>
+                    </div>
+                `;
 
-            tr.innerHTML = `
-                <td class="py-3 px-3">
-                    <input type="text" list="productsDatalist" class="prodNameInput w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="اسم الصنف (مثال: طوب الي مصمت)" value="${defaultName}">
-                </td>
-                <td class="py-3 px-3">
-                    <input type="text" class="sizeInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="25*12*6" value="${defaultSize}">
-                </td>
-                <td class="py-3 px-3">
-                    <input type="text" class="capInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="1000" value="${defaultCap}">
-                </td>
-                <td class="py-3 px-3">
-                    <input type="number" step="0.01" class="priceInput w-28 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0.00" value="${defaultPrice > 0 ? defaultPrice : ''}">
-                </td>
-                <td class="py-3 px-3">
-                    <input type="number" step="0.5" min="0.5" class="qtyInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${defaultQty}">
-                </td>
-                <td class="py-3 px-3">
-                    <span class="lineTotal font-bold text-slate-800">0.00</span>
-                </td>
-                <td class="py-3 px-2 text-center">
-                    <button type="button" class="delRowBtn text-red-500 hover:text-red-700 p-1" title="حذف الصنف">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </td>
-            `;
-
-            container.appendChild(tr);
-
-            // Bind Events
-            const nameElem = tr.querySelector('.prodNameInput');
-            const sizeElem = tr.querySelector('.sizeInput');
-            const capElem = tr.querySelector('.capInput');
-            const priceElem = tr.querySelector('.priceInput');
-            const qtyElem = tr.querySelector('.qtyInput');
-            const delBtn = tr.querySelector('.delRowBtn');
-
-            // Auto-fill row when typing/selecting from products list
-            nameElem.addEventListener('input', () => {
-                const val = nameElem.value.trim();
-                const matched = productsList.find(p => p.productName === val);
-                if (matched) {
-                    if (matched.size && !sizeElem.value) sizeElem.value = matched.size;
-                    if (matched.capacity && !capElem.value) capElem.value = matched.capacity;
-                    if (matched.defaultPrice && (!priceElem.value || priceElem.value == 0)) {
-                        priceElem.value = parseFloat(matched.defaultPrice).toFixed(2);
+                // Update column name on blur or Enter
+                const titleSpan = th.querySelector('.col-title');
+                titleSpan.addEventListener('blur', () => {
+                    const newName = titleSpan.textContent.trim() || `عمود ${idx + 1}`;
+                    columns[idx] = newName;
+                    calcTotals();
+                });
+                titleSpan.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        titleSpan.blur();
                     }
-                }
-                calcTotals();
+                });
+
+                // Delete column
+                th.querySelector('.del-col-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteColumn(idx);
+                });
+
+                tr.appendChild(th);
             });
 
-            priceElem.addEventListener('input', calcTotals);
-            qtyElem.addEventListener('input', calcTotals);
+            // Fixed Action column at the end
+            const actionTh = document.createElement('th');
+            actionTh.className = "no-drag py-2.5 px-2 text-center text-slate-500 bg-slate-50 w-16 border border-slate-200";
+            actionTh.textContent = "إجراء";
+            tr.appendChild(actionTh);
 
-            delBtn.addEventListener('click', () => {
-                if (document.querySelectorAll('#productRowsContainer tr').length > 1) {
-                    tr.remove();
+            initSortable();
+        }
+
+        function initSortable() {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+            const headerRow = document.getElementById('headerRow');
+            if (typeof Sortable === 'undefined') return;
+
+            sortableInstance = new Sortable(headerRow, {
+                animation: 180,
+                handle: '.col-drag-handle',
+                draggable: '.draggable-col',
+                filter: '.no-drag',
+                onEnd: function (evt) {
+                    if (evt.oldIndex === evt.newIndex) return;
+
+                    // Reorder the columns array
+                    const movedCol = columns.splice(evt.oldIndex, 1)[0];
+                    columns.splice(evt.newIndex, 0, movedCol);
+
+                    // Reorder cells in every row
+                    document.querySelectorAll('#productRowsContainer tr').forEach(row => {
+                        const cells = Array.from(row.querySelectorAll('.col-cell'));
+                        const movedCell = cells[evt.oldIndex];
+                        if (movedCell) {
+                            row.removeChild(movedCell);
+                            const remainingCells = Array.from(row.querySelectorAll('.col-cell'));
+                            if (evt.newIndex >= remainingCells.length) {
+                                row.insertBefore(movedCell, row.querySelector('.action-cell'));
+                            } else {
+                                row.insertBefore(movedCell, remainingCells[evt.newIndex]);
+                            }
+                        }
+                    });
+
+                    // Re-render headers to update data-col-index
+                    renderHeaders();
                     calcTotals();
-                } else {
-                    alert('يجب الإبقاء على صنف واحد على الأقل في عرض السعر.');
+                }
+            });
+        }
+
+        function addColumn(initialName = null) {
+            const colName = initialName || prompt('أدخل اسم العمود الجديد:', 'ملاحظات');
+            if (!colName || !colName.trim()) return;
+
+            columns.push(colName.trim());
+            renderHeaders();
+
+            // Add cell to each existing row
+            document.querySelectorAll('#productRowsContainer tr').forEach(row => {
+                const td = document.createElement('td');
+                td.className = "col-cell py-2 px-2.5";
+                td.innerHTML = `<input type="text" class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="" placeholder="${colName.trim()}">`;
+                td.querySelector('.cell-input').addEventListener('input', calcTotals);
+                row.insertBefore(td, row.querySelector('.action-cell'));
+            });
+
+            calcTotals();
+        }
+
+        function deleteColumn(idx) {
+            if (columns.length <= 1) {
+                alert('يجب الإبقاء على عمود واحد على الأقل في الجدول.');
+                return;
+            }
+            const colName = columns[idx];
+            if (!confirm(`هل أنت متأكد من حذف العمود "${colName}"؟`)) return;
+
+            columns.splice(idx, 1);
+            renderHeaders();
+
+            // Remove corresponding cell in every row
+            document.querySelectorAll('#productRowsContainer tr').forEach(row => {
+                const cells = Array.from(row.querySelectorAll('.col-cell'));
+                if (cells[idx]) {
+                    cells[idx].remove();
                 }
             });
 
             calcTotals();
         }
 
-        document.getElementById('addRowBtn').addEventListener('click', () => addProductRow());
+        function addRow(data = {}) {
+            const tbody = document.getElementById('productRowsContainer');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+            columns.forEach(col => {
+                const td = document.createElement('td');
+                td.className = "col-cell py-2 px-2.5";
+                const val = data[col] !== undefined ? data[col] : '';
+
+                const isProductNameCol = col.includes('نوع') || col.includes('صنف') || col.includes('منتج');
+                const listAttr = isProductNameCol ? 'list="productsDatalist"' : '';
+
+                td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${col}">`;
+
+                const input = td.querySelector('.cell-input');
+
+                if (isProductNameCol) {
+                    input.addEventListener('input', () => {
+                        const matched = productsList.find(p => p.productName === input.value.trim());
+                        if (matched) {
+                            columns.forEach((cName, cIdx) => {
+                                const cellInputs = tr.querySelectorAll('.cell-input');
+                                if (cName.includes('مقاس') && matched.size && !cellInputs[cIdx].value) {
+                                    cellInputs[cIdx].value = matched.size;
+                                }
+                                if ((cName.includes('حمول') || cName.includes('وحد')) && matched.capacity && !cellInputs[cIdx].value) {
+                                    cellInputs[cIdx].value = matched.capacity;
+                                }
+                                if (cName.includes('سعر') && matched.defaultPrice && (!cellInputs[cIdx].value || cellInputs[cIdx].value == 0)) {
+                                    cellInputs[cIdx].value = parseFloat(matched.defaultPrice).toFixed(2);
+                                }
+                            });
+                        }
+                        calcTotals();
+                    });
+                }
+
+                input.addEventListener('input', calcTotals);
+                tr.appendChild(td);
+            });
+
+            // Action cell
+            const actionTd = document.createElement('td');
+            actionTd.className = "action-cell py-2 px-2 text-center";
+            actionTd.innerHTML = `
+                <button type="button" class="delRowBtn text-red-500 hover:text-red-700 p-1" title="حذف هذا الصف">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            `;
+
+            actionTd.querySelector('.delRowBtn').addEventListener('click', () => {
+                if (document.querySelectorAll('#productRowsContainer tr').length > 1) {
+                    tr.remove();
+                    calcTotals();
+                } else {
+                    alert('يجب الإبقاء على صف واحد على الأقل في عرض السعر.');
+                }
+            });
+
+            tr.appendChild(actionTd);
+            tbody.appendChild(tr);
+            calcTotals();
+        }
+
+        document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+        document.getElementById('addColumnBtn').addEventListener('click', () => addColumn());
 
         function calcTotals() {
             let grandTotal = 0;
-            let count = 0;
-            const rows = document.querySelectorAll('#productRowsContainer tr');
+            const trs = document.querySelectorAll('#productRowsContainer tr');
 
-            rows.forEach(tr => {
-                const price = parseFloat(tr.querySelector('.priceInput')?.value || 0);
-                const qty = parseFloat(tr.querySelector('.qtyInput')?.value || 0);
-                const lineTotal = price * qty;
-                const totalSpan = tr.querySelector('.lineTotal');
-                if (totalSpan) totalSpan.textContent = lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                grandTotal += lineTotal;
-                count++;
+            let priceColIdx = -1;
+            let qtyColIdx = -1;
+            let totalColIdx = -1;
+
+            columns.forEach((c, idx) => {
+                const lower = c.toLowerCase();
+                if (lower.includes('سعر') || lower.includes('price')) priceColIdx = idx;
+                else if (lower.includes('كمي') || lower.includes('qty') || lower.includes('quantity')) qtyColIdx = idx;
+                else if (lower.includes('إجمال') || lower.includes('اجمال') || lower.includes('total')) totalColIdx = idx;
+            });
+
+            trs.forEach(tr => {
+                const inputs = tr.querySelectorAll('.cell-input');
+                if (inputs.length === 0) return;
+
+                let rowTotal = 0;
+                if (priceColIdx !== -1 && qtyColIdx !== -1 && inputs[priceColIdx] && inputs[qtyColIdx]) {
+                    const price = parseFloat(inputs[priceColIdx].value) || 0;
+                    const qty = parseFloat(inputs[qtyColIdx].value) || 0;
+                    rowTotal = price * qty;
+
+                    if (totalColIdx !== -1 && inputs[totalColIdx]) {
+                        if (rowTotal > 0 || inputs[priceColIdx].value || inputs[qtyColIdx].value) {
+                            inputs[totalColIdx].value = rowTotal.toFixed(2);
+                        }
+                    }
+                } else if (totalColIdx !== -1 && inputs[totalColIdx]) {
+                    rowTotal = parseFloat(inputs[totalColIdx].value) || 0;
+                }
+
+                grandTotal += rowTotal;
             });
 
             document.getElementById('grandTotal').textContent = grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('itemsCount').textContent = count;
+            document.getElementById('itemsCount').textContent = trs.length;
             return grandTotal;
         }
 
@@ -356,31 +514,34 @@
                 return;
             }
 
-            const items = [];
-            const rows = document.querySelectorAll('#productRowsContainer tr');
-            rows.forEach(tr => {
-                const prodName = tr.querySelector('.prodNameInput')?.value.trim();
-                const size = tr.querySelector('.sizeInput')?.value.trim() || '';
-                const cap = tr.querySelector('.capInput')?.value.trim() || '';
-                const price = parseFloat(tr.querySelector('.priceInput')?.value || 0);
-                const qty = parseFloat(tr.querySelector('.qtyInput')?.value || 0);
-
-                if (prodName && qty > 0) {
-                    items.push({
-                        productName: prodName,
-                        size: size,
-                        capacity: cap,
-                        quantity: qty,
-                        unitPrice: price
-                    });
-                }
+            // Extract dynamic headers from DOM
+            const headers = [];
+            document.querySelectorAll('#headerRow th.draggable-col').forEach(th => {
+                const title = th.querySelector('.col-title')?.textContent.trim() || 'عمود';
+                headers.push(title);
             });
 
-            if (items.length === 0) {
-                alert('يرجى إدخال صنف واحد على الأقل مع اسم وكمية صحيحة.');
+            // Extract dynamic rows from DOM
+            const rows = [];
+            const trs = document.querySelectorAll('#productRowsContainer tr');
+
+            trs.forEach(tr => {
+                const rowData = {};
+                const inputs = tr.querySelectorAll('.cell-input');
+                headers.forEach((h, idx) => {
+                    rowData[h] = inputs[idx] ? inputs[idx].value.trim() : '';
+                });
+                rows.push(rowData);
+            });
+
+            if (rows.length === 0) {
+                alert('يرجى إدخال صنف واحد على الأقل.');
                 return;
             }
 
+            const grandTotal = calcTotals();
+
+            // Construct payload matching required dynamic structure
             const payload = {
                 userId: 1,
                 clientName: clientName,
@@ -389,7 +550,9 @@
                 clientEmail: clientEmail || null,
                 projectName: projectName || null,
                 location: location || null,
-                items: items
+                totalAmount: grandTotal,
+                headers: headers,
+                rows: rows
             };
 
             const btn = document.getElementById('generateBtn');

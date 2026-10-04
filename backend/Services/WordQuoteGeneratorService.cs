@@ -56,6 +56,9 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 { "{{ContactPerson}}", request.ContactPerson ?? string.Empty },
                 { "{{ProjectName}}", request.ProjectName ?? string.Empty },
                 { "{{Location}}", request.Location ?? string.Empty },
+                { "{{Notes}}", request.Notes ?? string.Empty },
+                { "{{PaymentTerms}}", request.PaymentTerms ?? string.Empty },
+                { "{{ValidityDays}}", request.ValidityDays?.ToString() ?? "15" },
                 { "{{QuoteNumber}}", quoteNumber },
                 { "{{Date}}", DateTime.Now.ToString("yyyy/MM/dd") },
                 { "{{TotalAmount}}", totalAmount.ToString("N2") }
@@ -64,8 +67,15 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             // Replace simple placeholders across paragraphs (handling run-splitting)
             ReplacePlaceholdersAcrossBody(body, textReplacements);
 
-            // 2. Populate product table rows
-            PopulateProductTable(body, request.Items);
+            // 2. Populate product table rows (Dynamic Grid or Legacy Items)
+            if (request.Headers != null && request.Headers.Count > 0 && request.Rows != null && request.Rows.Count > 0)
+            {
+                PopulateDynamicTable(body, request.Headers, request.Rows);
+            }
+            else if (request.Items != null && request.Items.Count > 0)
+            {
+                PopulateProductTable(body, request.Items);
+            }
 
             mainPart.Document.Save();
         }
@@ -220,5 +230,149 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
 
         // Remove original placeholder row
         targetTable.RemoveChild(templateRow);
+    }
+
+    private void PopulateDynamicTable(Body body, List<string> headers, List<Dictionary<string, string>> rows)
+    {
+        var table = new Table();
+
+        // 1. Table Properties (100% width, borders, RTL visual order, margins)
+        var tblPr = new TableProperties(
+            new TableBorders(
+                new TopBorder { Val = BorderValues.Single, Size = 8, Color = "1E3A8A" },
+                new BottomBorder { Val = BorderValues.Single, Size = 8, Color = "1E3A8A" },
+                new LeftBorder { Val = BorderValues.Single, Size = 4, Color = "CBD5E1" },
+                new RightBorder { Val = BorderValues.Single, Size = 4, Color = "CBD5E1" },
+                new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4, Color = "E2E8F0" },
+                new InsideVerticalBorder { Val = BorderValues.Single, Size = 4, Color = "E2E8F0" }
+            ),
+            new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
+            new TableJustification { Val = TableRowAlignmentValues.Center },
+            new BiDiVisual(),
+            new TableCellMarginDefault(
+                new TopMargin { Width = "120", Type = TableWidthUnitValues.Dxa },
+                new BottomMargin { Width = "120", Type = TableWidthUnitValues.Dxa },
+                new LeftMargin { Width = "160", Type = TableWidthUnitValues.Dxa },
+                new RightMargin { Width = "160", Type = TableWidthUnitValues.Dxa }
+            )
+        );
+        table.AppendChild(tblPr);
+
+        // 2. Header Row
+        var headerRow = new TableRow();
+        headerRow.AppendChild(new TableRowProperties(new TableHeader(), new CantSplit()));
+
+        foreach (var headerText in headers)
+        {
+            var cell = new TableCell();
+            var cellPr = new TableCellProperties(
+                new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = "1E3A8A" },
+                new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+            );
+            cell.AppendChild(cellPr);
+
+            var para = new Paragraph(
+                new ParagraphProperties(
+                    new Justification { Val = JustificationValues.Center },
+                    new BiDi()
+                ),
+                new Run(
+                    new RunProperties(
+                        new Bold(),
+                        new Color { Val = "FFFFFF" },
+                        new FontSize { Val = "22" },
+                        new RunFonts { Ascii = "Cairo", HighAnsi = "Cairo", ComplexScript = "Cairo" }
+                    ),
+                    new Text(headerText) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }
+                )
+            );
+            cell.AppendChild(para);
+            headerRow.AppendChild(cell);
+        }
+        table.AppendChild(headerRow);
+
+        // 3. Data Rows
+        for (int r = 0; r < rows.Count; r++)
+        {
+            var rowDict = rows[r];
+            var isEven = (r % 2 == 0);
+            var dataRow = new TableRow();
+            dataRow.AppendChild(new TableRowProperties(new CantSplit()));
+
+            foreach (var header in headers)
+            {
+                rowDict.TryGetValue(header, out var cellValue);
+                cellValue ??= string.Empty;
+
+                var cell = new TableCell();
+                var cellPr = new TableCellProperties(
+                    new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = isEven ? "FFFFFF" : "F8FAFC" },
+                    new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                );
+                cell.AppendChild(cellPr);
+
+                var para = new Paragraph(
+                    new ParagraphProperties(
+                        new Justification { Val = JustificationValues.Center },
+                        new BiDi()
+                    ),
+                    new Run(
+                        new RunProperties(
+                            new Color { Val = "1E293B" },
+                            new FontSize { Val = "20" },
+                            new RunFonts { Ascii = "Cairo", HighAnsi = "Cairo", ComplexScript = "Cairo" }
+                        ),
+                        new Text(cellValue) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }
+                    )
+                );
+                cell.AppendChild(para);
+                dataRow.AppendChild(cell);
+            }
+            table.AppendChild(dataRow);
+        }
+
+        // 4. Locate {{DynamicItemsTable}} placeholder or existing table to replace
+        Paragraph? placeholderParagraph = null;
+        foreach (var p in body.Descendants<Paragraph>())
+        {
+            var pText = string.Concat(p.Descendants<Text>().Select(t => t.Text));
+            if (pText.Contains("{{DynamicItemsTable}}"))
+            {
+                placeholderParagraph = p;
+                break;
+            }
+        }
+
+        if (placeholderParagraph != null)
+        {
+            placeholderParagraph.Parent?.InsertAfter(table, placeholderParagraph);
+            placeholderParagraph.Remove();
+            _logger.LogInformation("Replaced {Placeholder} with dynamic table.", "{{DynamicItemsTable}}");
+            return;
+        }
+
+        // Fallback: check if an old template table exists with {{Type}} or {{ProductName}}
+        Table? templateTable = null;
+        foreach (var t in body.Descendants<Table>())
+        {
+            var tblText = string.Concat(t.Descendants<Text>().Select(x => x.Text));
+            if (tblText.Contains("{{Type}}") || tblText.Contains("{{ProductName}}") || tblText.Contains("سعر الالف"))
+            {
+                templateTable = t;
+                break;
+            }
+        }
+
+        if (templateTable != null)
+        {
+            templateTable.Parent?.InsertAfter(table, templateTable);
+            templateTable.Remove();
+            _logger.LogInformation("Replaced old template table with programmatic dynamic table.");
+            return;
+        }
+
+        // Final fallback: append table to document body
+        body.AppendChild(table);
+        _logger.LogInformation("Appended dynamic table to document body.");
     }
 }

@@ -40,9 +40,12 @@ public class QuotesController : ControllerBase
     [HttpPost("generate")]
     public async Task<ActionResult<QuoteResponseDto>> GenerateQuote([FromBody] QuoteRequestDto request)
     {
-        if (request.Items == null || request.Items.Count == 0)
+        bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
+        bool hasItems = request.Items != null && request.Items.Count > 0;
+
+        if (!hasDynamicRows && !hasItems)
         {
-            return BadRequest(new { message = "Quote must contain at least one item." });
+            return BadRequest(new { message = "Quote must contain at least one item or row." });
         }
 
         try
@@ -75,8 +78,59 @@ public class QuotesController : ControllerBase
             var projectName = request.ProjectName?.Trim() ?? "مشروع اتريم";
             var location = request.Location?.Trim() ?? "القاهرة - مصر";
 
-            // 3. Calculate Totals
-            var totalAmount = request.Items.Sum(item => item.Quantity * item.UnitPrice);
+            // 3. Map dynamic rows or items to database entities
+            var quoteItems = new List<QuoteItem>();
+            if (hasItems)
+            {
+                quoteItems = request.Items!.Select(i => new QuoteItem
+                {
+                    ProductName = i.ProductName,
+                    Size = i.Size ?? string.Empty,
+                    Capacity = i.Capacity ?? string.Empty,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    LineTotal = i.Quantity * i.UnitPrice
+                }).ToList();
+            }
+            else if (hasDynamicRows)
+            {
+                foreach (var row in request.Rows!)
+                {
+                    string name = GetRowValue(row, "النوع", "الصنف", "اسم المنتج", "Product", "Type") 
+                                  ?? row.Values.FirstOrDefault() ?? "صنف";
+                    string size = GetRowValue(row, "المقاس", "Size") ?? string.Empty;
+                    string cap = GetRowValue(row, "الحمولة", "الوحدة", "Capacity") ?? string.Empty;
+                    decimal qty = ParseDecimal(GetRowValue(row, "الكمية", "Quantity", "Qty"), 1);
+                    decimal price = ParseDecimal(GetRowValue(row, "السعر", "سعر الألف", "سعر الالف", "Price", "UnitPrice"), 0);
+                    decimal total = ParseDecimal(GetRowValue(row, "الإجمالي", "الاجمالي", "Total", "LineTotal"), qty * price);
+
+                    quoteItems.Add(new QuoteItem
+                    {
+                        ProductName = name,
+                        Size = size,
+                        Capacity = cap,
+                        Quantity = qty,
+                        UnitPrice = price,
+                        LineTotal = total
+                    });
+                }
+
+                // If request.Items is empty, fill it for template fallback
+                request.Items = quoteItems.Select(q => new ProductItemDto
+                {
+                    ProductName = q.ProductName,
+                    Size = q.Size,
+                    Capacity = q.Capacity,
+                    Quantity = q.Quantity,
+                    UnitPrice = q.UnitPrice
+                }).ToList();
+            }
+
+            // Calculate Totals
+            var totalAmount = request.TotalAmount.HasValue && request.TotalAmount.Value > 0
+                ? request.TotalAmount.Value
+                : quoteItems.Sum(item => item.LineTotal);
+
             var quoteNumber = $"Q-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
 
             // 4. File Paths
@@ -122,15 +176,7 @@ public class QuotesController : ControllerBase
                 PdfUrl = pdfUrl,
                 DocxUrl = docxUrl,
                 CreatedAt = DateTime.UtcNow,
-                Items = request.Items.Select(i => new QuoteItem
-                {
-                    ProductName = i.ProductName,
-                    Size = i.Size ?? string.Empty,
-                    Capacity = i.Capacity ?? string.Empty,
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice,
-                    LineTotal = i.Quantity * i.UnitPrice
-                }).ToList()
+                Items = quoteItems
             };
 
             _db.Quotes.Add(quote);
@@ -244,6 +290,23 @@ public class QuotesController : ControllerBase
         };
 
         return PhysicalFile(filePath, contentType, fileName);
+    }
+
+    private static string? GetRowValue(Dictionary<string, string> row, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var match = row.FirstOrDefault(kv => kv.Key.Trim().Equals(key, StringComparison.OrdinalIgnoreCase) || kv.Key.Contains(key));
+            if (!string.IsNullOrWhiteSpace(match.Value)) return match.Value.Trim();
+        }
+        return null;
+    }
+
+    private static decimal ParseDecimal(string? text, decimal fallback = 0)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return fallback;
+        var clean = System.Text.RegularExpressions.Regex.Replace(text, @"[^\d\.\,\-]", "").Replace(",", "");
+        return decimal.TryParse(clean, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : fallback;
     }
 }
 

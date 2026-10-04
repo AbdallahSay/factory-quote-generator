@@ -62,3 +62,4 @@ requirements*.txt
 pyproject.toml
 quotes.db
 seed.py
+.github/

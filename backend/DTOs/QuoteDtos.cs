@@ -24,7 +24,16 @@ public class QuoteRequestDto
     public string? ClientPhone { get; set; }
     public string? ProjectName { get; set; }
     public string? Location { get; set; }
-    [Required, MinLength(1, ErrorMessage = "At least one item is required")]
+    public string? Notes { get; set; }
+    public string? PaymentTerms { get; set; }
+    public int? ValidityDays { get; set; }
+    public decimal? TotalAmount { get; set; }
+
+    // Dynamic Table Structure (Mini-Excel Grid)
+    public List<string> Headers { get; set; } = new();
+    public List<Dictionary<string, string>> Rows { get; set; } = new();
+
+    // Legacy items list for backwards compatibility
     public List<ProductItemDto> Items { get; set; } = new();
 }
 
