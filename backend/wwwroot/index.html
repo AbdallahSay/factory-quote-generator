@@ -10,9 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- SortableJS CDN for Drag & Drop Reordering -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <!-- SweetAlert2 CDN for Modern Dialogs -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="config.js"></script>
     <style>
-        body { font-family: 'Cairo', sans-serif; }
+        body, .swal2-popup { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -349,7 +351,34 @@
         }
 
         function addColumn(initialName = null) {
-            const colName = initialName || prompt('أدخل اسم العمود الجديد:', 'ملاحظات');
+            if (initialName) {
+                insertColumn(initialName);
+                return;
+            }
+
+            Swal.fire({
+                title: 'إضافة عمود جديد',
+                text: 'أدخل اسم العمود الذي ترغب في إضافته للجدول:',
+                input: 'text',
+                inputValue: 'ملاحظات',
+                inputPlaceholder: 'اسم العمود (مثال: ملاحظات أو الخصم)',
+                showCancelButton: true,
+                confirmButtonText: 'إضافة',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#1e40af',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'يرجى إدخال اسم العمود!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    insertColumn(result.value.trim());
+                }
+            });
+        }
+
+        function insertColumn(colName) {
             if (!colName || !colName.trim()) return;
 
             columns.push(colName.trim());
@@ -369,24 +398,40 @@
 
         function deleteColumn(idx) {
             if (columns.length <= 1) {
-                alert('يجب الإبقاء على عمود واحد على الأقل في الجدول.');
+                Swal.fire({
+                    title: 'خطأ!',
+                    text: 'يجب الإبقاء على عمود واحد على الأقل في الجدول.',
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                });
                 return;
             }
             const colName = columns[idx];
-            if (!confirm(`هل أنت متأكد من حذف العمود "${colName}"؟`)) return;
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: `هل تريد بالتأكيد حذف عمود "${colName}" وكافة بياناته؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    columns.splice(idx, 1);
+                    renderHeaders();
 
-            columns.splice(idx, 1);
-            renderHeaders();
+                    // Remove corresponding cell in every row
+                    document.querySelectorAll('#productRowsContainer tr').forEach(row => {
+                        const cells = Array.from(row.querySelectorAll('.col-cell'));
+                        if (cells[idx]) {
+                            cells[idx].remove();
+                        }
+                    });
 
-            // Remove corresponding cell in every row
-            document.querySelectorAll('#productRowsContainer tr').forEach(row => {
-                const cells = Array.from(row.querySelectorAll('.col-cell'));
-                if (cells[idx]) {
-                    cells[idx].remove();
+                    calcTotals();
                 }
             });
-
-            calcTotals();
         }
 
         function addRow(data = {}) {
@@ -442,10 +487,28 @@
 
             actionTd.querySelector('.delRowBtn').addEventListener('click', () => {
                 if (document.querySelectorAll('#productRowsContainer tr').length > 1) {
-                    tr.remove();
-                    calcTotals();
+                    Swal.fire({
+                        title: 'هل أنت متأكد؟',
+                        text: 'هل تريد بالتأكيد حذف هذا البند من عرض السعر؟',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'نعم، احذف',
+                        cancelButtonText: 'إلغاء',
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#64748b'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            tr.remove();
+                            calcTotals();
+                        }
+                    });
                 } else {
-                    alert('يجب الإبقاء على صف واحد على الأقل في عرض السعر.');
+                    Swal.fire({
+                        title: 'خطأ!',
+                        text: 'يجب الإبقاء على صف واحد على الأقل في عرض السعر.',
+                        icon: 'error',
+                        confirmButtonText: 'إغلاق'
+                    });
                 }
             });
 
@@ -509,8 +572,14 @@
             const location = document.getElementById('projectLocation').value.trim();
 
             if (!clientName) {
-                alert('يرجى إدخال اسم شركة العميل.');
-                document.getElementById('clientNameInput').focus();
+                Swal.fire({
+                    title: 'خطأ!',
+                    text: 'يرجى إدخال اسم شركة العميل.',
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                }).then(() => {
+                    document.getElementById('clientNameInput').focus();
+                });
                 return;
             }
 
@@ -535,7 +604,12 @@
             });
 
             if (rows.length === 0) {
-                alert('يرجى إدخال صنف واحد على الأقل.');
+                Swal.fire({
+                    title: 'خطأ!',
+                    text: 'يرجى إدخال صنف واحد على الأقل في عرض السعر.',
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                });
                 return;
             }
 
@@ -590,9 +664,22 @@
 
                 // Smooth scroll to result
                 document.getElementById('resultModal').scrollIntoView({ behavior: 'smooth' });
+
+                // SweetAlert2 Success Notification
+                Swal.fire({
+                    title: 'تم بنجاح!',
+                    text: `تم إنشاء عرض السعر (${result.quoteNumber}) وتوليد ملفات Word و PDF بنجاح.`,
+                    icon: 'success',
+                    confirmButtonText: 'حسناً'
+                });
             } catch (err) {
                 console.error(err);
-                alert(`حدث خطأ: ${err.message}`);
+                Swal.fire({
+                    title: 'خطأ!',
+                    text: `حدث خطأ أثناء إنشاء عرض السعر: ${err.message}`,
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                });
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'إنشاء وتصدير عرض السعر';

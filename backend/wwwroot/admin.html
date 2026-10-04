@@ -8,8 +8,11 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN for Modern Dialogs -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="config.js"></script>
     <style>
-        body { font-family: 'Cairo', sans-serif; }
+        body, .swal2-popup { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -32,7 +35,7 @@
                     <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     تحديث فوري
                 </button>
-                <a href="/index.html" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold flex items-center gap-1">
+                <a href="index.html" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     عرض سعر جديد
                 </a>
@@ -147,16 +150,38 @@
 
     <!-- Dashboard JavaScript Logic -->
     <script>
-        document.addEventListener('DOMContentLoaded', fetchDashboardData);
-        document.getElementById('refreshBtn').addEventListener('click', fetchDashboardData);
+        document.addEventListener('DOMContentLoaded', () => fetchDashboardData(false));
+        document.getElementById('refreshBtn').addEventListener('click', () => fetchDashboardData(true));
 
-        async function fetchDashboardData() {
-            await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
+        async function fetchDashboardData(isManual = false) {
+            try {
+                await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
+                if (isManual) {
+                    Swal.fire({
+                        title: 'تم بنجاح!',
+                        text: 'تم تحديث بيانات لوحة الإدارة بنجاح.',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+                if (isManual) {
+                    Swal.fire({
+                        title: 'خطأ!',
+                        text: 'تعذر تحديث بعض بيانات لوحة الإدارة.',
+                        icon: 'error',
+                        confirmButtonText: 'إغلاق'
+                    });
+                }
+            }
         }
 
         async function loadStats() {
             try {
-                const res = await fetch('/api/admin/stats');
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/stats`);
                 if (!res.ok) return;
                 const stats = await res.json();
                 document.getElementById('kpiTotalQuotes').textContent = stats.totalQuotes || 0;
@@ -170,7 +195,7 @@
 
         async function loadQuotes() {
             try {
-                const res = await fetch('/api/admin/quotes');
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/quotes`);
                 if (!res.ok) return;
                 const quotes = await res.json();
                 const tbody = document.getElementById('quotesTableBody');
@@ -180,7 +205,10 @@
                     return;
                 }
 
-                tbody.innerHTML = quotes.map(q => `
+                tbody.innerHTML = quotes.map(q => {
+                    const pdfUrl = q.pdfUrl ? (q.pdfUrl.startsWith('http') ? q.pdfUrl : `${CONFIG.API_BASE_URL}${q.pdfUrl}`) : '#';
+                    const docxUrl = q.docxUrl ? (q.docxUrl.startsWith('http') ? q.docxUrl : `${CONFIG.API_BASE_URL}${q.docxUrl}`) : '#';
+                    return `
                     <tr class="hover:bg-slate-50 transition">
                         <td class="py-3 px-4 font-mono font-bold text-blue-900">${q.quoteNumber}</td>
                         <td class="py-3 px-4 font-semibold text-slate-800">${q.clientName}</td>
@@ -190,18 +218,18 @@
                         <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(q.createdAt).toLocaleString('ar-EG')}</td>
                         <td class="py-3 px-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="${q.pdfUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
+                                <a href="${pdfUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                                     PDF
                                 </a>
-                                <a href="${q.docxUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition">
+                                <a href="${docxUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                                     Word
                                 </a>
                             </div>
                         </td>
                     </tr>
-                `).join('');
+                `}).join('');
             } catch (err) {
                 console.error('Quotes error:', err);
             }
@@ -209,7 +237,7 @@
 
         async function loadLogs() {
             try {
-                const res = await fetch('/api/admin/logs');
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/logs`);
                 if (!res.ok) return;
                 const logs = await res.json();
                 const tbody = document.getElementById('logsTableBody');

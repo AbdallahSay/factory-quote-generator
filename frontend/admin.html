@@ -8,9 +8,11 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN for Modern Dialogs -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="config.js"></script>
     <style>
-        body { font-family: 'Cairo', sans-serif; }
+        body, .swal2-popup { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -148,11 +150,33 @@
 
     <!-- Dashboard JavaScript Logic -->
     <script>
-        document.addEventListener('DOMContentLoaded', fetchDashboardData);
-        document.getElementById('refreshBtn').addEventListener('click', fetchDashboardData);
+        document.addEventListener('DOMContentLoaded', () => fetchDashboardData(false));
+        document.getElementById('refreshBtn').addEventListener('click', () => fetchDashboardData(true));
 
-        async function fetchDashboardData() {
-            await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
+        async function fetchDashboardData(isManual = false) {
+            try {
+                await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
+                if (isManual) {
+                    Swal.fire({
+                        title: 'تم بنجاح!',
+                        text: 'تم تحديث بيانات لوحة الإدارة بنجاح.',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+                if (isManual) {
+                    Swal.fire({
+                        title: 'خطأ!',
+                        text: 'تعذر تحديث بعض بيانات لوحة الإدارة.',
+                        icon: 'error',
+                        confirmButtonText: 'إغلاق'
+                    });
+                }
+            }
         }
 
         async function loadStats() {
