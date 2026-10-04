@@ -1,0 +1,62 @@
+# Build & Publish Artifacts
+bin/
+obj/
+publish/
+**/bin/
+**/obj/
+**/publish/
+
+# Visual Studio & IDE Cache
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+.vscode/
+.idea/
+
+# Python Virtual Environment & Cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Generated Quotation Documents (Privacy & Size)
+**/wwwroot/quotes/*.pdf
+**/wwwroot/quotes/*.docx
+wwwroot/quotes/
+
+# Local Environment Secrets
+.env
+.env.*
+!.env.example
+
+# Temporary and AI Artifacts
+.user_uploaded/
+.gemini/
+*.tmp
+
+# Legacy Workspace Folders and Local Scripts
+FactoryQuoteApi/
+/templates/
+/static/
+src/
+app/
+generated_quotes/
+output/
+scripts/
+tests/
+deploy_monsterasp.py
+execute_remote_sql.py
+migration_refactor_clients_products.sql
+monsterasp_drop_and_create.sql
+monsterasp_schema.sql
+test_*.py
+Dockerfile
+.dockerignore
+requirements*.txt
+pyproject.toml
+quotes.db
+seed.py

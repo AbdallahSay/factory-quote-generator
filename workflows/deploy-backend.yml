@@ -1,0 +1,39 @@
+name: Deploy Backend to MonsterASP.NET
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & FTP Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK 10.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore backend/FactoryQuoteApi.csproj
+
+      - name: Build & Publish Release
+        run: dotnet publish backend/FactoryQuoteApi.csproj -c Release -o ./backend/publish
+
+      - name: Deploy to MonsterASP.NET via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./backend/publish/
+          server-dir: /site/wwwroot/
+          dangerous-clean-slate: false

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إنشاء عروض الأسعار | مصنع المنتجات الإسمنتية</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <!-- Navbar -->
+    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-blue-800 p-2 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold">مصنع الطوب الآلي والخرسانة</h1>
+                    <p class="text-xs text-blue-200">منظومة المبيعات وإصدار عروض الأسعار المعتمدة</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <a href="admin.html" class="px-3 py-1.5 text-sm bg-blue-800 hover:bg-blue-700 text-blue-100 rounded-lg transition font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    لوحة الإدارة
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <!-- Sales Form Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    بيانات العميل والمشروع
+                </h2>
+                <span class="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">نموذج معتمد</span>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Client Name Input -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientNameInput">اسم شركة العميل *</label>
+                        <input type="text" id="clientNameInput" list="clientsDatalist" placeholder="أدخل اسم شركة العميل (مثال: شركة اتريم للمقاولات)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <datalist id="clientsDatalist"></datalist>
+                    </div>
+
+                    <!-- Contact Person -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="contactPerson">المسؤول / المهندس المعني</label>
+                        <input type="text" id="contactPerson" placeholder="مثال: م / سارة شريف" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Phone (Optional) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientPhone">رقم الهاتف / WhatsApp (اختياري)</label>
+                        <input type="text" id="clientPhone" placeholder="+201012345678" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Email (Optional) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientEmail">البريد الإلكتروني (اختياري)</label>
+                        <input type="email" id="clientEmail" placeholder="client@company.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Project Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectName">اسم المشروع</label>
+                        <input type="text" id="projectName" placeholder="مثال: مشروع كمبوند ابراج اتريم" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Location -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectLocation">موقع التوريد</label>
+                        <input type="text" id="projectLocation" placeholder="مثال: القاهرة - التجمع الخامس" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Table Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    الأصناف والكميات المطلوبة
+                </h2>
+                <button type="button" id="addRowBtn" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    إضافة صنف
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-6 overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase bg-slate-50">
+                            <th class="py-2.5 px-3">الصنف / النوع</th>
+                            <th class="py-2.5 px-3">المقاس</th>
+                            <th class="py-2.5 px-3">الحمولة / الوحدة</th>
+                            <th class="py-2.5 px-3">سعر الألف (ج.م)</th>
+                            <th class="py-2.5 px-3">الكمية (بالألف)</th>
+                            <th class="py-2.5 px-3">الإجمالي (ج.م)</th>
+                            <th class="py-2.5 px-2 text-center">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productRowsContainer" class="divide-y divide-slate-100 text-sm">
+                        <!-- Dynamic Rows Injected Here -->
+                    </tbody>
+                </table>
+                <datalist id="productsDatalist"></datalist>
+            </div>
+
+            <!-- Total Bar -->
+            <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-sm text-slate-600">
+                    عدد الأصناف: <span id="itemsCount" class="font-bold text-slate-900">0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="text-xs text-slate-500 block">الإجمالي الكلي لعرض السعر:</span>
+                        <span id="grandTotal" class="text-2xl font-black text-blue-900">0.00</span>
+                        <span class="text-xs font-bold text-slate-600">جنيه مصري</span>
+                    </div>
+                    <button type="button" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:shadow-md transition flex items-center gap-2">
+                        <svg id="generateSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="generateBtnText">إنشاء وتصدير عرض السعر</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Result Banner / Modal -->
+        <div id="resultModal" class="hidden bg-emerald-50 border border-emerald-300 rounded-xl p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-600 text-white p-2.5 rounded-full">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-emerald-900">تم إنشاء عرض السعر بنجاح!</h3>
+                        <p class="text-sm text-emerald-700">رقم العرض: <strong id="resQuoteNumber" class="text-emerald-950 font-mono">Q-XXXXX</strong> | الإجمالي: <strong id="resQuoteTotal">0.00</strong> ج.م</p>
+                    </div>
+                </div>
+                <span class="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded font-semibold">جاهز للتحميل</span>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-emerald-200 flex flex-wrap items-center gap-3">
+                <a id="resPdfLink" href="#" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+                    تحميل مستند PDF
+                </a>
+                <a id="resDocxLink" href="#" target="_blank" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+                    تحميل مستند Word
+                </a>
+                <span class="text-xs text-emerald-800 font-medium mr-auto">✓ تم حفظ البيانات في SQL Server</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- VanillaJS Application Logic -->
+    <script>
+        let clientsList = [];
+        let productsList = [];
+        let rowCounter = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([loadClients(), loadProducts()]);
+            // Add initial empty row
+            addProductRow('طوب الي مصمت', 10, 1450, '25*12*6', '1000');
+        });
+
+        async function loadClients() {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/clients`);
+                if (!res.ok) return;
+                clientsList = await res.json();
+                
+                const clientsDatalist = document.getElementById('clientsDatalist');
+                clientsDatalist.innerHTML = '';
+                clientsList.forEach(client => {
+                    const opt = document.createElement('option');
+                    opt.value = client.clientName;
+                    clientsDatalist.appendChild(opt);
+                });
+
+                // Auto-fill client details if selected from suggestions
+                document.getElementById('clientNameInput').addEventListener('input', (e) => {
+                    const val = e.target.value.trim();
+                    const matched = clientsList.find(c => c.clientName === val);
+                    if (matched) {
+                        if (matched.contactPerson && !document.getElementById('contactPerson').value) {
+                            document.getElementById('contactPerson').value = matched.contactPerson;
+                        }
+                        if (matched.phone && !document.getElementById('clientPhone').value) {
+                            document.getElementById('clientPhone').value = matched.phone;
+                        }
+                        if (matched.email && !document.getElementById('clientEmail').value) {
+                            document.getElementById('clientEmail').value = matched.email;
+                        }
+                        if (matched.address && !document.getElementById('projectLocation').value) {
+                            document.getElementById('projectLocation').value = matched.address;
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn('Could not load client suggestions:', err);
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/products`);
+                if (!res.ok) return;
+                productsList = await res.json();
+                
+                const productsDatalist = document.getElementById('productsDatalist');
+                if (productsDatalist) {
+                    productsDatalist.innerHTML = '';
+                    productsList.forEach(prod => {
+                        const opt = document.createElement('option');
+                        opt.value = prod.productName;
+                        productsDatalist.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.warn('Could not load product suggestions:', err);
+            }
+        }
+
+        function addProductRow(defaultName = '', defaultQty = 10, defaultPrice = 0, defaultSize = '25*12*6', defaultCap = '1000') {
+            rowCounter++;
+            const container = document.getElementById('productRowsContainer');
+            const rowId = `prodRow_${rowCounter}`;
+
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+            tr.innerHTML = `
+                <td class="py-3 px-3">
+                    <input type="text" list="productsDatalist" class="prodNameInput w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="اسم الصنف (مثال: طوب الي مصمت)" value="${defaultName}">
+                </td>
+                <td class="py-3 px-3">
+                    <input type="text" class="sizeInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="25*12*6" value="${defaultSize}">
+                </td>
+                <td class="py-3 px-3">
+                    <input type="text" class="capInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="1000" value="${defaultCap}">
+                </td>
+                <td class="py-3 px-3">
+                    <input type="number" step="0.01" class="priceInput w-28 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0.00" value="${defaultPrice > 0 ? defaultPrice : ''}">
+                </td>
+                <td class="py-3 px-3">
+                    <input type="number" step="0.5" min="0.5" class="qtyInput w-24 border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${defaultQty}">
+                </td>
+                <td class="py-3 px-3">
+                    <span class="lineTotal font-bold text-slate-800">0.00</span>
+                </td>
+                <td class="py-3 px-2 text-center">
+                    <button type="button" class="delRowBtn text-red-500 hover:text-red-700 p-1" title="حذف الصنف">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </td>
+            `;
+
+            container.appendChild(tr);
+
+            // Bind Events
+            const nameElem = tr.querySelector('.prodNameInput');
+            const sizeElem = tr.querySelector('.sizeInput');
+            const capElem = tr.querySelector('.capInput');
+            const priceElem = tr.querySelector('.priceInput');
+            const qtyElem = tr.querySelector('.qtyInput');
+            const delBtn = tr.querySelector('.delRowBtn');
+
+            // Auto-fill row when typing/selecting from products list
+            nameElem.addEventListener('input', () => {
+                const val = nameElem.value.trim();
+                const matched = productsList.find(p => p.productName === val);
+                if (matched) {
+                    if (matched.size && !sizeElem.value) sizeElem.value = matched.size;
+                    if (matched.capacity && !capElem.value) capElem.value = matched.capacity;
+                    if (matched.defaultPrice && (!priceElem.value || priceElem.value == 0)) {
+                        priceElem.value = parseFloat(matched.defaultPrice).toFixed(2);
+                    }
+                }
+                calcTotals();
+            });
+
+            priceElem.addEventListener('input', calcTotals);
+            qtyElem.addEventListener('input', calcTotals);
+
+            delBtn.addEventListener('click', () => {
+                if (document.querySelectorAll('#productRowsContainer tr').length > 1) {
+                    tr.remove();
+                    calcTotals();
+                } else {
+                    alert('يجب الإبقاء على صنف واحد على الأقل في عرض السعر.');
+                }
+            });
+
+            calcTotals();
+        }
+
+        document.getElementById('addRowBtn').addEventListener('click', () => addProductRow());
+
+        function calcTotals() {
+            let grandTotal = 0;
+            let count = 0;
+            const rows = document.querySelectorAll('#productRowsContainer tr');
+
+            rows.forEach(tr => {
+                const price = parseFloat(tr.querySelector('.priceInput')?.value || 0);
+                const qty = parseFloat(tr.querySelector('.qtyInput')?.value || 0);
+                const lineTotal = price * qty;
+                const totalSpan = tr.querySelector('.lineTotal');
+                if (totalSpan) totalSpan.textContent = lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                grandTotal += lineTotal;
+                count++;
+            });
+
+            document.getElementById('grandTotal').textContent = grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('itemsCount').textContent = count;
+            return grandTotal;
+        }
+
+        // Generate Quote Button Action
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const clientName = document.getElementById('clientNameInput').value.trim();
+            const contactPerson = document.getElementById('contactPerson').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
+            const clientEmail = document.getElementById('clientEmail').value.trim();
+            const projectName = document.getElementById('projectName').value.trim();
+            const location = document.getElementById('projectLocation').value.trim();
+
+            if (!clientName) {
+                alert('يرجى إدخال اسم شركة العميل.');
+                document.getElementById('clientNameInput').focus();
+                return;
+            }
+
+            const items = [];
+            const rows = document.querySelectorAll('#productRowsContainer tr');
+            rows.forEach(tr => {
+                const prodName = tr.querySelector('.prodNameInput')?.value.trim();
+                const size = tr.querySelector('.sizeInput')?.value.trim() || '';
+                const cap = tr.querySelector('.capInput')?.value.trim() || '';
+                const price = parseFloat(tr.querySelector('.priceInput')?.value || 0);
+                const qty = parseFloat(tr.querySelector('.qtyInput')?.value || 0);
+
+                if (prodName && qty > 0) {
+                    items.push({
+                        productName: prodName,
+                        size: size,
+                        capacity: cap,
+                        quantity: qty,
+                        unitPrice: price
+                    });
+                }
+            });
+
+            if (items.length === 0) {
+                alert('يرجى إدخال صنف واحد على الأقل مع اسم وكمية صحيحة.');
+                return;
+            }
+
+            const payload = {
+                userId: 1,
+                clientName: clientName,
+                contactPerson: contactPerson || null,
+                clientPhone: clientPhone || null,
+                clientEmail: clientEmail || null,
+                projectName: projectName || null,
+                location: location || null,
+                items: items
+            };
+
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('generateBtnText');
+            const spinner = document.getElementById('generateSpinner');
+
+            try {
+                btn.disabled = true;
+                btnText.textContent = 'جارٍ الإنشاء والإرسال...';
+                spinner.classList.remove('hidden');
+
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'فشل في إنشاء عرض السعر');
+                }
+
+                const result = await response.json();
+
+                // Format link URLs
+                const pdfUrl = result.pdfUrl.startsWith('http') ? result.pdfUrl : `${CONFIG.API_BASE_URL}${result.pdfUrl}`;
+                const docxUrl = result.docxUrl.startsWith('http') ? result.docxUrl : `${CONFIG.API_BASE_URL}${result.docxUrl}`;
+
+                // Display Result Modal
+                document.getElementById('resQuoteNumber').textContent = result.quoteNumber;
+                document.getElementById('resQuoteTotal').textContent = result.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('resPdfLink').href = pdfUrl;
+                document.getElementById('resDocxLink').href = docxUrl;
+                document.getElementById('resultModal').classList.remove('hidden');
+
+                // Smooth scroll to result
+                document.getElementById('resultModal').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                console.error(err);
+                alert(`حدث خطأ: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'إنشاء وتصدير عرض السعر';
+                spinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
