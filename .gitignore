@@ -32,6 +32,8 @@ wwwroot/quotes/
 .env
 .env.*
 !.env.example
+appsettings.Production.json
+!appsettings.Production.json.example
 
 # Temporary and AI Artifacts
 .user_uploaded/

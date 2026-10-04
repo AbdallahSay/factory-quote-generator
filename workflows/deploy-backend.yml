@@ -35,5 +35,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./backend/publish/
-          server-dir: /site/wwwroot/
+          server-dir: /wwwroot/
           dangerous-clean-slate: false

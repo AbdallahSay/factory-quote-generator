@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using FactoryQuoteApi.Data;
 using FactoryQuoteApi.Models;
 using FactoryQuoteApi.Services;
+// Use pure managed networking for SQL Client to avoid native SNI.dll dependencies
+AppContext.SetSwitch("Switch.Microsoft.Data.SqlClient.UseManagedNetworkingOnWindows", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,14 +36,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("VercelCorsPolicy", policy =>
     {
-        policy.WithOrigins(
-            "https://factory-quote-frontend.vercel.app",
-            "https://factory-quote-frontend-bxsbz85vm-abdallahsay10-7957s-projects.vercel.app",
-            "http://localhost:5000",
-            "http://127.0.0.1:5000",
-            "http://localhost:3000"
-        )
-        .SetIsOriginAllowedToAllowWildcardSubdomains()
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrWhiteSpace(origin)) return false;
+            var uri = new Uri(origin);
+            return uri.Host.EndsWith("vercel.app", StringComparison.OrdinalIgnoreCase) ||
+                   uri.Host.EndsWith("runasp.net", StringComparison.OrdinalIgnoreCase) ||
+                   uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                   uri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
+        })
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
