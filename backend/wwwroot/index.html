@@ -58,7 +58,7 @@
                     <!-- Client Name Input -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientNameInput">اسم شركة العميل *</label>
-                        <input type="text" id="clientNameInput" list="clientsDatalist" placeholder="أدخل اسم شركة العميل (مثال: شركة اتريم للمقاولات)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <input type="text" id="clientNameInput" list="clientsDatalist" placeholder="مثال: شركة اتريم للمقاولات العامة" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                         <datalist id="clientsDatalist"></datalist>
                     </div>
 
@@ -71,19 +71,19 @@
                     <!-- Phone (Optional) -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientPhone">رقم الهاتف / WhatsApp (اختياري)</label>
-                        <input type="text" id="clientPhone" placeholder="+201012345678" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="clientPhone" placeholder="مثال: 01012345678" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <!-- Email (Optional) -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientEmail">البريد الإلكتروني (اختياري)</label>
-                        <input type="email" id="clientEmail" placeholder="client@company.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="email" id="clientEmail" placeholder="مثال: client@company.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <!-- Project Name -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectName">اسم المشروع</label>
-                        <input type="text" id="projectName" placeholder="مثال: مشروع كمبوند ابراج اتريم" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="projectName" placeholder="مثال: مشروع النور" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <!-- Location -->
@@ -192,15 +192,8 @@
         document.addEventListener('DOMContentLoaded', async () => {
             renderHeaders();
             await Promise.all([loadClients(), loadProducts()]);
-            // Add initial default row
-            addRow({
-                "النوع": "طوب الي مصمت",
-                "المقاس": "25*12*6",
-                "الحمولة": "1000",
-                "سعر الالف": "1450.00",
-                "الكمية": "10",
-                "الإجمالي": "14500.00"
-            });
+            // Add initial blank row
+            addRow({});
         });
 
         async function loadClients() {
@@ -447,7 +440,23 @@
                 const isProductNameCol = col.includes('نوع') || col.includes('صنف') || col.includes('منتج');
                 const listAttr = isProductNameCol ? 'list="productsDatalist"' : '';
 
-                td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${col}">`;
+                let placeholderText = `أدخل ${col}...`;
+                const lowerCol = col.toLowerCase();
+                if (lowerCol.includes('نوع') || lowerCol.includes('صنف') || lowerCol.includes('منتج')) {
+                    placeholderText = 'مثال: طوب آلي مصمت';
+                } else if (lowerCol.includes('مقاس')) {
+                    placeholderText = 'مثال: 25*12*6';
+                } else if (lowerCol.includes('حمول') || lowerCol.includes('وحد')) {
+                    placeholderText = 'مثال: 1000';
+                } else if (lowerCol.includes('سعر')) {
+                    placeholderText = 'مثال: 1450.00';
+                } else if (lowerCol.includes('كمي')) {
+                    placeholderText = 'مثال: 10';
+                } else if (lowerCol.includes('إجمال') || lowerCol.includes('اجمال')) {
+                    placeholderText = '0.00';
+                }
+
+                td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${placeholderText}">`;
 
                 const input = td.querySelector('.cell-input');
 

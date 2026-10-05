@@ -1,12 +1,15 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FactoryQuoteApi.DTOs;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FactoryQuoteApi.Services;
 
 public interface IWordQuoteGeneratorService
 {
     Task<string> GenerateQuoteDocumentAsync(string templatePath, string outputPath, QuoteRequestDto request, string quoteNumber, decimal totalAmount);
+    string SanitizeFileName(string? clientName, string? projectName, string fallback = "Quote");
 }
 
 public class WordQuoteGeneratorService : IWordQuoteGeneratorService
@@ -16,6 +19,40 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
     public WordQuoteGeneratorService(ILogger<WordQuoteGeneratorService> logger)
     {
         _logger = logger;
+    }
+
+    public string SanitizeFileName(string? clientName, string? projectName, string fallback = "Quote")
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(clientName))
+        {
+            parts.Add(clientName.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(projectName))
+        {
+            parts.Add(projectName.Trim());
+        }
+
+        string raw = string.Join(" ", parts);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return fallback;
+        }
+
+        // Strip invalid characters for Windows file paths (\ / : * ? " < > | and control chars)
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var sb = new StringBuilder();
+        foreach (char c in raw)
+        {
+            if (!invalidChars.Contains(c) && c != '\\' && c != '/' && c != ':' && c != '*' && c != '?' && c != '"' && c != '<' && c != '>' && c != '|')
+            {
+                sb.Append(c);
+            }
+        }
+
+        // Collapse multiple spaces into a single space and trim
+        string sanitized = Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
     }
 
     public Task<string> GenerateQuoteDocumentAsync(

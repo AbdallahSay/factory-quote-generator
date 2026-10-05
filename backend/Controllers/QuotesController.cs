@@ -75,8 +75,8 @@ public class QuotesController : ControllerBase
             var clientEmail = !string.IsNullOrWhiteSpace(request.ClientEmail) ? request.ClientEmail.Trim() : null;
             var clientPhone = !string.IsNullOrWhiteSpace(request.ClientPhone) ? request.ClientPhone.Trim() : null;
             var contactPerson = request.ContactPerson?.Trim() ?? string.Empty;
-            var projectName = request.ProjectName?.Trim() ?? "مشروع اتريم";
-            var location = request.Location?.Trim() ?? "القاهرة - مصر";
+            var projectName = !string.IsNullOrWhiteSpace(request.ProjectName) ? request.ProjectName.Trim() : string.Empty;
+            var location = request.Location?.Trim() ?? string.Empty;
 
             // 3. Map dynamic rows or items to database entities
             var quoteItems = new List<QuoteItem>();
@@ -138,8 +138,9 @@ public class QuotesController : ControllerBase
             var quotesDir = Path.Combine(webRoot, "quotes");
             System.IO.Directory.CreateDirectory(quotesDir);
 
-            var docxFilename = $"{quoteNumber}.docx";
-            var pdfFilename = $"{quoteNumber}.pdf";
+            var baseFileName = _wordGenerator.SanitizeFileName(clientName, projectName, quoteNumber);
+            var docxFilename = $"{baseFileName}.docx";
+            var pdfFilename = $"{baseFileName}.pdf";
             var docxPath = Path.Combine(quotesDir, docxFilename);
             var pdfPath = Path.Combine(quotesDir, pdfFilename);
 
@@ -158,8 +159,8 @@ public class QuotesController : ControllerBase
 
             // Generate URLs
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var pdfUrl = $"{baseUrl}/quotes/{pdfFilename}";
-            var docxUrl = $"{baseUrl}/quotes/{docxFilename}";
+            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfFilename)}";
+            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxFilename)}";
 
             // 7. Save Quote & Items to SQL Server Database
             var quote = new Quote
