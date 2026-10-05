@@ -20,6 +20,12 @@ public class QuoteRequestDto
     [Required(ErrorMessage = "ClientName is required")]
     public string ClientName { get; set; } = string.Empty;
     public string? ContactPerson { get; set; }
+    public string? ContactTitle { get; set; }
+    public string? IssuerName { get; set; }
+    public string? IssuerJobTitle { get; set; }
+    public string? IssuerPrefix { get; set; }
+    public DateTime? QuoteDate { get; set; }
+    public List<string>? Terms { get; set; }
     public string? ClientEmail { get; set; }
     public string? ClientPhone { get; set; }
     public string? ProjectName { get; set; }

@@ -172,6 +172,13 @@ public class QuotesController : ControllerBase
                 ClientEmail = clientEmail,
                 ClientPhone = clientPhone,
                 ContactPerson = contactPerson,
+                ContactTitle = request.ContactTitle,
+                IssuerName = request.IssuerName,
+                IssuerJobTitle = request.IssuerJobTitle,
+                IssuerPrefix = request.IssuerPrefix,
+                TermsJson = request.Terms != null && request.Terms.Count > 0 
+                    ? System.Text.Json.JsonSerializer.Serialize(request.Terms) 
+                    : null,
                 ProjectName = projectName,
                 Location = location,
                 TotalAmount = totalAmount,
@@ -187,7 +194,7 @@ public class QuotesController : ControllerBase
             var auditLog = new AuditLog
             {
                 UserId = user.Id,
-                Action = "Quote_Generated",
+                Action = "QuoteGenerated",
                 EntityId = quoteNumber,
                 Timestamp = DateTime.UtcNow
             };
@@ -259,6 +266,57 @@ public class QuotesController : ControllerBase
             _logger.LogError(ex, "Failed to generate quote.");
             return StatusCode(500, new { message = "An error occurred while generating quote.", error = ex.Message });
         }
+    }
+
+    [HttpGet("terms")]
+    public IActionResult GetTerms()
+    {
+        var templatePath = Path.Combine(_env.ContentRootPath, "..", "Templates", "عرض سعر شركة اتريم.docx");
+        if (!System.IO.File.Exists(templatePath))
+        {
+            templatePath = Path.Combine(_env.ContentRootPath, "Templates", "عرض سعر شركة اتريم.docx");
+        }
+
+        var terms = _wordGenerator.GetDefaultTerms(templatePath);
+        return Ok(terms);
+    }
+
+    [HttpPost("preview")]
+    public IActionResult PreviewQuote([FromBody] QuoteRequestDto request)
+    {
+        var quoteDate = request.QuoteDate ?? DateTime.Now;
+        var dateStr = quoteDate.ToString("dd-MM-yyyy");
+        string arabicDay = quoteDate.DayOfWeek switch
+        {
+            DayOfWeek.Saturday => "السبت",
+            DayOfWeek.Sunday => "الأحد",
+            DayOfWeek.Monday => "الإثنين",
+            DayOfWeek.Tuesday => "الثلاثاء",
+            DayOfWeek.Wednesday => "الأربعاء",
+            DayOfWeek.Thursday => "الخميس",
+            DayOfWeek.Friday => "الجمعة",
+            _ => "الأحد"
+        };
+
+        var preview = new
+        {
+            quoteNumber = $"Q-{DateTime.UtcNow:yyyyMMdd}-PREVIEW",
+            date = dateStr,
+            day = arabicDay,
+            clientName = request.ClientName,
+            contactPerson = request.ContactPerson,
+            contactTitle = request.ContactTitle ?? "المهندس",
+            projectName = request.ProjectName,
+            location = request.Location,
+            issuerName = request.IssuerName ?? "اشرف الشربيني",
+            issuerJobTitle = request.IssuerJobTitle ?? "مدير تطوير الاعمال والمبيعات",
+            issuerPrefix = request.IssuerPrefix ?? "م / ",
+            headers = request.Headers,
+            rows = request.Rows,
+            terms = request.Terms
+        };
+
+        return Ok(preview);
     }
 
     [HttpGet("{id:int}")]

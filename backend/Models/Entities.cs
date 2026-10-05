@@ -74,6 +74,15 @@ public class Quote
     public string Location { get; set; } = string.Empty;
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
+    [MaxLength(50)]
+    public string? ContactTitle { get; set; }
+    [MaxLength(150)]
+    public string? IssuerName { get; set; }
+    [MaxLength(150)]
+    public string? IssuerJobTitle { get; set; }
+    [MaxLength(50)]
+    public string? IssuerPrefix { get; set; }
+    public string? TermsJson { get; set; }
     [MaxLength(500)]
     public string? PdfUrl { get; set; }
     [MaxLength(500)]

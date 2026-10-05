@@ -57,8 +57,12 @@ public class AdminController : ControllerBase
                 ClientName = q.ClientName,
                 ClientPhone = q.ClientPhone ?? "",
                 q.ContactPerson,
+                q.ContactTitle,
                 q.ProjectName,
                 q.Location,
+                q.IssuerName,
+                q.IssuerJobTitle,
+                q.IssuerPrefix,
                 q.TotalAmount,
                 q.PdfUrl,
                 q.DocxUrl,
@@ -68,6 +72,28 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         return Ok(quotes);
+    }
+
+    public class AuditLogRequestDto
+    {
+        public int? UserId { get; set; } = 1;
+        public string Action { get; set; } = string.Empty;
+        public string? EntityId { get; set; }
+    }
+
+    [HttpPost("audit")]
+    public async Task<IActionResult> RecordAudit([FromBody] AuditLogRequestDto dto)
+    {
+        var audit = new AuditLog
+        {
+            UserId = dto.UserId ?? 1,
+            Action = dto.Action,
+            EntityId = dto.EntityId,
+            Timestamp = DateTime.UtcNow
+        };
+        _db.AuditLogs.Add(audit);
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true });
     }
 
     [HttpGet("stats")]

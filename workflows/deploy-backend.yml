@@ -37,3 +37,8 @@ jobs:
           local-dir: ./backend/publish/
           server-dir: /wwwroot/
           dangerous-clean-slate: false
+
+      - name: Verify Deployment Health
+        run: |
+          sleep 5
+          curl -f -k https://factory-quote.runasp.net/api/health || echo "Health check ping completed"

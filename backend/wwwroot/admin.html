@@ -27,7 +27,7 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold">لوحة المراقبة والتدقيق الإداري</h1>
-                    <p class="text-xs text-slate-400">متابعة سجلات التدقيق (Audit Logs) وعروض الأسعار الصادرة</p>
+                    <p class="text-xs text-slate-400">متابعة سجلات التدقيق (Audit Logs) وعروض الأسعار الصادرة مع تفاصيل جهة الإصدار</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3 space-x-reverse">
@@ -96,7 +96,7 @@
                     <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                     <h2 class="font-bold text-slate-800 text-base">أحدث عروض الأسعار الصادرة</h2>
                 </div>
-                <span class="text-xs text-slate-500">محدث تلقائياً من SQL Server</span>
+                <span class="text-xs text-slate-500">محدث تلقائياً من SQL Server مع بيانات جهة الإصدار والمشروع</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -104,8 +104,9 @@
                     <thead>
                         <tr class="bg-slate-50 text-xs font-bold text-slate-500 uppercase border-b border-slate-200">
                             <th class="py-3 px-4">رقم العرض</th>
-                            <th class="py-3 px-4">اسم العميل</th>
-                            <th class="py-3 px-4">المشروع</th>
+                            <th class="py-3 px-4">اسم العميل والمسؤول</th>
+                            <th class="py-3 px-4">المشروع والموقع</th>
+                            <th class="py-3 px-4">جهة الإصدار</th>
                             <th class="py-3 px-4">الأصناف</th>
                             <th class="py-3 px-4">المبلغ الإجمالي</th>
                             <th class="py-3 px-4">تاريخ الإصدار</th>
@@ -113,7 +114,7 @@
                         </tr>
                     </thead>
                     <tbody id="quotesTableBody" class="divide-y divide-slate-100 text-sm">
-                        <tr><td colspan="7" class="py-6 text-center text-slate-400">جارٍ تحميل عروض الأسعار...</td></tr>
+                        <tr><td colspan="8" class="py-6 text-center text-slate-400">جارٍ تحميل عروض الأسعار...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -126,7 +127,7 @@
                     <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                     <h2 class="font-bold text-slate-800 text-base">سجلات التدقيق الأمني والعمليات (Audit Logs)</h2>
                 </div>
-                <span class="text-xs text-slate-500">أحدث 100 حركة أمنية</span>
+                <span class="text-xs text-slate-500">أحدث 100 حركة أمنية وعملية (توليد، معاينة، تحميل، تعديل شروط)</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -137,7 +138,7 @@
                             <th class="py-3 px-4">وقت الحركة (UTC)</th>
                             <th class="py-3 px-4">المستخدم</th>
                             <th class="py-3 px-4">نوع الحركة</th>
-                            <th class="py-3 px-4">معرّف السجل / رقم العرض</th>
+                            <th class="py-3 px-4">معرّف السجل / التفاصيل</th>
                         </tr>
                     </thead>
                     <tbody id="logsTableBody" class="divide-y divide-slate-100 text-sm font-mono text-xs">
@@ -201,28 +202,46 @@
                 const tbody = document.getElementById('quotesTableBody');
                 
                 if (quotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">لا توجد عروض أسعار مسجلة بعد.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-400">لا توجد عروض أسعار مسجلة بعد.</td></tr>';
                     return;
                 }
 
                 tbody.innerHTML = quotes.map(q => {
                     const pdfUrl = q.pdfUrl ? (q.pdfUrl.startsWith('http') ? q.pdfUrl : `${CONFIG.API_BASE_URL}${q.pdfUrl}`) : '#';
                     const docxUrl = q.docxUrl ? (q.docxUrl.startsWith('http') ? q.docxUrl : `${CONFIG.API_BASE_URL}${q.docxUrl}`) : '#';
+                    
+                    const clientAttention = q.contactPerson 
+                        ? `<span class="block text-xs text-slate-500">${q.contactTitle || 'عناية'} : ${q.contactPerson}</span>` 
+                        : '';
+                    const projectLoc = q.location 
+                        ? `<span class="block text-xs text-slate-500">${q.location}</span>` 
+                        : '';
+                    const issuer = (q.issuerName || q.issuerJobTitle)
+                        ? `<div><span class="font-bold text-slate-800 text-xs">${q.issuerPrefix || ''}${q.issuerName || ''}</span><span class="block text-[11px] text-slate-500">${q.issuerJobTitle || ''}</span></div>`
+                        : '<span class="text-xs text-slate-400">-</span>';
+
                     return `
                     <tr class="hover:bg-slate-50 transition">
                         <td class="py-3 px-4 font-mono font-bold text-blue-900">${q.quoteNumber}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">${q.clientName}</td>
-                        <td class="py-3 px-4 text-slate-600">${q.projectName || '-'}</td>
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-slate-800">${q.clientName}</span>
+                            ${clientAttention}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-slate-700 font-medium">${q.projectName || '-'}</span>
+                            ${projectLoc}
+                        </td>
+                        <td class="py-3 px-4">${issuer}</td>
                         <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-700 font-bold">${q.itemCount} صنف</span></td>
                         <td class="py-3 px-4 font-bold text-emerald-700">${parseFloat(q.totalAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} ج.م</td>
                         <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(q.createdAt).toLocaleString('ar-EG')}</td>
                         <td class="py-3 px-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="${pdfUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
+                                <a href="${pdfUrl}" target="_blank" onclick="trackDownload('PDF', '${q.quoteNumber}')" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                                     PDF
                                 </a>
-                                <a href="${docxUrl}" target="_blank" class="px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition">
+                                <a href="${docxUrl}" target="_blank" onclick="trackDownload('DOCX', '${q.quoteNumber}')" class="px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                                     Word
                                 </a>
@@ -233,6 +252,16 @@
             } catch (err) {
                 console.error('Quotes error:', err);
             }
+        }
+
+        async function trackDownload(fileType, quoteNo) {
+            try {
+                await fetch(`${CONFIG.API_BASE_URL}/api/admin/audit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: 1, action: 'QuoteDownloaded', entityId: `${fileType}: ${quoteNo}` })
+                });
+            } catch(e) {}
         }
 
         async function loadLogs() {
@@ -247,15 +276,22 @@
                     return;
                 }
 
-                tbody.innerHTML = logs.map((log, idx) => `
+                tbody.innerHTML = logs.map((log) => {
+                    let actionBadge = 'bg-slate-100 text-slate-800';
+                    if (log.action.includes('Generated')) actionBadge = 'bg-emerald-100 text-emerald-800';
+                    else if (log.action.includes('Downloaded')) actionBadge = 'bg-blue-100 text-blue-800';
+                    else if (log.action.includes('Previewed')) actionBadge = 'bg-purple-100 text-purple-800';
+                    else if (log.action.includes('Term')) actionBadge = 'bg-amber-100 text-amber-800';
+
+                    return `
                     <tr class="hover:bg-slate-50 transition">
                         <td class="py-2 px-4 text-slate-400">${log.id}</td>
                         <td class="py-2 px-4 text-slate-500">${new Date(log.timestamp).toISOString()}</td>
                         <td class="py-2 px-4 font-sans font-semibold text-slate-800">${log.user ? log.user.fullName : 'System'} <span class="text-xs text-slate-400">(${log.user ? log.user.role : '-'})</span></td>
-                        <td class="py-2 px-4"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold">${log.action}</span></td>
-                        <td class="py-2 px-4 text-blue-800 font-bold">${log.entityId || '-'}</td>
+                        <td class="py-2 px-4"><span class="px-2 py-0.5 ${actionBadge} rounded font-semibold">${log.action}</span></td>
+                        <td class="py-2 px-4 text-blue-800 font-bold font-sans">${log.entityId || '-'}</td>
                     </tr>
-                `).join('');
+                `}).join('');
             } catch (err) {
                 console.error('Logs error:', err);
             }

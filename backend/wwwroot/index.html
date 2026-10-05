@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold">مصنع الطوب الآلي والخرسانة</h1>
-                    <p class="text-xs text-blue-200">منظومة المبيعات وإصدار عروض الأسعار المعتمدة</p>
+                    <p class="text-xs text-blue-200">منظومة المبيعات وإصدار عروض الأسعار المعتمدة من القالب الأصلي</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 space-x-reverse">
@@ -43,29 +43,59 @@
 
     <!-- Main Container -->
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <!-- Sales Form Card -->
+        <!-- 1. Customer & Project Details Card -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                    بيانات العميل والمشروع
+                    1. بيانات العميل والمشروع
                 </h2>
-                <span class="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">نموذج معتمد</span>
+                <span class="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">تعديل مباشر للقالب الأصلي</span>
             </div>
 
             <div class="p-6 space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Client Name Input -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientNameInput">اسم شركة العميل *</label>
-                        <input type="text" id="clientNameInput" list="clientsDatalist" placeholder="مثال: شركة اتريم للمقاولات العامة" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientNameInput">السادة شركة (اسم العميل) *</label>
+                        <input type="text" id="clientNameInput" list="clientsDatalist" placeholder="مثال: شركة اتريم للمقاولات والاعمال المتخصصة" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                         <datalist id="clientsDatalist"></datalist>
                     </div>
 
-                    <!-- Contact Person -->
+                    <!-- Contact Title & Person -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="contactPerson">المسؤول / المهندس المعني</label>
-                        <input type="text" id="contactPerson" placeholder="مثال: م / سارة شريف" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">عناية (اللقب واسم المسؤول)</label>
+                        <div class="flex gap-2">
+                            <select id="contactTitle" class="border border-slate-300 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 w-32 font-medium">
+                                <option value="المهندس">المهندس</option>
+                                <option value="المهندسة" selected>المهندسة</option>
+                                <option value="الأستاذ">الأستاذ</option>
+                                <option value="الأستاذة">الأستاذة</option>
+                                <option value="السيد">السيد</option>
+                                <option value="السيدة">السيدة</option>
+                                <option value="الدكتور">الدكتور</option>
+                                <option value="الدكتورة">الدكتورة</option>
+                            </select>
+                            <input type="text" id="contactPerson" placeholder="مثال: سارة شريف" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Project Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectName">اسم المشروع</label>
+                        <input type="text" id="projectName" placeholder="مثال: مشروع ابراج اتريم" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Location -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectLocation">المكان / موقع التوريد</label>
+                        <input type="text" id="projectLocation" placeholder="مثال: القاهرة - التجمع الخامس" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Date & Day -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="quoteDate">تاريخ عرض السعر</label>
+                        <input type="date" id="quoteDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                     </div>
 
                     <!-- Phone (Optional) -->
@@ -75,35 +105,61 @@
                     </div>
 
                     <!-- Email (Optional) -->
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-semibold text-slate-700 mb-1" for="clientEmail">البريد الإلكتروني (اختياري)</label>
                         <input type="email" id="clientEmail" placeholder="مثال: client@company.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    </div>
-
-                    <!-- Project Name -->
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectName">اسم المشروع</label>
-                        <input type="text" id="projectName" placeholder="مثال: مشروع النور" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    </div>
-
-                    <!-- Location -->
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="projectLocation">موقع التوريد</label>
-                        <input type="text" id="projectLocation" placeholder="مثال: القاهرة - التجمع الخامس" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Products Table Card: Dynamic Data Grid -->
+        <!-- 2. Issuer Details Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                    2. بيانات جهة الإصدار والاعتماد
+                </h2>
+                <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">التوقيع والاعتماد</span>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Issuer Job Title -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerJobTitle">المسمى الوظيفي للمُصدِر</label>
+                        <input type="text" id="issuerJobTitle" value="مدير تطوير الاعمال والمبيعات" placeholder="مثال: مدير تطوير الاعمال والمبيعات" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Issuer Prefix -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerPrefix">اللقب</label>
+                        <select id="issuerPrefix" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium">
+                            <option value="م / " selected>م / (مهندس)</option>
+                            <option value="أ / ">أ / (أستاذ)</option>
+                            <option value="د / ">د / (دكتور)</option>
+                            <option value="السيد / ">السيد / </option>
+                        </select>
+                    </div>
+
+                    <!-- Issuer Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerName">اسم المسؤول المُصدِر</label>
+                        <input type="text" id="issuerName" value="اشرف الشربيني" placeholder="مثال: اشرف الشربيني" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Products Table Card: Mutates Original Word Table -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
                 <div>
                     <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                        جدول بنود عرض السعر (Dynamic Data Grid)
+                        3. جدول بنود عرض السعر (أعمدة القالب الأصلي الافتراضية)
                     </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">💡 اسحب الأعمدة لإعادة ترتيبها (Drag & Drop) • انقر على اسم أي عمود لتعديله • أضف أو احذف أعمدة بحرية</p>
+                    <p class="text-xs text-slate-500 mt-0.5">💡 الأعمدة الافتراضية الأربعة: النوع • المقاس • الحمولة • سعر الألف (تعديل جدول القالب مباشرة بدون إعادة بناء)</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="addColumnBtn" class="text-xs bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
@@ -138,10 +194,14 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
-                        <span class="text-xs text-slate-500 block">الإجمالي الكلي لعرض السعر:</span>
+                        <span class="text-xs text-slate-500 block">الإجمالي التقديري الداخلي:</span>
                         <span id="grandTotal" class="text-2xl font-black text-blue-900">0.00</span>
                         <span class="text-xs font-bold text-slate-600">جنيه مصري</span>
                     </div>
+                    <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5">
+                        <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <span>معاينة العرض</span>
+                    </button>
                     <button type="button" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:shadow-md transition flex items-center gap-2">
                         <svg id="generateSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -153,6 +213,34 @@
             </div>
         </div>
 
+        <!-- 4. Terms and Conditions Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100/80 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        4. الشروط العامة والخاصة لعرض السعر
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">محملة تلقائياً من القالب الأصلي • ترث نفس نمط الترقيم والخط (ListParagraph) في Word عند التعديل</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="resetTermsBtn" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1.5 px-3 rounded-lg transition">
+                        استعادة الشروط الأصلية
+                    </button>
+                    <button type="button" id="addTermBtn" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        + إضافة شرط
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <ol id="termsList" class="space-y-2.5 list-decimal list-inside text-sm text-slate-700">
+                    <!-- Dynamically populated from API / template -->
+                </ol>
+            </div>
+        </div>
+
         <!-- Success Result Banner / Modal -->
         <div id="resultModal" class="hidden bg-emerald-50 border border-emerald-300 rounded-xl p-6 shadow-sm">
             <div class="flex items-start justify-between">
@@ -161,8 +249,8 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-emerald-900">تم إنشاء عرض السعر بنجاح!</h3>
-                        <p class="text-sm text-emerald-700">رقم العرض: <strong id="resQuoteNumber" class="text-emerald-950 font-mono">Q-XXXXX</strong> | الإجمالي: <strong id="resQuoteTotal">0.00</strong> ج.م</p>
+                        <h3 class="text-lg font-bold text-emerald-900">تم إنشاء عرض السعر بنجاح من القالب الأصلي!</h3>
+                        <p class="text-sm text-emerald-700">رقم العرض: <strong id="resQuoteNumber" class="text-emerald-950 font-mono">Q-XXXXX</strong> | الإجمالي المحفوظ إدارياً: <strong id="resQuoteTotal">0.00</strong> ج.م</p>
                     </div>
                 </div>
                 <span class="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded font-semibold">جاهز للتحميل</span>
@@ -175,23 +263,120 @@
                 </a>
                 <a id="resDocxLink" href="#" target="_blank" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
-                    تحميل مستند Word
+                    تحميل مستند Word الأصلي المعدل
                 </a>
-                <span class="text-xs text-emerald-800 font-medium mr-auto">✓ تم حفظ البيانات في SQL Server</span>
+                <span class="text-xs text-emerald-800 font-medium mr-auto">✓ تم تحديث SmartArt ومخطط التاريخ ورقم الصادر</span>
             </div>
         </div>
     </main>
 
-    <!-- VanillaJS Dynamic Data Grid Application Logic -->
+    <!-- 5. Interactive Document Preview Modal -->
+    <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <h3 class="font-bold text-base">معاينة عرض السعر (مطابق لقالب Word الأصلي)</h3>
+                </div>
+                <button type="button" id="closePreviewBtn" class="text-blue-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            </div>
+
+            <!-- Document Simulator Container -->
+            <div class="p-8 max-h-[75vh] overflow-y-auto bg-slate-50 space-y-6">
+                <!-- Word Document Page Simulator -->
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-slate-300 max-w-3xl mx-auto space-y-6 text-slate-800 text-sm">
+                    <!-- Top SmartArt Representation -->
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-blue-950">عرض سعر</h2>
+                            <p class="text-xs text-slate-500 font-bold">مصنع المنتجات الإسمنتية والخرسانية</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 p-2.5 rounded-lg text-xs font-bold text-blue-900">
+                            <div class="text-center px-2 border-l border-blue-200">
+                                <span class="block text-slate-500 text-[10px]">اليوم</span>
+                                <span id="prevDay">الأحد</span>
+                            </div>
+                            <div class="text-center px-2 border-l border-blue-200">
+                                <span class="block text-slate-500 text-[10px]">التاريخ</span>
+                                <span id="prevDate">--</span>
+                            </div>
+                            <div class="text-center px-2">
+                                <span class="block text-slate-500 text-[10px]">رقم الصادر</span>
+                                <span id="prevQuoteNo" class="font-mono text-emerald-800">Q-AUTO</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Block -->
+                    <div class="space-y-1.5 leading-relaxed font-semibold">
+                        <p class="text-slate-900">السادة شركة : <span id="prevClientName" class="text-blue-900 font-bold underline underline-offset-4">شركة اتريم</span> المحترمين,,, ,,</p>
+                        <p class="text-slate-800">عناية <span id="prevContactTitle">المهندسة</span> : <span id="prevContactPerson" class="text-blue-900 font-bold underline underline-offset-4">سارة شريف</span> <span id="prevHonorific">المحترمة</span> ,,, ,,</p>
+                        <p class="text-slate-700">اسم المشروع : <span id="prevProjectName" class="font-bold text-slate-900">مشروع النور</span></p>
+                        <p class="text-slate-700">المكان: <span id="prevLocation" class="font-bold text-slate-900">القاهرة</span></p>
+                    </div>
+
+                    <p class="text-xs text-slate-600 font-bold pt-2">نود احاطتكم علما بأسعار المنتجات الاتية: -</p>
+
+                    <!-- Preview Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-slate-400 text-xs text-center" id="prevTable">
+                            <thead class="bg-blue-900 text-white font-bold" id="prevTableHead">
+                                <!-- Injected via JS -->
+                            </thead>
+                            <tbody class="divide-y divide-slate-300" id="prevTableBody">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Terms Block -->
+                    <div class="space-y-2 pt-2">
+                        <h4 class="font-bold text-blue-950 border-b border-slate-200 pb-1 text-xs">الشروط العامة والخاصة لعرض السعر</h4>
+                        <ol id="prevTermsList" class="space-y-1.5 list-decimal list-inside text-xs text-slate-700 leading-relaxed">
+                            <!-- Injected via JS -->
+                        </ol>
+                    </div>
+
+                    <!-- Closing & Issuer Signature -->
+                    <div class="pt-6 border-t border-slate-200 flex justify-between items-end">
+                        <p class="text-xs font-bold text-slate-700">وتفضلوا بقبول فائق الاحترام والتقدير ،،،،،</p>
+                        <div class="text-left font-bold text-xs space-y-1">
+                            <p id="prevIssuerJobTitle" class="text-slate-600">مدير تطوير الاعمال والمبيعات</p>
+                            <p id="prevIssuerFullName" class="text-blue-900 text-sm">م / اشرف الشربيني</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+                <span class="text-xs text-slate-500">معاينة تفاعلية حية قبل التصدير النهائي</span>
+                <div class="flex gap-2">
+                    <button type="button" id="modalCloseBtn" class="px-4 py-2 text-xs font-bold bg-slate-300 hover:bg-slate-400 text-slate-800 rounded-lg transition">إغلاق</button>
+                    <button type="button" id="confirmAndGenerateBtn" class="px-5 py-2 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition shadow">تأكيد وتصدير الآن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
     <script>
         let clientsList = [];
         let productsList = [];
-        let columns = ["النوع", "المقاس", "الحمولة", "سعر الالف", "الكمية", "الإجمالي"];
+        // Default columns in the authentic template: النوع, المقاس, الحمولة, سعر الألف
+        let columns = ["النوع", "المقاس", "الحمولة", "سعر الألف"];
+        let defaultTerms = [];
+        let currentTerms = [];
         let sortableInstance = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quoteDate').value = today;
+
             renderHeaders();
-            await Promise.all([loadClients(), loadProducts()]);
+            await Promise.all([loadClients(), loadProducts(), loadTerms()]);
             // Add initial blank row
             addRow({});
         });
@@ -210,13 +395,18 @@
                     clientsDatalist.appendChild(opt);
                 });
 
-                // Auto-fill client details if selected from suggestions
                 document.getElementById('clientNameInput').addEventListener('input', (e) => {
                     const val = e.target.value.trim();
                     const matched = clientsList.find(c => c.clientName === val);
                     if (matched) {
                         if (matched.contactPerson && !document.getElementById('contactPerson').value) {
-                            document.getElementById('contactPerson').value = matched.contactPerson;
+                            // Extract title if present
+                            let cp = matched.contactPerson.trim();
+                            if (cp.startsWith('م / ') || cp.startsWith('م/')) {
+                                document.getElementById('contactTitle').value = 'المهندس';
+                                cp = cp.replace(/^م\s*\/\s*/, '');
+                            }
+                            document.getElementById('contactPerson').value = cp;
                         }
                         if (matched.phone && !document.getElementById('clientPhone').value) {
                             document.getElementById('clientPhone').value = matched.phone;
@@ -254,6 +444,112 @@
             }
         }
 
+        async function loadTerms() {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/terms`);
+                if (res.ok) {
+                    defaultTerms = await res.json();
+                }
+            } catch (err) {
+                console.warn('Could not fetch terms from API. Using template fallback.');
+            }
+
+            if (!defaultTerms || defaultTerms.length === 0) {
+                defaultTerms = [
+                    "السعر غير شامل ضريبة القيمة المضافة.",
+                    "يتم التوريد بعد استخراج الشيك بقيمة التوريد المستحق .",
+                    "السعر شامل توصيل الي الموقع .",
+                    "يتم توريد البضاعة علي بالتات خشب .",
+                    "الاسعار لا تشمل البالتات الخشب .",
+                    "يتم استرداد البالتات خلال مدة اقصاها 10 ايام ، فى حالة وجود عجز او تلف البالتات يتم احتساب سعر البالتة 150 جنيه .",
+                    "يتم تغيير الأسعار في حالة صدور قرارات سيادية فيما يخص أسعار المواد الخام والوقود.",
+                    "العرض ساري لمدة أسبوع من تاريخه ولا يجدد إلا بالرجوع الي الشركة ولا يلتفت لأي إجراء يتم بعد انتهاء المدة المقررة إلا بإقرار من الشركة.",
+                    "في حالة إصدار أمر توريد فإن الشروط السابق ذكرها جزء لا يتجزأ من شروط أمر التوريد حتى وإن لم تكتب."
+                ];
+            }
+
+            currentTerms = [...defaultTerms];
+            renderTerms();
+        }
+
+        function renderTerms() {
+            const container = document.getElementById('termsList');
+            container.innerHTML = '';
+
+            currentTerms.forEach((term, idx) => {
+                const li = document.createElement('li');
+                li.className = "flex items-start justify-between gap-3 group bg-slate-50 hover:bg-slate-100/80 p-2.5 rounded-lg border border-slate-200 transition";
+                li.innerHTML = `
+                    <span class="font-bold text-slate-500 text-xs mt-0.5 select-none">${idx + 1}.</span>
+                    <div class="flex-1 outline-none text-slate-800 text-xs sm:text-sm font-medium hover:bg-white focus:bg-white focus:ring-2 focus:ring-amber-500 p-1 rounded cursor-text" contenteditable="true" spellcheck="false">${term}</div>
+                    <button type="button" class="del-term-btn opacity-40 group-hover:opacity-100 text-slate-400 hover:text-red-600 font-bold p-1 transition" title="حذف هذا الشرط">&times;</button>
+                `;
+
+                const editDiv = li.querySelector('div');
+                editDiv.addEventListener('blur', () => {
+                    const newText = editDiv.textContent.trim();
+                    if (newText && newText !== currentTerms[idx]) {
+                        currentTerms[idx] = newText;
+                        recordAudit('TermEdited', `Term #${idx + 1}`);
+                    }
+                });
+
+                li.querySelector('.del-term-btn').addEventListener('click', () => {
+                    deleteTerm(idx);
+                });
+
+                container.appendChild(li);
+            });
+        }
+
+        function addTerm() {
+            Swal.fire({
+                title: 'إضافة شرط جديد',
+                text: 'أدخل نص الشرط أو البند المراد إضافته لشروط عرض السعر:',
+                input: 'textarea',
+                inputPlaceholder: 'مثال: مدة التوريد 3 أيام من تاريخ أمر التوريد...',
+                showCancelButton: true,
+                confirmButtonText: 'إضافة',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#d97706',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) return 'يرجى كتابة نص الشرط!';
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    currentTerms.push(result.value.trim());
+                    renderTerms();
+                    recordAudit('TermAdded', result.value.trim().substring(0, 30));
+                    Swal.fire({ title: 'تمت الإضافة!', text: 'تمت إضافة الشرط بنجاح.', icon: 'success', timer: 1200, showConfirmButton: false });
+                }
+            });
+        }
+
+        function deleteTerm(idx) {
+            Swal.fire({
+                title: 'حذف الشرط؟',
+                text: `هل تريد بالتأكيد حذف هذا الشرط؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#dc2626'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentTerms.splice(idx, 1);
+                    renderTerms();
+                    recordAudit('TermDeleted', `Term #${idx + 1}`);
+                }
+            });
+        }
+
+        document.getElementById('addTermBtn').addEventListener('click', addTerm);
+        document.getElementById('resetTermsBtn').addEventListener('click', () => {
+            currentTerms = [...defaultTerms];
+            renderTerms();
+            Swal.fire({ title: 'تم الاسترجاع', text: 'تمت استعادة الشروط الأصلية للقالب.', icon: 'info', timer: 1400, showConfirmButton: false });
+        });
+
         function renderHeaders() {
             const tr = document.getElementById('headerRow');
             tr.innerHTML = '';
@@ -270,7 +566,6 @@
                     </div>
                 `;
 
-                // Update column name on blur or Enter
                 const titleSpan = th.querySelector('.col-title');
                 titleSpan.addEventListener('blur', () => {
                     const newName = titleSpan.textContent.trim() || `عمود ${idx + 1}`;
@@ -284,7 +579,6 @@
                     }
                 });
 
-                // Delete column
                 th.querySelector('.del-col-btn').addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteColumn(idx);
@@ -293,7 +587,7 @@
                 tr.appendChild(th);
             });
 
-            // Fixed Action column at the end
+            // Action column
             const actionTh = document.createElement('th');
             actionTh.className = "no-drag py-2.5 px-2 text-center text-slate-500 bg-slate-50 w-16 border border-slate-200";
             actionTh.textContent = "إجراء";
@@ -303,9 +597,7 @@
         }
 
         function initSortable() {
-            if (sortableInstance) {
-                sortableInstance.destroy();
-            }
+            if (sortableInstance) sortableInstance.destroy();
             const headerRow = document.getElementById('headerRow');
             if (typeof Sortable === 'undefined') return;
 
@@ -317,11 +609,9 @@
                 onEnd: function (evt) {
                     if (evt.oldIndex === evt.newIndex) return;
 
-                    // Reorder the columns array
                     const movedCol = columns.splice(evt.oldIndex, 1)[0];
                     columns.splice(evt.newIndex, 0, movedCol);
 
-                    // Reorder cells in every row
                     document.querySelectorAll('#productRowsContainer tr').forEach(row => {
                         const cells = Array.from(row.querySelectorAll('.col-cell'));
                         const movedCell = cells[evt.oldIndex];
@@ -336,7 +626,6 @@
                         }
                     });
 
-                    // Re-render headers to update data-col-index
                     renderHeaders();
                     calcTotals();
                 }
@@ -353,16 +642,14 @@
                 title: 'إضافة عمود جديد',
                 text: 'أدخل اسم العمود الذي ترغب في إضافته للجدول:',
                 input: 'text',
-                inputValue: 'ملاحظات',
-                inputPlaceholder: 'اسم العمود (مثال: ملاحظات أو الخصم)',
+                inputValue: 'الكمية',
+                inputPlaceholder: 'اسم العمود (مثال: الكمية أو ملاحظات)',
                 showCancelButton: true,
                 confirmButtonText: 'إضافة',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#1e40af',
                 inputValidator: (value) => {
-                    if (!value || !value.trim()) {
-                        return 'يرجى إدخال اسم العمود!';
-                    }
+                    if (!value || !value.trim()) return 'يرجى إدخال اسم العمود!';
                 }
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
@@ -377,7 +664,6 @@
             columns.push(colName.trim());
             renderHeaders();
 
-            // Add cell to each existing row
             document.querySelectorAll('#productRowsContainer tr').forEach(row => {
                 const td = document.createElement('td');
                 td.className = "col-cell py-2 px-2.5";
@@ -391,35 +677,26 @@
 
         function deleteColumn(idx) {
             if (columns.length <= 1) {
-                Swal.fire({
-                    title: 'خطأ!',
-                    text: 'يجب الإبقاء على عمود واحد على الأقل في الجدول.',
-                    icon: 'error',
-                    confirmButtonText: 'إغلاق'
-                });
+                Swal.fire({ title: 'خطأ!', text: 'يجب الإبقاء على عمود واحد على الأقل في الجدول.', icon: 'error', confirmButtonText: 'إغلاق' });
                 return;
             }
             const colName = columns[idx];
             Swal.fire({
                 title: 'هل أنت متأكد؟',
-                text: `هل تريد بالتأكيد حذف عمود "${colName}" وكافة بياناته؟`,
+                text: `هل تريد بالتأكيد حذف عمود "${colName}"؟`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'نعم، احذف',
                 cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#64748b'
+                confirmButtonColor: '#dc2626'
             }).then((result) => {
                 if (result.isConfirmed) {
                     columns.splice(idx, 1);
                     renderHeaders();
 
-                    // Remove corresponding cell in every row
                     document.querySelectorAll('#productRowsContainer tr').forEach(row => {
                         const cells = Array.from(row.querySelectorAll('.col-cell'));
-                        if (cells[idx]) {
-                            cells[idx].remove();
-                        }
+                        if (cells[idx]) cells[idx].remove();
                     });
 
                     calcTotals();
@@ -443,17 +720,15 @@
                 let placeholderText = `أدخل ${col}...`;
                 const lowerCol = col.toLowerCase();
                 if (lowerCol.includes('نوع') || lowerCol.includes('صنف') || lowerCol.includes('منتج')) {
-                    placeholderText = 'مثال: طوب آلي مصمت';
+                    placeholderText = 'مثال: طوب الي مصمت';
                 } else if (lowerCol.includes('مقاس')) {
                     placeholderText = 'مثال: 25*12*6';
                 } else if (lowerCol.includes('حمول') || lowerCol.includes('وحد')) {
                     placeholderText = 'مثال: 1000';
                 } else if (lowerCol.includes('سعر')) {
-                    placeholderText = 'مثال: 1450.00';
+                    placeholderText = 'مثال: 1450';
                 } else if (lowerCol.includes('كمي')) {
                     placeholderText = 'مثال: 10';
-                } else if (lowerCol.includes('إجمال') || lowerCol.includes('اجمال')) {
-                    placeholderText = '0.00';
                 }
 
                 td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${placeholderText}">`;
@@ -473,7 +748,7 @@
                                     cellInputs[cIdx].value = matched.capacity;
                                 }
                                 if (cName.includes('سعر') && matched.defaultPrice && (!cellInputs[cIdx].value || cellInputs[cIdx].value == 0)) {
-                                    cellInputs[cIdx].value = parseFloat(matched.defaultPrice).toFixed(2);
+                                    cellInputs[cIdx].value = parseFloat(matched.defaultPrice).toFixed(0);
                                 }
                             });
                         }
@@ -503,8 +778,7 @@
                         showCancelButton: true,
                         confirmButtonText: 'نعم، احذف',
                         cancelButtonText: 'إلغاء',
-                        confirmButtonColor: '#dc2626',
-                        cancelButtonColor: '#64748b'
+                        confirmButtonColor: '#dc2626'
                     }).then((result) => {
                         if (result.isConfirmed) {
                             tr.remove();
@@ -512,12 +786,7 @@
                         }
                     });
                 } else {
-                    Swal.fire({
-                        title: 'خطأ!',
-                        text: 'يجب الإبقاء على صف واحد على الأقل في عرض السعر.',
-                        icon: 'error',
-                        confirmButtonText: 'إغلاق'
-                    });
+                    Swal.fire({ title: 'خطأ!', text: 'يجب الإبقاء على صف واحد على الأقل في عرض السعر.', icon: 'error', confirmButtonText: 'إغلاق' });
                 }
             });
 
@@ -553,14 +822,8 @@
                     const price = parseFloat(inputs[priceColIdx].value) || 0;
                     const qty = parseFloat(inputs[qtyColIdx].value) || 0;
                     rowTotal = price * qty;
-
-                    if (totalColIdx !== -1 && inputs[totalColIdx]) {
-                        if (rowTotal > 0 || inputs[priceColIdx].value || inputs[qtyColIdx].value) {
-                            inputs[totalColIdx].value = rowTotal.toFixed(2);
-                        }
-                    }
-                } else if (totalColIdx !== -1 && inputs[totalColIdx]) {
-                    rowTotal = parseFloat(inputs[totalColIdx].value) || 0;
+                } else if (priceColIdx !== -1 && inputs[priceColIdx]) {
+                    rowTotal = parseFloat(inputs[priceColIdx].value) || 0;
                 }
 
                 grandTotal += rowTotal;
@@ -571,14 +834,101 @@
             return grandTotal;
         }
 
+        // Preview Functionality
+        document.getElementById('previewBtn').addEventListener('click', openPreviewModal);
+        document.getElementById('closePreviewBtn').addEventListener('click', closePreviewModal);
+        document.getElementById('modalCloseBtn').addEventListener('click', closePreviewModal);
+        document.getElementById('confirmAndGenerateBtn').addEventListener('click', () => {
+            closePreviewModal();
+            document.getElementById('generateBtn').click();
+        });
+
+        function openPreviewModal() {
+            const clientName = document.getElementById('clientNameInput').value.trim() || 'شركة اتريم للمقاولات والاعمال المتخصصة';
+            const contactTitle = document.getElementById('contactTitle').value;
+            const contactPerson = document.getElementById('contactPerson').value.trim() || 'سارة شريف';
+            const projectName = document.getElementById('projectName').value.trim() || 'مشروع ابراج اتريم';
+            const location = document.getElementById('projectLocation').value.trim() || 'القاهرة - التجمع الخامس';
+            const quoteDateVal = document.getElementById('quoteDate').value;
+            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim() || 'مدير تطوير الاعمال والمبيعات';
+            const issuerPrefix = document.getElementById('issuerPrefix').value;
+            const issuerName = document.getElementById('issuerName').value.trim() || 'اشرف الشربيني';
+
+            const isFemale = contactTitle.includes('ة');
+            const honorific = isFemale ? 'المحترمة' : 'المحترم';
+
+            const dateObj = quoteDateVal ? new Date(quoteDateVal) : new Date();
+            const daysAr = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+            const dayName = daysAr[dateObj.getDay()];
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const yyyy = dateObj.getFullYear();
+            const formattedDate = `${dd}-${mm}-${yyyy}`;
+
+            document.getElementById('prevDay').textContent = dayName;
+            document.getElementById('prevDate').textContent = formattedDate;
+            document.getElementById('prevQuoteNo').textContent = `Q-${yyyy}${mm}${dd}-PREVIEW`;
+
+            document.getElementById('prevClientName').textContent = clientName;
+            document.getElementById('prevContactTitle').textContent = contactTitle;
+            document.getElementById('prevContactPerson').textContent = contactPerson;
+            document.getElementById('prevHonorific').textContent = honorific;
+            document.getElementById('prevProjectName').textContent = projectName;
+            document.getElementById('prevLocation').textContent = location;
+
+            document.getElementById('prevIssuerJobTitle').textContent = issuerJobTitle;
+            document.getElementById('prevIssuerFullName').textContent = `${issuerPrefix.trim()} ${issuerName}`.trim();
+
+            // Table headers
+            const thead = document.getElementById('prevTableHead');
+            thead.innerHTML = `<tr>${columns.map(c => `<th class="border border-slate-400 py-2 px-3">${c}</th>`).join('')}</tr>`;
+
+            // Table rows
+            const tbody = document.getElementById('prevTableBody');
+            tbody.innerHTML = '';
+            document.querySelectorAll('#productRowsContainer tr').forEach(tr => {
+                const inputs = tr.querySelectorAll('.cell-input');
+                const rowCells = columns.map((c, i) => `<td class="border border-slate-300 py-2 px-3">${inputs[i] ? inputs[i].value : ''}</td>`).join('');
+                tbody.innerHTML += `<tr>${rowCells}</tr>`;
+            });
+
+            // Terms
+            const termsListElem = document.getElementById('prevTermsList');
+            termsListElem.innerHTML = currentTerms.map(t => `<li>${t}</li>`).join('');
+
+            document.getElementById('previewModal').classList.remove('hidden');
+            recordAudit('QuotePreviewed', `Preview: ${clientName}`);
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.add('hidden');
+        }
+
+        async function recordAudit(action, entityId = null) {
+            try {
+                await fetch(`${CONFIG.API_BASE_URL}/api/admin/audit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: 1, action, entityId })
+                });
+            } catch (e) {
+                // Silently ignore audit logging network issues
+            }
+        }
+
         // Generate Quote Button Action
         document.getElementById('generateBtn').addEventListener('click', async () => {
             const clientName = document.getElementById('clientNameInput').value.trim();
+            const contactTitle = document.getElementById('contactTitle').value;
             const contactPerson = document.getElementById('contactPerson').value.trim();
             const clientPhone = document.getElementById('clientPhone').value.trim();
             const clientEmail = document.getElementById('clientEmail').value.trim();
             const projectName = document.getElementById('projectName').value.trim();
             const location = document.getElementById('projectLocation').value.trim();
+            const quoteDate = document.getElementById('quoteDate').value;
+            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim();
+            const issuerPrefix = document.getElementById('issuerPrefix').value;
+            const issuerName = document.getElementById('issuerName').value.trim();
 
             if (!clientName) {
                 Swal.fire({
@@ -624,15 +974,21 @@
 
             const grandTotal = calcTotals();
 
-            // Construct payload matching required dynamic structure
+            // Construct payload matching required schema
             const payload = {
                 userId: 1,
                 clientName: clientName,
+                contactTitle: contactTitle,
                 contactPerson: contactPerson || null,
                 clientPhone: clientPhone || null,
                 clientEmail: clientEmail || null,
                 projectName: projectName || null,
                 location: location || null,
+                quoteDate: quoteDate ? new Date(quoteDate).toISOString() : null,
+                issuerJobTitle: issuerJobTitle,
+                issuerPrefix: issuerPrefix,
+                issuerName: issuerName,
+                terms: currentTerms,
                 totalAmount: grandTotal,
                 headers: headers,
                 rows: rows
@@ -644,7 +1000,7 @@
 
             try {
                 btn.disabled = true;
-                btnText.textContent = 'جارٍ الإنشاء والإرسال...';
+                btnText.textContent = 'جارٍ التعديل على القالب الأصلي والتصدير...';
                 spinner.classList.remove('hidden');
 
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/generate`, {
@@ -660,24 +1016,26 @@
 
                 const result = await response.json();
 
-                // Format link URLs
                 const pdfUrl = result.pdfUrl.startsWith('http') ? result.pdfUrl : `${CONFIG.API_BASE_URL}${result.pdfUrl}`;
                 const docxUrl = result.docxUrl.startsWith('http') ? result.docxUrl : `${CONFIG.API_BASE_URL}${result.docxUrl}`;
 
-                // Display Result Modal
                 document.getElementById('resQuoteNumber').textContent = result.quoteNumber;
                 document.getElementById('resQuoteTotal').textContent = result.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('resPdfLink').href = pdfUrl;
-                document.getElementById('resDocxLink').href = docxUrl;
-                document.getElementById('resultModal').classList.remove('hidden');
+                
+                const pdfLink = document.getElementById('resPdfLink');
+                pdfLink.href = pdfUrl;
+                pdfLink.onclick = () => recordAudit('QuoteDownloaded', `PDF: ${result.quoteNumber}`);
 
-                // Smooth scroll to result
+                const docxLink = document.getElementById('resDocxLink');
+                docxLink.href = docxUrl;
+                docxLink.onclick = () => recordAudit('QuoteDownloaded', `DOCX: ${result.quoteNumber}`);
+
+                document.getElementById('resultModal').classList.remove('hidden');
                 document.getElementById('resultModal').scrollIntoView({ behavior: 'smooth' });
 
-                // SweetAlert2 Success Notification
                 Swal.fire({
                     title: 'تم بنجاح!',
-                    text: `تم إنشاء عرض السعر (${result.quoteNumber}) وتوليد ملفات Word و PDF بنجاح.`,
+                    text: `تم تعديل القالب الأصلي وإنشاء عرض السعر (${result.quoteNumber}) وتوليد ملفات Word و PDF بنجاح.`,
                     icon: 'success',
                     confirmButtonText: 'حسناً'
                 });
