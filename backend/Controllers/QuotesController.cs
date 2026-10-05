@@ -126,10 +126,11 @@ public class QuotesController : ControllerBase
                 }).ToList();
             }
 
-            // Calculate Totals
-            var totalAmount = request.TotalAmount.HasValue && request.TotalAmount.Value > 0
-                ? request.TotalAmount.Value
-                : quoteItems.Sum(item => item.LineTotal);
+            // Calculate TotalAmount securely on the server side by summing up the LineTotal of all items
+            var calculatedTotal = quoteItems.Sum(item => item.LineTotal);
+            var totalAmount = calculatedTotal > 0 
+                ? calculatedTotal 
+                : (request.TotalAmount.HasValue && request.TotalAmount.Value > 0 ? request.TotalAmount.Value : 0);
 
             var quoteNumber = $"Q-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
 

@@ -8,7 +8,7 @@ namespace FactoryQuoteApi.Services;
 
 public interface IWordQuoteGeneratorService
 {
-    Task<string> GenerateQuoteDocumentAsync(string templatePath, string outputPath, QuoteRequestDto request, string quoteNumber, decimal totalAmount);
+    Task<string> GenerateQuoteDocumentAsync(string templatePath, string outputPath, QuoteRequestDto request, string quoteNumber, decimal totalAmount = 0);
     string SanitizeFileName(string? clientName, string? projectName, string fallback = "Quote");
 }
 
@@ -60,7 +60,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         string outputPath,
         QuoteRequestDto request,
         string quoteNumber,
-        decimal totalAmount)
+        decimal totalAmount = 0)
     {
         if (!File.Exists(templatePath))
         {
@@ -86,7 +86,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
 
             var body = mainPart.Document.Body;
 
-            // 1. Dictionary of simple text placeholders
+            // 1. Dictionary of simple text placeholders (TotalAmount is intentionally excluded to keep it internal)
             var textReplacements = new Dictionary<string, string>
             {
                 { "{{CompanyName}}", request.ClientName ?? string.Empty },
@@ -97,8 +97,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 { "{{PaymentTerms}}", request.PaymentTerms ?? string.Empty },
                 { "{{ValidityDays}}", request.ValidityDays?.ToString() ?? "15" },
                 { "{{QuoteNumber}}", quoteNumber },
-                { "{{Date}}", DateTime.Now.ToString("yyyy/MM/dd") },
-                { "{{TotalAmount}}", totalAmount.ToString("N2") }
+                { "{{Date}}", DateTime.Now.ToString("yyyy/MM/dd") }
             };
 
             // Replace simple placeholders across paragraphs (handling run-splitting)
