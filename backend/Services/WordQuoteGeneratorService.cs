@@ -356,65 +356,115 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         string contactPerson = request.ContactPerson?.Trim() ?? string.Empty;
         string projectName = request.ProjectName?.Trim() ?? string.Empty;
         string location = request.Location?.Trim() ?? string.Empty;
+
         string contactTitle = !string.IsNullOrWhiteSpace(request.ContactTitle) ? request.ContactTitle.Trim() : "المهندس";
+        string cleanTitle = contactTitle;
+        if (cleanTitle.StartsWith("عناية"))
+        {
+            cleanTitle = cleanTitle.Substring("عناية".Length).Trim();
+        }
+        cleanTitle = cleanTitle.TrimEnd(':', ' ').Trim();
+        if (string.IsNullOrWhiteSpace(cleanTitle))
+        {
+            cleanTitle = "المهندس";
+        }
 
         // Determine title honorific (المحترمة vs المحترم)
-        bool isFemale = contactTitle.EndsWith("ة") || contactTitle.Contains("مهندسة") || contactTitle.Contains("أستاذة") || contactTitle.Contains("سيدة");
+        bool isFemale = cleanTitle.EndsWith("ة") || cleanTitle.Contains("مهندسة") || cleanTitle.Contains("أستاذة") || cleanTitle.Contains("سيدة") || cleanTitle.Contains("دكتورة");
         string honorific = isFemale ? "المحترمة" : "المحترم";
+
+        string companyPrefix = "السادة شركة : ";
+        string companySuffix = "المحترمين ,,,";
+        string fullCompanyPrefix = $"{companyPrefix}{clientName}";
+
+        string attentionPrefix = $"عناية {cleanTitle} : ";
+        string attentionSuffix = $"{honorific} ,,,";
+        string fullAttentionPrefix = $"{attentionPrefix}{contactPerson}";
+
+        const int targetHonorificCol = 55;
+
+        int spaces1 = targetHonorificCol - fullCompanyPrefix.Length;
+        if (spaces1 < 4) spaces1 = 4;
+        if (fullCompanyPrefix.Length + spaces1 + companySuffix.Length > 68)
+        {
+            spaces1 = Math.Max(2, 68 - fullCompanyPrefix.Length - companySuffix.Length);
+        }
+
+        int spaces2 = targetHonorificCol - fullAttentionPrefix.Length;
+        if (spaces2 < 4) spaces2 = 4;
+        if (fullAttentionPrefix.Length + spaces2 + attentionSuffix.Length > 68)
+        {
+            spaces2 = Math.Max(2, 68 - fullAttentionPrefix.Length - attentionSuffix.Length);
+        }
+
+        string companyFullLine = $"{fullCompanyPrefix}{new string(' ', spaces1)}{companySuffix}";
+        string attentionFullLine = $"{fullAttentionPrefix}{new string(' ', spaces2)}{attentionSuffix}";
+        string projectFullLine = $"اسم المشروع : {projectName}";
+        string locationFullLine = $"المكان: {location}";
 
         foreach (var p in body.Elements<Paragraph>())
         {
             var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
 
-            // Paragraph: السادة شركة : {{CompanyName}}                       المحترمين,,, ,,
             if (text.Contains("السادة شركة"))
             {
-                var t = p.Descendants<Text>().FirstOrDefault();
-                if (t != null)
-                {
-                    t.Text = t.Text.Replace("{{CompanyName}}", clientName);
-                }
+                SetCustomerParagraphContent(p, companyFullLine);
             }
-
-            // Paragraph: عناية المهندسة :  {{ContactPerson}}                                                             المحترمة ,,, ,,
-            if (text.Contains("عناية"))
+            else if (text.Contains("عناية"))
             {
-                var t = p.Descendants<Text>().FirstOrDefault();
-                if (t != null)
-                {
-                    var updated = t.Text.Replace("{{ContactPerson}}", contactPerson);
-                    if (contactTitle != "المهندسة" && updated.Contains("المهندسة"))
-                    {
-                        updated = updated.Replace("المهندسة", contactTitle);
-                    }
-                    if (honorific != "المحترمة" && updated.Contains("المحترمة"))
-                    {
-                        updated = updated.Replace("المحترمة", honorific);
-                    }
-                    t.Text = updated;
-                }
+                SetCustomerParagraphContent(p, attentionFullLine);
             }
-
-            // Paragraph: اسم المشروع : {{ProjectName}}
-            if (text.Contains("اسم المشروع"))
+            else if (text.Contains("اسم المشروع"))
             {
-                var t = p.Descendants<Text>().FirstOrDefault();
-                if (t != null)
-                {
-                    t.Text = t.Text.Replace("{{ProjectName}}", projectName);
-                }
+                SetCustomerParagraphContent(p, projectFullLine);
             }
-
-            // Paragraph: المكان: {{Location}}
-            if (text.Contains("المكان:"))
+            else if (text.Contains("المكان:"))
             {
-                var t = p.Descendants<Text>().FirstOrDefault();
-                if (t != null)
-                {
-                    t.Text = t.Text.Replace("{{Location}}", location);
-                }
+                SetCustomerParagraphContent(p, locationFullLine);
             }
         }
+    }
+
+    private static void SetCustomerParagraphContent(Paragraph p, string lineText)
+    {
+        var runs = p.Elements<Run>().ToList();
+        Run targetRun;
+
+        if (runs.Count == 0)
+        {
+            targetRun = p.AppendChild(new Run());
+        }
+        else
+        {
+            targetRun = runs[0];
+            for (int i = 1; i < runs.Count; i++)
+            {
+                p.RemoveChild(runs[i]);
+            }
+        }
+
+        // Apply bold and preserve/inherit existing run formatting (font, size, RTL, ar-EG)
+        var pRPr = p.ParagraphProperties?.GetFirstChild<ParagraphMarkRunProperties>();
+        var rPr = targetRun.GetFirstChild<RunProperties>();
+        if (rPr == null)
+        {
+            rPr = pRPr != null ? (RunProperties)pRPr.CloneNode(true) : new RunProperties();
+            targetRun.PrependChild(rPr);
+        }
+
+        if (rPr.Bold == null) rPr.Bold = new Bold { Val = OnOffValue.FromBoolean(true) };
+        else rPr.Bold.Val = OnOffValue.FromBoolean(true);
+
+        if (rPr.BoldComplexScript == null) rPr.BoldComplexScript = new BoldComplexScript { Val = OnOffValue.FromBoolean(true) };
+        else rPr.BoldComplexScript.Val = OnOffValue.FromBoolean(true);
+
+        if (rPr.FontSize == null) rPr.FontSize = new FontSize { Val = "28" };
+        if (rPr.FontSizeComplexScript == null) rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "28" };
+        if (rPr.RightToLeftText == null) rPr.RightToLeftText = new RightToLeftText();
+        if (rPr.Languages == null) rPr.Languages = new Languages { Bidi = "ar-EG" };
+
+        targetRun.RemoveAllChildren<Text>();
+        targetRun.AppendChild(new Text(lineText) { Space = SpaceProcessingModeValues.Preserve });
     }
 
     private void UpdateProductTable(Body body, QuoteRequestDto request)
