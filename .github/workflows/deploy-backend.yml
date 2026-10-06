@@ -41,9 +41,13 @@ jobs:
         run: dotnet publish backend/FactoryQuoteApi.csproj -c Release -o ./backend/publish
 
       - name: Take App Offline
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           echo '<!DOCTYPE html><html><head><title>Updating Application</title></head><body><h2>Updating System... Please wait a few seconds.</h2></body></html>' > app_offline.htm
-          curl -k --ssl-reqd -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" "ftp://${{ secrets.FTP_SERVER }}/app_offline.htm" -T app_offline.htm
+          curl -k --ssl-reqd --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/wwwroot/app_offline.htm" -T app_offline.htm
           echo "Waiting 6 seconds for IIS to release file locks..."
           sleep 6
 
@@ -54,13 +58,17 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./backend/publish/
-          server-dir: /
+          server-dir: /wwwroot/
           dangerous-clean-slate: false
 
       - name: Bring App Online
         if: always()
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          curl -k --ssl-reqd -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" "ftp://${{ secrets.FTP_SERVER }}/" -Q "-DELE app_offline.htm" || true
+          curl -k --ssl-reqd --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/wwwroot/" -Q "-DELE app_offline.htm" || true
 
       - name: Verify Production Health
         run: |
