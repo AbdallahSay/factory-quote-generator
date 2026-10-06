@@ -876,9 +876,9 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
 
     private void UpdateIssuerDetails(Body body, QuoteRequestDto request)
     {
-        string? newJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
+        string finalJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
             ? request.IssuerJobTitle.Trim()
-            : null;
+            : "مدير تطوير الأعمال والمبيعات";
 
         string? rawName = !string.IsNullOrWhiteSpace(request.IssuerName)
             ? request.IssuerName.Trim()
@@ -888,70 +888,72 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             ? request.IssuerPrefix.Trim()
             : null;
 
-        string? fullIssuer = null;
+        string finalIssuer;
         if (!string.IsNullOrEmpty(rawName))
         {
             if (!string.IsNullOrEmpty(rawPrefix) && !rawName.StartsWith(rawPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                fullIssuer = $"{rawPrefix} {rawName}".Trim();
+                finalIssuer = $"{rawPrefix} {rawName}".Trim();
             }
             else
             {
-                fullIssuer = rawName;
+                finalIssuer = rawName;
             }
         }
-
-        // Job title target phrases to replace (from most specific to general)
-        var jobTitleTargets = new[]
+        else
         {
-            "مدير تطوير الأعمال والمبيعات",
-            "مدير تطوير الاعمال والمبيعات",
-            "تطوير الأعمال والمبيعات",
-            "تطوير الاعمال والمبيعات"
-        };
-
-        // Name / signature target phrases to replace (from most specific to general)
-        var nameTargets = new[]
-        {
-            "م / أشرف الشربيني",
-            "م / اشرف الشربيني",
-            "م/ أشرف الشربيني",
-            "م/ اشرف الشربيني",
-            "أشرف الشربيني",
-            "اشرف الشربيني"
-        };
+            finalIssuer = "م / أشرف الشربيني";
+        }
 
         foreach (var p in body.Descendants<Paragraph>())
         {
             var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
             if (string.IsNullOrWhiteSpace(text)) continue;
 
-            // Replace job title if custom title provided
-            if (!string.IsNullOrEmpty(newJobTitle))
+            if (text.Contains("مدير تطوير") || text.Contains("اشرف الشربيني") || text.Contains("أشرف الشربيني") ||
+                text.Contains("تطوير الاعمال") || text.Contains("تطوير الأعمال") ||
+                (!string.IsNullOrWhiteSpace(request.IssuerJobTitle) && text.Contains(request.IssuerJobTitle.Trim())) ||
+                (!string.IsNullOrWhiteSpace(request.IssuerName) && text.Contains(request.IssuerName.Trim())))
             {
-                foreach (var target in jobTitleTargets)
-                {
-                    if (text.Contains(target))
-                    {
-                        ReplaceTextInParagraph(p, target, newJobTitle);
-                        text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
-                        break;
-                    }
-                }
-            }
+                var runs = p.Elements<Run>().ToList();
+                var protoRun = runs.FirstOrDefault(r => r.GetFirstChild<RunProperties>() != null) ?? runs.FirstOrDefault();
+                var rPr = protoRun?.GetFirstChild<RunProperties>()?.CloneNode(true) as RunProperties;
 
-            // Replace name / signature if custom name provided
-            if (!string.IsNullOrEmpty(fullIssuer))
-            {
-                foreach (var target in nameTargets)
+                if (rPr == null)
                 {
-                    if (text.Contains(target))
-                    {
-                        ReplaceTextInParagraph(p, target, fullIssuer);
-                        text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
-                        break;
-                    }
+                    rPr = new RunProperties();
+                    rPr.AppendChild(new Bold());
+                    rPr.AppendChild(new BoldComplexScript());
+                    rPr.AppendChild(new FontSize { Val = "28" });
+                    rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
+                    rPr.AppendChild(new RightToLeftText());
+                    rPr.AppendChild(new Languages { Bidi = "ar-QA" });
                 }
+
+                if (rPr.Bold == null) rPr.Bold = new Bold();
+                if (rPr.BoldComplexScript == null) rPr.BoldComplexScript = new BoldComplexScript();
+                if (rPr.RightToLeftText == null) rPr.RightToLeftText = new RightToLeftText();
+                if (rPr.Languages == null) rPr.Languages = new Languages { Bidi = "ar-QA" };
+                if (rPr.FontSize == null) rPr.FontSize = new FontSize { Val = "28" };
+                if (rPr.FontSizeComplexScript == null) rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "28" };
+
+                p.RemoveAllChildren<Run>();
+
+                var runJobTitle = new Run();
+                runJobTitle.AppendChild((RunProperties)rPr.CloneNode(true));
+                runJobTitle.AppendChild(new Text(finalJobTitle) { Space = SpaceProcessingModeValues.Preserve });
+
+                var breakRun = new Run();
+                breakRun.AppendChild(new Break());
+
+                var runIssuer = new Run();
+                runIssuer.AppendChild((RunProperties)rPr.CloneNode(true));
+                runIssuer.AppendChild(new Text(finalIssuer) { Space = SpaceProcessingModeValues.Preserve });
+
+                p.AppendChild(runJobTitle);
+                p.AppendChild(breakRun);
+                p.AppendChild(runIssuer);
+                break;
             }
         }
     }
