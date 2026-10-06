@@ -998,29 +998,80 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 if (rPr.FontSize == null) rPr.FontSize = new FontSize { Val = "28" };
                 if (rPr.FontSizeComplexScript == null) rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "28" };
 
-                // Cleanly remove all old runs and fragments from the paragraph, preserving pPr
-                var pPr = p.ParagraphProperties;
-                p.RemoveAllChildren();
-                if (pPr != null)
+                // Clone authentic signature paragraph formatting for BOTH paragraphs
+                var pPrJob = p.ParagraphProperties != null
+                    ? (ParagraphProperties)p.ParagraphProperties.CloneNode(true)
+                    : new ParagraphProperties();
+                var pPrName = p.ParagraphProperties != null
+                    ? (ParagraphProperties)p.ParagraphProperties.CloneNode(true)
+                    : new ParagraphProperties();
+
+                // Spacing: ensure tight spacing so Issuer Name is directly below Job Title without large vertical gap
+                var spJob = pPrJob.GetFirstChild<SpacingBetweenLines>() ?? new SpacingBetweenLines();
+                spJob.Before = "0";
+                spJob.After = "0";
+                spJob.Line = "240";
+                spJob.LineRule = LineSpacingRuleValues.Auto;
+                if (pPrJob.GetFirstChild<SpacingBetweenLines>() == null)
                 {
-                    p.AppendChild(pPr);
+                    var ind = pPrJob.GetFirstChild<Indentation>();
+                    if (ind != null)
+                        pPrJob.InsertBefore(spJob, ind);
+                    else
+                    {
+                        var jc = pPrJob.GetFirstChild<Justification>();
+                        if (jc != null)
+                            pPrJob.InsertBefore(spJob, jc);
+                        else
+                            pPrJob.AppendChild(spJob);
+                    }
                 }
 
+                var spName = pPrName.GetFirstChild<SpacingBetweenLines>() ?? new SpacingBetweenLines();
+                spName.Before = "0";
+                spName.After = "0";
+                spName.Line = "240";
+                spName.LineRule = LineSpacingRuleValues.Auto;
+                if (pPrName.GetFirstChild<SpacingBetweenLines>() == null)
+                {
+                    var ind = pPrName.GetFirstChild<Indentation>();
+                    if (ind != null)
+                        pPrName.InsertBefore(spName, ind);
+                    else
+                    {
+                        var jc = pPrName.GetFirstChild<Justification>();
+                        if (jc != null)
+                            pPrName.InsertBefore(spName, jc);
+                        else
+                            pPrName.AppendChild(spName);
+                    }
+                }
+
+                // Paragraph 1: Job Title
+                p.RemoveAllChildren();
+                p.AppendChild(pPrJob);
                 var runJobTitle = new Run();
                 runJobTitle.AppendChild((RunProperties)rPr.CloneNode(true));
                 runJobTitle.AppendChild(new Text(finalJobTitle));
+                p.AppendChild(runJobTitle);
 
-                var breakRun = new Run();
-                breakRun.AppendChild((RunProperties)rPr.CloneNode(true));
-                breakRun.AppendChild(new Break());
-
+                // Paragraph 2: Issuer Name (Directly below)
+                var pName = new Paragraph();
+                pName.AppendChild(pPrName);
                 var runIssuer = new Run();
                 runIssuer.AppendChild((RunProperties)rPr.CloneNode(true));
                 runIssuer.AppendChild(new Text(finalIssuer));
+                pName.AppendChild(runIssuer);
 
-                p.AppendChild(runJobTitle);
-                p.AppendChild(breakRun);
-                p.AppendChild(runIssuer);
+                // Insert Paragraph 2 directly after Paragraph 1
+                if (p.Parent != null)
+                {
+                    p.Parent.InsertAfter(pName, p);
+                }
+                else
+                {
+                    body.AppendChild(pName);
+                }
                 break;
             }
         }
