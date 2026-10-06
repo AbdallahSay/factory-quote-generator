@@ -188,17 +188,13 @@
                 <datalist id="productsDatalist"></datalist>
             </div>
 
-            <!-- Total Bar -->
+            <!-- Items Bar -->
             <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div class="text-sm text-slate-600">
-                    عدد الأصناف: <span id="itemsCount" class="font-bold text-slate-900">0</span>
+                <div class="text-sm text-slate-600 font-bold">
+                    عدد الأصناف: <span id="itemsCount" class="font-extrabold text-blue-900">0</span>
+                    <span class="text-xs text-slate-400 font-normal mr-2">| الأعمدة المعتمدة: النوع • المقاس • الحمولة • سعر الألف</span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right">
-                        <span class="text-xs text-slate-500 block">الإجمالي التقديري الداخلي:</span>
-                        <span id="grandTotal" class="text-2xl font-black text-blue-900">0.00</span>
-                        <span class="text-xs font-bold text-slate-600">جنيه مصري</span>
-                    </div>
+                <div class="flex items-center gap-3">
                     <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5">
                         <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         <span>معاينة العرض</span>
@@ -251,7 +247,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-bold text-emerald-900">تم إنشاء عرض السعر بنجاح من القالب الأصلي!</h3>
-                        <p class="text-sm text-emerald-700">رقم العرض: <strong id="resQuoteNumber" class="text-emerald-950 font-mono">Q-XXXXX</strong> | الإجمالي المحفوظ إدارياً: <strong id="resQuoteTotal">0.00</strong> ج.م</p>
+                        <p class="text-sm text-emerald-700">رقم العرض: <strong id="resQuoteNumber" class="text-emerald-950 font-mono">Q-XXXXX</strong></p>
                     </div>
                 </div>
                 <span class="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded font-semibold">جاهز للتحميل</span>
@@ -646,14 +642,18 @@
                 title: 'إضافة عمود جديد',
                 text: 'أدخل اسم العمود الذي ترغب في إضافته للجدول:',
                 input: 'text',
-                inputValue: 'الكمية',
-                inputPlaceholder: 'اسم العمود (مثال: الكمية أو ملاحظات)',
+                inputValue: 'ملاحظات',
+                inputPlaceholder: 'اسم العمود (مثال: ملاحظات أو كود الصنف)',
                 showCancelButton: true,
                 confirmButtonText: 'إضافة',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#1e40af',
                 inputValidator: (value) => {
                     if (!value || !value.trim()) return 'يرجى إدخال اسم العمود!';
+                    const v = value.trim();
+                    if (v.includes('كمي') || v.includes('إجمال') || v.includes('اجمال')) {
+                        return 'أعمدة الكمية والإجمالي تم إلغاؤها؛ يرجى إدخال اسم عمود آخر.';
+                    }
                 }
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
@@ -731,8 +731,6 @@
                     placeholderText = 'مثال: 1000';
                 } else if (lowerCol.includes('سعر')) {
                     placeholderText = 'مثال: 1450';
-                } else if (lowerCol.includes('كمي')) {
-                    placeholderText = 'مثال: 10';
                 }
 
                 td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-800 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${placeholderText}">`;
@@ -803,39 +801,9 @@
         document.getElementById('addColumnBtn').addEventListener('click', () => addColumn());
 
         function calcTotals() {
-            let grandTotal = 0;
             const trs = document.querySelectorAll('#productRowsContainer tr');
-
-            let priceColIdx = -1;
-            let qtyColIdx = -1;
-            let totalColIdx = -1;
-
-            columns.forEach((c, idx) => {
-                const lower = c.toLowerCase();
-                if (lower.includes('سعر') || lower.includes('price')) priceColIdx = idx;
-                else if (lower.includes('كمي') || lower.includes('qty') || lower.includes('quantity')) qtyColIdx = idx;
-                else if (lower.includes('إجمال') || lower.includes('اجمال') || lower.includes('total')) totalColIdx = idx;
-            });
-
-            trs.forEach(tr => {
-                const inputs = tr.querySelectorAll('.cell-input');
-                if (inputs.length === 0) return;
-
-                let rowTotal = 0;
-                if (priceColIdx !== -1 && qtyColIdx !== -1 && inputs[priceColIdx] && inputs[qtyColIdx]) {
-                    const price = parseFloat(inputs[priceColIdx].value) || 0;
-                    const qty = parseFloat(inputs[qtyColIdx].value) || 0;
-                    rowTotal = price * qty;
-                } else if (priceColIdx !== -1 && inputs[priceColIdx]) {
-                    rowTotal = parseFloat(inputs[priceColIdx].value) || 0;
-                }
-
-                grandTotal += rowTotal;
-            });
-
-            document.getElementById('grandTotal').textContent = grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById('itemsCount').textContent = trs.length;
-            return grandTotal;
+            return 0;
         }
 
         // Preview Functionality
@@ -951,12 +919,23 @@
                 return;
             }
 
-            // Extract dynamic headers from DOM
-            const headers = [];
+            // Extract dynamic headers from DOM (strictly excluding forbidden columns)
+            const rawHeaders = [];
             document.querySelectorAll('#headerRow th.draggable-col').forEach(th => {
                 const title = th.querySelector('.col-title')?.textContent.trim() || 'عمود';
-                headers.push(title);
+                rawHeaders.push(title);
             });
+
+            const isForbiddenCol = (name) => {
+                const n = (name || '').trim().toLowerCase();
+                return n.includes('كمي') || n.includes('إجمال') || n.includes('اجمال') ||
+                       n === 'qty' || n === 'quantity' || n === 'total' || n === 'linetotal';
+            };
+
+            const headers = rawHeaders.filter(h => !isForbiddenCol(h));
+            if (headers.length === 0) {
+                headers.push("النوع", "المقاس", "الحمولة", "سعر الألف");
+            }
 
             // Extract dynamic rows from DOM
             const rows = [];
@@ -965,8 +944,10 @@
             trs.forEach(tr => {
                 const rowData = {};
                 const inputs = tr.querySelectorAll('.cell-input');
-                headers.forEach((h, idx) => {
-                    rowData[h] = inputs[idx] ? inputs[idx].value.trim() : '';
+                rawHeaders.forEach((h, idx) => {
+                    if (!isForbiddenCol(h)) {
+                        rowData[h] = inputs[idx] ? inputs[idx].value.trim() : '';
+                    }
                 });
                 rows.push(rowData);
             });
@@ -1029,7 +1010,10 @@
                 const docxUrl = result.docxUrl.startsWith('http') ? result.docxUrl : `${CONFIG.API_BASE_URL}${result.docxUrl}`;
 
                 document.getElementById('resQuoteNumber').textContent = result.quoteNumber;
-                document.getElementById('resQuoteTotal').textContent = result.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const resQuoteTotalElem = document.getElementById('resQuoteTotal');
+                if (resQuoteTotalElem) {
+                    resQuoteTotalElem.textContent = result.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
                 
                 const pdfLink = document.getElementById('resPdfLink');
                 pdfLink.href = pdfUrl;

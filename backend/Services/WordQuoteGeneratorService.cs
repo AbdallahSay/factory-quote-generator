@@ -538,6 +538,14 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 ? request.Headers
                 : request.Rows!.First().Keys.ToList();
 
+            // Filter out forbidden columns (الكمية, الإجمالي)
+            headers = headers.Where(h => !IsForbiddenColumn(h)).ToList();
+
+            if (headers.Count == 0)
+            {
+                headers = new List<string> { "النوع", "المقاس", "الحمولة", "سعر الألف" };
+            }
+
             // Mutate Header Row cells (bold)
             MutateRowCells(headerRow, headers, isHeader: true);
 
@@ -771,6 +779,17 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             if (boldCs == null) rPr.AppendChild(new BoldComplexScript());
             else boldCs.Val = true;
         }
+    }
+
+    public static bool IsForbiddenColumn(string? col)
+    {
+        if (string.IsNullOrWhiteSpace(col)) return false;
+        var trimmed = col.Trim();
+        return trimmed.Contains("كمي") || trimmed.Contains("إجمال") || trimmed.Contains("اجمال") ||
+               trimmed.Equals("qty", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.Equals("quantity", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.Equals("total", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.Equals("linetotal", StringComparison.OrdinalIgnoreCase);
     }
 
     private void UpdateTerms(Body body, List<string>? customTerms)

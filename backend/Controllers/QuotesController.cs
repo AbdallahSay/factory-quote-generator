@@ -94,24 +94,27 @@ public class QuotesController : ControllerBase
             }
             else if (hasDynamicRows)
             {
+                if (request.Headers != null)
+                {
+                    request.Headers = request.Headers.Where(h => !WordQuoteGeneratorService.IsForbiddenColumn(h)).ToList();
+                }
+
                 foreach (var row in request.Rows!)
                 {
                     string name = GetRowValue(row, "النوع", "الصنف", "اسم المنتج", "Product", "Type") 
                                   ?? row.Values.FirstOrDefault() ?? "صنف";
                     string size = GetRowValue(row, "المقاس", "Size") ?? string.Empty;
                     string cap = GetRowValue(row, "الحمولة", "الوحدة", "Capacity") ?? string.Empty;
-                    decimal qty = ParseDecimal(GetRowValue(row, "الكمية", "Quantity", "Qty"), 1);
                     decimal price = ParseDecimal(GetRowValue(row, "السعر", "سعر الألف", "سعر الالف", "Price", "UnitPrice"), 0);
-                    decimal total = ParseDecimal(GetRowValue(row, "الإجمالي", "الاجمالي", "Total", "LineTotal"), qty * price);
 
                     quoteItems.Add(new QuoteItem
                     {
                         ProductName = name,
                         Size = size,
                         Capacity = cap,
-                        Quantity = qty,
+                        Quantity = 0,
                         UnitPrice = price,
-                        LineTotal = total
+                        LineTotal = 0
                     });
                 }
 
@@ -121,7 +124,7 @@ public class QuotesController : ControllerBase
                     ProductName = q.ProductName,
                     Size = q.Size,
                     Capacity = q.Capacity,
-                    Quantity = q.Quantity,
+                    Quantity = 0,
                     UnitPrice = q.UnitPrice
                 }).ToList();
             }
