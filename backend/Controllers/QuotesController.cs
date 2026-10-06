@@ -298,53 +298,141 @@ public class QuotesController : ControllerBase
     }
 
     [HttpPost("preview")]
-    public IActionResult PreviewQuote([FromBody] QuoteRequestDto request)
+    public async Task<IActionResult> PreviewQuote([FromBody] QuoteRequestDto request)
     {
-        var quoteDate = request.QuoteDate ?? DateTime.Now;
-        var dateStr = quoteDate.ToString("dd-MM-yyyy");
-        string arabicDay = quoteDate.DayOfWeek switch
-        {
-            DayOfWeek.Saturday => "السبت",
-            DayOfWeek.Sunday => "الأحد",
-            DayOfWeek.Monday => "الإثنين",
-            DayOfWeek.Tuesday => "الثلاثاء",
-            DayOfWeek.Wednesday => "الأربعاء",
-            DayOfWeek.Thursday => "الخميس",
-            DayOfWeek.Friday => "الجمعة",
-            _ => "الأحد"
-        };
+        bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
+        bool hasItems = request.Items != null && request.Items.Count > 0;
 
-        int productCount = 0;
-        if (request.Rows != null && request.Rows.Count > 0)
+        if (!hasDynamicRows && !hasItems)
         {
-            productCount = request.Rows.Count;
-        }
-        else if (request.Items != null && request.Items.Count > 0)
-        {
-            productCount = request.Items.Count;
+            return BadRequest(new { message = "يرجى إدخال صنف واحد على الأقل في عرض السعر." });
         }
 
-        var quoteNumber = $"{productCount:D2}-{dateStr}";
-
-        var preview = new
+        try
         {
-            quoteNumber = quoteNumber,
-            date = dateStr,
-            day = arabicDay,
-            clientName = request.ClientName,
-            contactPerson = request.ContactPerson,
-            contactTitle = request.ContactTitle ?? "المهندس",
-            projectName = request.ProjectName,
-            location = request.Location,
-            issuerName = !string.IsNullOrWhiteSpace(request.IssuerName) ? request.IssuerName : "أشرف الشربيني",
-            issuerJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle) ? request.IssuerJobTitle : "مدير تطوير الأعمال والمبيعات",
-            issuerPrefix = !string.IsNullOrWhiteSpace(request.IssuerPrefix) ? request.IssuerPrefix : "م / ",
-            headers = request.Headers,
-            rows = request.Rows,
-            terms = request.Terms
-        };
+            var clientName = !string.IsNullOrWhiteSpace(request.ClientName) 
+                ? request.ClientName.Trim() 
+                : "شركة اتريم للمقاولات والاعمال المتخصصة";
+            var projectName = !string.IsNullOrWhiteSpace(request.ProjectName) ? request.ProjectName.Trim() : string.Empty;
 
-        return Ok(preview);
+            var quoteItems = new List<QuoteItem>();
+            if (hasItems)
+            {
+                quoteItems = request.Items!.Select(i => new QuoteItem
+                {
+                    ProductName = i.ProductName,
+                    Size = i.Size ?? string.Empty,
+                    Capacity = i.Capacity ?? string.Empty,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    LineTotal = i.Quantity * i.UnitPrice
+                }).ToList();
+            }
+            else if (hasDynamicRows)
+            {
+                if (request.Headers != null)
+                {
+                    request.Headers = request.Headers.Where(h => !WordQuoteGeneratorService.IsForbiddenColumn(h)).ToList();
+                }
+
+                foreach (var row in request.Rows!)
+                {
+                    string name = GetRowValue(row, "النوع", "الصنف", "اسم المنتج", "Product", "Type") 
+                                  ?? row.Values.FirstOrDefault() ?? "صنف";
+                    string size = GetRowValue(row, "المقاس", "Size") ?? string.Empty;
+                    string cap = GetRowValue(row, "الحمولة", "الوحدة", "Capacity") ?? string.Empty;
+                    decimal price = ParseDecimal(GetRowValue(row, "السعر", "سعر الألف", "سعر الالف", "Price", "UnitPrice"), 0);
+
+                    quoteItems.Add(new QuoteItem
+                    {
+                        ProductName = name,
+                        Size = size,
+                        Capacity = cap,
+                        Quantity = 0,
+                        UnitPrice = price,
+                        LineTotal = 0
+                    });
+                }
+
+                request.Items = quoteItems.Select(q => new ProductItemDto
+                {
+                    ProductName = q.ProductName,
+                    Size = q.Size,
+                    Capacity = q.Capacity,
+                    Quantity = 0,
+                    UnitPrice = q.UnitPrice
+                }).ToList();
+            }
+
+            var calculatedTotal = quoteItems.Sum(item => item.LineTotal);
+            var totalAmount = calculatedTotal > 0 
+                ? calculatedTotal 
+                : (request.TotalAmount.HasValue && request.TotalAmount.Value > 0 ? request.TotalAmount.Value : 0);
+
+            int productCount = hasDynamicRows ? request.Rows!.Count : (hasItems ? request.Items!.Count : 0);
+            var quoteDate = request.QuoteDate ?? DateTime.Now;
+            var quoteNumber = $"{productCount:D2}-{quoteDate:dd-MM-yyyy}";
+
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var quotesDir = Path.Combine(webRoot, "quotes");
+            System.IO.Directory.CreateDirectory(quotesDir);
+
+            // Safely clean up temporary preview files older than 1 hour
+            CleanupOldPreviewFiles(quotesDir);
+
+            var previewId = Guid.NewGuid().ToString("N");
+            var docxFilename = $"preview_{previewId}.docx";
+            var pdfFilename = $"preview_{previewId}.pdf";
+            var docxPath = Path.Combine(quotesDir, docxFilename);
+            var pdfPath = Path.Combine(quotesDir, pdfFilename);
+
+            var templatePath = Path.Combine(_env.ContentRootPath, "..", "Templates", "عرض سعر شركة اتريم.docx");
+            if (!System.IO.File.Exists(templatePath))
+            {
+                templatePath = Path.Combine(_env.ContentRootPath, "Templates", "عرض سعر شركة اتريم.docx");
+            }
+
+            await _wordGenerator.GenerateQuoteDocumentAsync(templatePath, docxPath, request, quoteNumber, totalAmount);
+            await _pdfConverter.ConvertDocxToPdfAsync(docxPath, pdfPath);
+
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfFilename)}";
+            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxFilename)}";
+
+            return Ok(new
+            {
+                quoteNumber = quoteNumber,
+                pdfUrl = pdfUrl,
+                docxUrl = docxUrl,
+                message = "Preview generated successfully."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate quote preview.");
+            return StatusCode(500, new { message = "حدث خطأ أثناء معاينة عرض السعر.", error = ex.Message });
+        }
+    }
+
+    private static void CleanupOldPreviewFiles(string quotesDir)
+    {
+        try
+        {
+            var dir = new DirectoryInfo(quotesDir);
+            if (!dir.Exists) return;
+            var cutoff = DateTime.UtcNow.AddHours(-1);
+            foreach (var file in dir.GetFiles("preview_*.*"))
+            {
+                if (file.LastWriteTimeUtc < cutoff)
+                {
+                    try { file.Delete(); } catch { }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore background file cleanup errors
+        }
     }
 
     [HttpGet("{id:int}")]
@@ -370,9 +458,13 @@ public class QuotesController : ControllerBase
         }
 
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext == ".pdf")
+        {
+            return PhysicalFile(filePath, "application/pdf");
+        }
+
         var contentType = ext switch
         {
-            ".pdf" => "application/pdf",
             ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             _ => "application/octet-stream"
         };

@@ -195,9 +195,13 @@
                     <span class="text-xs text-slate-400 font-normal mr-2">| الأعمدة المعتمدة: النوع • المقاس • الحمولة • سعر الألف</span>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5">
-                        <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        <span>معاينة العرض</span>
+                    <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                        <svg id="previewSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <svg id="previewIcon" class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <span id="previewBtnText">معاينة عرض السعر</span>
                     </button>
                     <button type="button" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:shadow-md transition flex items-center gap-2">
                         <svg id="generateSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -270,91 +274,51 @@
         </div>
     </main>
 
-    <!-- 5. Interactive Document Preview Modal -->
-    <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200">
+    <!-- 5. Real Document Preview Modal -->
+    <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
             <!-- Modal Header -->
-            <div class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <h3 class="font-bold text-base">معاينة عرض السعر (مطابق لقالب Word الأصلي)</h3>
+            <div class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <div>
+                        <h3 class="font-bold text-base">معاينة عرض السعر الحقيقي (قالب Word الأصلي)</h3>
+                        <p class="text-xs text-blue-200">معاينة حية لملف PDF الفعلي المولد قبل الاعتماد والحفظ</p>
+                    </div>
                 </div>
-                <button type="button" id="closePreviewBtn" class="text-blue-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                <div class="flex items-center gap-2">
+                    <a id="previewNewTabBtn" href="#" target="_blank" class="text-xs bg-blue-800 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        فتح في نافذة جديدة
+                    </a>
+                    <button type="button" id="closePreviewBtn" class="text-blue-200 hover:text-white text-2xl font-bold leading-none px-2 cursor-pointer">&times;</button>
+                </div>
             </div>
 
-            <!-- Document Simulator Container -->
-            <div class="p-8 max-h-[75vh] overflow-y-auto bg-slate-50 space-y-6">
-                <!-- Word Document Page Simulator -->
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-slate-300 max-w-3xl mx-auto space-y-6 text-slate-800 text-sm">
-                    <!-- Top SmartArt Representation -->
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <div>
-                            <h2 class="text-2xl font-black text-blue-950">عرض سعر</h2>
-                            <p class="text-xs text-slate-500 font-bold">مصنع المنتجات الإسمنتية والخرسانية</p>
-                        </div>
-                        <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 p-2.5 rounded-lg text-xs font-bold text-blue-900">
-                            <div class="text-center px-2 border-l border-blue-200">
-                                <span class="block text-slate-700 text-[10px] font-bold">اليوم</span>
-                                <span id="prevDay" class="font-bold text-slate-900">الأحد</span>
-                            </div>
-                            <div class="text-center px-2 border-l border-blue-200">
-                                <span class="block text-slate-700 text-[10px] font-bold">التاريخ</span>
-                                <span id="prevDate" class="font-bold text-slate-900">--</span>
-                            </div>
-                            <div class="text-center px-2">
-                                <span class="block text-slate-700 text-[10px] font-bold">رقم الصادر</span>
-                                <span id="prevQuoteNo" class="font-mono text-emerald-800 font-bold">02-06-10-2026</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Customer Block -->
-                    <div class="space-y-1.5 leading-relaxed font-semibold">
-                        <p class="text-slate-900">السادة شركة : <span id="prevClientName" class="text-blue-900 font-bold underline underline-offset-4">شركة اتريم</span> المحترمين,,, ,,</p>
-                        <p class="text-slate-800">عناية <span id="prevContactTitle">المهندسة</span> : <span id="prevContactPerson" class="text-blue-900 font-bold underline underline-offset-4">سارة شريف</span> <span id="prevHonorific">المحترمة</span> ,,, ,,</p>
-                        <p class="text-slate-700">اسم المشروع : <span id="prevProjectName" class="font-bold text-slate-900">مشروع النور</span></p>
-                        <p class="text-slate-700">المكان: <span id="prevLocation" class="font-bold text-slate-900">القاهرة</span></p>
-                    </div>
-
-                    <p class="text-xs text-slate-600 font-bold pt-2">نود احاطتكم علما بأسعار المنتجات الاتية: -</p>
-
-                    <!-- Preview Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse border border-slate-400 text-xs text-center" id="prevTable">
-                            <thead class="bg-blue-900 text-white font-bold" id="prevTableHead">
-                                <!-- Injected via JS -->
-                            </thead>
-                            <tbody class="divide-y divide-slate-300" id="prevTableBody">
-                                <!-- Injected via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Terms Block -->
-                    <div class="space-y-2 pt-2">
-                        <h4 class="font-bold text-blue-950 border-b border-slate-200 pb-1 text-xs">الشروط العامة والخاصة لعرض السعر</h4>
-                        <ol id="prevTermsList" class="space-y-1.5 list-decimal list-inside text-xs text-slate-700 leading-relaxed">
-                            <!-- Injected via JS -->
-                        </ol>
-                    </div>
-
-                    <!-- Closing & Issuer Signature -->
-                    <div class="pt-6 border-t border-slate-200 flex justify-between items-end">
-                        <p class="text-xs font-bold text-slate-700">وتفضلوا بقبول فائق الاحترام والتقدير ،،،،،</p>
-                        <div class="text-left font-bold text-xs space-y-1">
-                            <p id="prevIssuerJobTitle" class="text-slate-600">مدير تطوير الاعمال والمبيعات</p>
-                            <p id="prevIssuerFullName" class="text-blue-900 text-sm">م / اشرف الشربيني</p>
-                        </div>
-                    </div>
+            <!-- PDF Viewer Container -->
+            <div class="flex-1 bg-slate-100 p-2 sm:p-4 overflow-hidden min-h-[500px] flex flex-col">
+                <div id="previewLoading" class="flex-1 flex flex-col items-center justify-center gap-3 py-20 text-slate-500">
+                    <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-semibold">جارٍ توليد مستند المعاينة الحقيقي من قالب Word...</span>
                 </div>
+                <iframe id="previewPdfFrame" class="hidden w-full h-[65vh] rounded-lg border border-slate-300 shadow-inner bg-white" src=""></iframe>
             </div>
 
             <!-- Modal Footer -->
-            <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
-                <span class="text-xs text-slate-500">معاينة تفاعلية حية قبل التصدير النهائي</span>
-                <div class="flex gap-2">
-                    <button type="button" id="modalCloseBtn" class="px-4 py-2 text-xs font-bold bg-slate-300 hover:bg-slate-400 text-slate-800 rounded-lg transition">إغلاق</button>
-                    <button type="button" id="confirmAndGenerateBtn" class="px-5 py-2 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition shadow">تأكيد وتصدير الآن</button>
+            <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3 shrink-0">
+                <span class="text-xs text-slate-600 font-medium">لم يتم حفظ عرض السعر في قاعدة البيانات بعد. يمكنك مراجعة الملف ثم الاعتماد.</span>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="modalBackToEditBtn" class="px-5 py-2.5 text-sm font-bold bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+                        رجوع للتعديل
+                    </button>
+                    <button type="button" id="modalConfirmAndGenerateBtn" class="px-6 py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-md flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        اعتماد وإنشاء عرض السعر
+                    </button>
                 </div>
             </div>
         </div>
@@ -806,79 +770,20 @@
             return 0;
         }
 
-        // Preview Functionality
-        document.getElementById('previewBtn').addEventListener('click', openPreviewModal);
-        document.getElementById('closePreviewBtn').addEventListener('click', closePreviewModal);
-        document.getElementById('modalCloseBtn').addEventListener('click', closePreviewModal);
-        document.getElementById('confirmAndGenerateBtn').addEventListener('click', () => {
+        // Real PDF Preview Functionality
+        document.getElementById('previewBtn').addEventListener('click', openRealPdfPreview);
+        document.getElementById('closePreviewBtn')?.addEventListener('click', closePreviewModal);
+        document.getElementById('modalBackToEditBtn')?.addEventListener('click', closePreviewModal);
+        document.getElementById('modalConfirmAndGenerateBtn')?.addEventListener('click', () => {
             closePreviewModal();
             document.getElementById('generateBtn').click();
         });
 
-        function openPreviewModal() {
-            const clientName = document.getElementById('clientNameInput').value.trim() || 'شركة اتريم للمقاولات والاعمال المتخصصة';
-            const contactTitle = document.getElementById('contactTitle').value;
-            const contactPerson = document.getElementById('contactPerson').value.trim() || 'سارة شريف';
-            const projectName = document.getElementById('projectName').value.trim() || 'مشروع ابراج اتريم';
-            const location = document.getElementById('projectLocation').value.trim() || 'القاهرة - التجمع الخامس';
-            const quoteDateVal = document.getElementById('quoteDate').value;
-            const issuerName = document.getElementById('issuerName').value.trim() || 'أشرف الشربيني';
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim() || 'مدير تطوير الأعمال والمبيعات';
-            const issuerPrefix = document.getElementById('issuerPrefix').value.trim() || 'م / ';
-
-            const isFemale = contactTitle.includes('ة');
-            const honorific = isFemale ? 'المحترمة' : 'المحترم';
-
-            const dateObj = quoteDateVal ? new Date(quoteDateVal) : new Date();
-            const daysAr = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-            const dayName = daysAr[dateObj.getDay()];
-            const dd = String(dateObj.getDate()).padStart(2, '0');
-            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const yyyy = dateObj.getFullYear();
-            const formattedDate = `${dd}-${mm}-${yyyy}`;
-
-            const trs = document.querySelectorAll('#productRowsContainer tr');
-            const productCount = trs.length;
-            const countStr = String(productCount).padStart(2, '0');
-            const outgoingNumber = `${countStr}-${formattedDate}`;
-
-            document.getElementById('prevDay').textContent = dayName;
-            document.getElementById('prevDate').textContent = formattedDate;
-            document.getElementById('prevQuoteNo').textContent = outgoingNumber;
-
-            document.getElementById('prevClientName').textContent = clientName;
-            document.getElementById('prevContactTitle').textContent = contactTitle;
-            document.getElementById('prevContactPerson').textContent = contactPerson;
-            document.getElementById('prevHonorific').textContent = honorific;
-            document.getElementById('prevProjectName').textContent = projectName;
-            document.getElementById('prevLocation').textContent = location;
-
-            document.getElementById('prevIssuerJobTitle').textContent = issuerJobTitle;
-            document.getElementById('prevIssuerFullName').textContent = `${issuerPrefix.trim()} ${issuerName}`.trim();
-
-            // Table headers (bold)
-            const thead = document.getElementById('prevTableHead');
-            thead.innerHTML = `<tr>${columns.map(c => `<th class="border border-slate-400 py-2 px-3 font-bold text-center">${c}</th>`).join('')}</tr>`;
-
-            // Table rows (bold cell values)
-            const tbody = document.getElementById('prevTableBody');
-            tbody.innerHTML = '';
-            trs.forEach(tr => {
-                const inputs = tr.querySelectorAll('.cell-input');
-                const rowCells = columns.map((c, i) => `<td class="border border-slate-300 py-2 px-3 font-bold text-center">${inputs[i] ? inputs[i].value : ''}</td>`).join('');
-                tbody.innerHTML += `<tr>${rowCells}</tr>`;
-            });
-
-            // Terms
-            const termsListElem = document.getElementById('prevTermsList');
-            termsListElem.innerHTML = currentTerms.map(t => `<li>${t}</li>`).join('');
-
-            document.getElementById('previewModal').classList.remove('hidden');
-            recordAudit('QuotePreviewed', `Preview: ${clientName}`);
-        }
-
         function closePreviewModal() {
-            document.getElementById('previewModal').classList.add('hidden');
+            const modal = document.getElementById('previewModal');
+            modal.classList.add('hidden');
+            const frame = document.getElementById('previewPdfFrame');
+            if (frame) frame.src = '';
         }
 
         async function recordAudit(action, entityId = null) {
@@ -893,8 +798,7 @@
             }
         }
 
-        // Generate Quote Button Action
-        document.getElementById('generateBtn').addEventListener('click', async () => {
+        function getQuotePayload() {
             const clientName = document.getElementById('clientNameInput').value.trim();
             const contactTitle = document.getElementById('contactTitle').value;
             const contactPerson = document.getElementById('contactPerson').value.trim();
@@ -916,7 +820,7 @@
                 }).then(() => {
                     document.getElementById('clientNameInput').focus();
                 });
-                return;
+                return null;
             }
 
             // Extract dynamic headers from DOM (strictly excluding forbidden columns)
@@ -959,13 +863,13 @@
                     icon: 'error',
                     confirmButtonText: 'إغلاق'
                 });
-                return;
+                return null;
             }
 
             const grandTotal = calcTotals();
 
             // Construct payload matching required schema
-            const payload = {
+            return {
                 userId: 1,
                 clientName: clientName,
                 contactTitle: contactTitle,
@@ -983,6 +887,85 @@
                 headers: headers,
                 rows: rows
             };
+        }
+
+        async function openRealPdfPreview() {
+            const payload = getQuotePayload();
+            if (!payload) return;
+
+            const prevBtn = document.getElementById('previewBtn');
+            const prevSpinner = document.getElementById('previewSpinner');
+            const prevIcon = document.getElementById('previewIcon');
+            const prevText = document.getElementById('previewBtnText');
+
+            const modal = document.getElementById('previewModal');
+            const loading = document.getElementById('previewLoading');
+            const frame = document.getElementById('previewPdfFrame');
+            const newTabBtn = document.getElementById('previewNewTabBtn');
+
+            prevBtn.disabled = true;
+            prevSpinner?.classList.remove('hidden');
+            prevIcon?.classList.add('hidden');
+            if (prevText) prevText.textContent = 'جارٍ إعداد المعاينة...';
+
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            frame.classList.add('hidden');
+            frame.src = '';
+            if (newTabBtn) newTabBtn.href = '#';
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/preview`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || 'فشل في توليد مستند المعاينة');
+                }
+
+                const result = await response.json();
+                const pdfUrl = result.pdfUrl.startsWith('http') ? result.pdfUrl : `${CONFIG.API_BASE_URL}${result.pdfUrl}`;
+
+                frame.src = pdfUrl;
+                if (newTabBtn) newTabBtn.href = pdfUrl;
+
+                frame.onload = () => {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                };
+
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                }, 1000);
+
+            } catch (err) {
+                console.error('Preview generation failed:', err);
+                closePreviewModal();
+                Swal.fire({
+                    title: 'خطأ في المعاينة',
+                    text: err.message || 'حدث خطأ أثناء إعداد مستند المعاينة. يرجى المحاولة مرة أخرى.',
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                });
+            } finally {
+                prevBtn.disabled = false;
+                prevSpinner?.classList.add('hidden');
+                prevIcon?.classList.remove('hidden');
+                if (prevText) prevText.textContent = 'معاينة عرض السعر';
+            }
+        }
+
+        // Generate Quote Button Action
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const payload = getQuotePayload();
+            if (!payload) return;
+
+            const clientName = payload.clientName;
+            const projectName = payload.projectName;
 
             const btn = document.getElementById('generateBtn');
             const btnText = document.getElementById('generateBtnText');
