@@ -6,7 +6,7 @@ on:
     paths:
       - "backend/**"
       - "database/**"
-      - ".github/workflows/deploy-backend.yml"
+      - ".github/**"
   workflow_dispatch:
 
 jobs:
@@ -41,16 +41,26 @@ jobs:
         run: dotnet publish backend/FactoryQuoteApi.csproj -c Release -o ./backend/publish
 
       - name: Deploy to MonsterASP.NET via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./backend/publish/
-          server-dir: /wwwroot/
-          dangerous-clean-slate: false
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: /wwwroot
+        run: |
+          python3 .github/deploy.py
 
       - name: Verify Production Health
         run: |
-          sleep 10
-          curl -f -s -S https://factory-quote.runasp.net/api/health
+          echo "Waiting for app to start up..."
+          sleep 6
+          for i in {1..6}; do
+            echo "Health check attempt $i..."
+            if curl -f -s -S https://factory-quote.runasp.net/api/health; then
+              echo ""
+              echo "Production health check PASSED!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Production health check failed after multiple attempts."
+          exit 1
