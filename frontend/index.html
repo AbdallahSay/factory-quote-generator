@@ -262,10 +262,10 @@
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                     تحميل مستند Word الأصلي المعدل
                 </a>
-                <a id="resWhatsAppBtn" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
+                <button type="button" id="resWhatsAppBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm cursor-pointer">
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.203c.043.071.043.419-.101.824z"/></svg>
                     مشاركة على واتساب
-                </a>
+                </button>
             </div>
         </div>
     </main>
@@ -1023,21 +1023,64 @@
                 docxLink.href = docxUrl;
                 docxLink.onclick = () => recordAudit('QuoteDownloaded', `DOCX: ${result.quoteNumber}`);
 
-                // WhatsApp share button: https://wa.me/?text=...
-                let waLines = [];
-                waLines.push(`عرض سعر جديد`);
-                waLines.push(`العميل: ${clientName}`);
-                if (projectName) {
-                    waLines.push(`المشروع: ${projectName}`);
-                }
-                waLines.push(`رقم العرض: ${result.quoteNumber}`);
-                waLines.push(`رابط عرض السعر (PDF):\n${pdfUrl}`);
+                // Preload production PDF Blob for instant Web Share API support
+                let preloadedPdfFile = null;
+                fetch(pdfUrl)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        preloadedPdfFile = new File([blob], `${result.quoteNumber}.pdf`, { type: 'application/pdf' });
+                    })
+                    .catch(err => {
+                        console.warn('PDF preload failed:', err);
+                    });
 
-                const waText = waLines.join('\n');
+                // Web Share API handler to share PDF File directly
                 const waBtn = document.getElementById('resWhatsAppBtn');
                 if (waBtn) {
-                    waBtn.href = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-                    waBtn.onclick = () => recordAudit('QuoteSharedWhatsApp', `WhatsApp: ${result.quoteNumber}`);
+                    waBtn.onclick = async () => {
+                        recordAudit('QuoteSharedWhatsApp', `WhatsApp: ${result.quoteNumber}`);
+
+                        let shareText = `عرض سعر جديد\nالعميل: ${clientName}`;
+                        if (projectName) {
+                            shareText += `\nالمشروع: ${projectName}`;
+                        }
+                        shareText += `\nرقم العرض: ${result.quoteNumber}`;
+
+                        try {
+                            let pdfFile = preloadedPdfFile;
+                            if (!pdfFile) {
+                                const res = await fetch(pdfUrl);
+                                const blob = await res.blob();
+                                pdfFile = new File([blob], `${result.quoteNumber}.pdf`, { type: 'application/pdf' });
+                                preloadedPdfFile = pdfFile;
+                            }
+
+                            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                                await navigator.share({
+                                    files: [pdfFile],
+                                    text: shareText
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'مشاركة الملفات غير مدعومة',
+                                    text: 'متصفحك الحالي لا يدعم مشاركة الملفات مباشرة عبر Web Share API. يرجى استخدام زر "تحميل مستند PDF" لمشاركة الملف.',
+                                    icon: 'info',
+                                    confirmButtonText: 'حسناً'
+                                });
+                            }
+                        } catch (err) {
+                            if (err.name === 'AbortError') {
+                                return; // User cancelled share sheet
+                            }
+                            console.error('Share error:', err);
+                            Swal.fire({
+                                title: 'تنبيه',
+                                text: 'تعذر مشاركة الملف من هذا المتصفح. يمكنك تحميل مستند PDF ومشاركته يدوياً.',
+                                icon: 'warning',
+                                confirmButtonText: 'حسناً'
+                            });
+                        }
+                    };
                 }
 
                 document.getElementById('resultModal').classList.remove('hidden');
