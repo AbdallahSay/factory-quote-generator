@@ -36,6 +36,7 @@ appsettings.Production.json
 !appsettings.Production.json.example
 
 # Temporary and AI Artifacts
+.vercel/
 .user_uploaded/
 .gemini/
 *.tmp
