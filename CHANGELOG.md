@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-10-06
+
+### 🚀 Added (إضافات وميزات جديدة)
+- **Direct Word Template Mutation Engine (تعديل مباشر على القالب الأصلي):**
+  - Refactored `WordQuoteGeneratorService` to use the authentic master Word document (`backend/Templates/عرض سعر شركة اتريم.docx`) as the single source of truth without recreation or visual redesign.
+  - Document mutation operates exclusively in-place via OpenXML, strictly preserving all original document fonts, line spacing, margins, watermarks, headers, footers, and RTL properties.
+  - SmartArt diagram manipulation (`word/diagrams/data1.xml` and `word/diagrams/drawing1.xml`) dynamically injecting Arabic day name, standardized date (`dd-MM-yyyy`), and outgoing quote number into graphic header shapes.
+  - Precise in-place updating of customer information (Company Name, Contact Title, Contact Person, Project Name, Location) and quote issuer data (Job Title, Prefix, Name).
+  - Product table row cloning inheriting cell styles, alignments, and borders without emitting unnecessary summary total rows into the client document.
+
+- **Dynamic Terms & Conditions Management (إدارة ديناميكية حية للشروط والأحكام):**
+  - Endpoint `GET /api/quotes/terms` dynamically extracts all 9 default factory terms directly from the master Word document.
+  - Fully interactive terms manager on the frontend allowing sales representatives to edit, remove, or append terms.
+  - Added terms dynamically clone prototype OpenXML paragraphs inheriting `pStyle="ListParagraph"` and numbering definition `numId="2"`.
+
+- **Interactive Document Preview (معاينة فورية تفاعلية للمستند):**
+  - Instant live quotation preview modal on the frontend displaying customer details, issuer credentials, formatted items table, and active terms before document generation.
+  - Comprehensive audit trail endpoint (`POST /api/admin/audit`) recording preview, generation, and download telemetry.
+
+- **Database Architecture Extension (ترحيل وتوسيع قاعدة البيانات):**
+  - Applied schema migration on MonsterASP.NET SQL Server adding `ContactTitle`, `IssuerName`, `IssuerJobTitle`, `IssuerPrefix`, and `TermsJson` to the `Quotes` table for historical auditability.
+
+---
+
 ## [1.1.0] - 2026-10-05
 
 ### 🚀 Added (إضافات وميزات جديدة)
