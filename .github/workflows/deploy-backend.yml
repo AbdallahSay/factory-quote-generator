@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - "backend/**"
+      - "database/**"
       - ".github/workflows/deploy-backend.yml"
   workflow_dispatch:
 
@@ -25,7 +26,18 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore backend/FactoryQuoteApi.csproj
 
-      - name: Build & Publish Release
+      - name: Build Release
+        run: dotnet build backend/FactoryQuoteApi.csproj -c Release --no-restore
+
+      - name: Run Tests (if exists)
+        run: |
+          if ls tests/*.csproj 1> /dev/null 2>&1; then
+            dotnet test --no-build -c Release
+          else
+            echo "No test projects found, skipping tests."
+          fi
+
+      - name: Publish Backend
         run: dotnet publish backend/FactoryQuoteApi.csproj -c Release -o ./backend/publish
 
       - name: Deploy to MonsterASP.NET via FTP
@@ -38,7 +50,7 @@ jobs:
           server-dir: /wwwroot/
           dangerous-clean-slate: false
 
-      - name: Verify Deployment Health
+      - name: Verify Production Health
         run: |
-          sleep 5
-          curl -f -k https://factory-quote.runasp.net/api/health || echo "Health check ping completed"
+          sleep 10
+          curl -f -s -S https://factory-quote.runasp.net/api/health
