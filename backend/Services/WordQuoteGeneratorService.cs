@@ -448,7 +448,15 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         var rPr = targetRun.GetFirstChild<RunProperties>();
         if (rPr == null)
         {
-            rPr = pRPr != null ? (RunProperties)pRPr.CloneNode(true) : new RunProperties();
+            rPr = new RunProperties();
+            if (pRPr != null)
+            {
+                var runFonts = pRPr.GetFirstChild<RunFonts>();
+                if (runFonts != null)
+                {
+                    rPr.RunFonts = (RunFonts)runFonts.CloneNode(true);
+                }
+            }
             targetRun.PrependChild(rPr);
         }
 
