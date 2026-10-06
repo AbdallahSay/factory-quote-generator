@@ -3,10 +3,6 @@ name: Deploy Backend to MonsterASP.NET
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - "backend/**"
-      - "database/**"
-      - ".github/**"
   workflow_dispatch:
 
 jobs:
