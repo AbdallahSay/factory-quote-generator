@@ -25,8 +25,7 @@ public class ApplicationDbContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<Quote>()
-            .HasIndex(q => q.QuoteNumber)
-            .IsUnique();
+            .HasIndex(q => q.QuoteNumber);
 
         modelBuilder.Entity<Quote>()
             .HasOne(q => q.User)

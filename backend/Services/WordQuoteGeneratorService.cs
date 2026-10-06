@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FactoryQuoteApi.DTOs;
@@ -263,20 +264,40 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 {
                     tElem.Value = quoteNumber;
                 }
+
+                // Requirement: Make day/date/outgoing-number displayed values and labels bold
+                foreach (var rPr in pt.Descendants(a + "rPr"))
+                {
+                    rPr.SetAttributeValue("b", "1");
+                }
+                foreach (var endParaRPr in pt.Descendants(a + "endParaRPr"))
+                {
+                    endParaRPr.SetAttributeValue("b", "1");
+                }
             }
             return doc.ToString(SaveOptions.DisableFormatting);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse data1.xml with XDocument. Using regex replacement.");
-            return Regex.Replace(xml, @"<a:t>(.*?)</a:t>", m =>
+            string res = Regex.Replace(xml, @"<a:t>(.*?)</a:t>", m =>
             {
                 var val = m.Groups[1].Value.Trim();
                 if (ArabicDays.Contains(val)) return $"<a:t>{dayName}</a:t>";
                 if (Regex.IsMatch(val, @"^\d{2}-\d{2}-\d{4}$")) return $"<a:t>{dateStr}</a:t>";
-                if (val.Contains("06-04-10-2026") || val.StartsWith("Q-", StringComparison.OrdinalIgnoreCase)) return $"<a:t>{quoteNumber}</a:t>";
+                if (Regex.IsMatch(val, @"^\d{2}-\d{2}-\d{2}-\d{4}$") || val.Contains("06-04-10-2026") || val.StartsWith("Q-", StringComparison.OrdinalIgnoreCase)) return $"<a:t>{quoteNumber}</a:t>";
                 return m.Value;
             });
+
+            // Enforce bold on all runs
+            res = Regex.Replace(res, @"<a:rPr\b([^>]*)>", m =>
+            {
+                var attrs = m.Groups[1].Value;
+                if (attrs.Contains("b=")) return Regex.Replace(m.Value, @"b=""[^""]*""", @"b=""1""");
+                return $"<a:rPr b=\"1\"{attrs}>";
+            });
+
+            return res;
         }
     }
 
@@ -284,7 +305,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
     {
         var labels = new HashSet<string> { "اليوم", "التاريخ", "رقم الصادر" };
 
-        return Regex.Replace(xml, @"<a:t>(.*?)</a:t>", m =>
+        string replaced = Regex.Replace(xml, @"<a:t>(.*?)</a:t>", m =>
         {
             var txt = m.Groups[1].Value.Trim();
             if (labels.Contains(txt))
@@ -301,6 +322,29 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             }
             return $"<a:t>{quoteNumber}</a:t>";
         });
+
+        // Enforce bold (b="1") on all run properties and endParaRPr in drawing1.xml
+        replaced = Regex.Replace(replaced, @"<a:rPr\b([^>]*)>", m =>
+        {
+            var attrs = m.Groups[1].Value;
+            if (attrs.Contains("b="))
+            {
+                return Regex.Replace(m.Value, @"b=""[^""]*""", @"b=""1""");
+            }
+            return $"<a:rPr b=\"1\"{attrs}>";
+        });
+
+        replaced = Regex.Replace(replaced, @"<a:endParaRPr\b([^>]*)>", m =>
+        {
+            var attrs = m.Groups[1].Value;
+            if (attrs.Contains("b="))
+            {
+                return Regex.Replace(m.Value, @"b=""[^""]*""", @"b=""1""");
+            }
+            return $"<a:endParaRPr b=\"1\"{attrs}>";
+        });
+
+        return replaced;
     }
 
     private void UpdateCustomerFields(Body body, QuoteRequestDto request)
@@ -402,6 +446,28 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             return;
         }
 
+        // Requirement 1: Center the products table block horizontally on the page
+        var tblPr = targetTable.GetFirstChild<TableProperties>();
+        if (tblPr == null)
+        {
+            tblPr = new TableProperties();
+            targetTable.PrependChild(tblPr);
+        }
+
+        // Remove floating table positioning properties that cause shifts
+        tblPr.RemoveAllChildren<TablePositionProperties>();
+        // Remove any indentation that shifts the table left or right
+        tblPr.RemoveAllChildren<TableIndentation>();
+
+        // Center the table block horizontally
+        var tableJustification = tblPr.GetFirstChild<TableJustification>();
+        if (tableJustification == null)
+        {
+            tableJustification = new TableJustification();
+            tblPr.AppendChild(tableJustification);
+        }
+        tableJustification.Val = TableRowAlignmentValues.Center;
+
         bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
         bool hasItems = request.Items != null && request.Items.Count > 0;
 
@@ -411,10 +477,10 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 ? request.Headers
                 : request.Rows!.First().Keys.ToList();
 
-            // Mutate Header Row cells
+            // Mutate Header Row cells (bold)
             MutateRowCells(headerRow, headers, isHeader: true);
 
-            // Mutate Data Rows
+            // Mutate Data Rows (bold)
             var insertPos = templateRow;
             foreach (var rowDict in request.Rows!)
             {
@@ -431,6 +497,15 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         }
         else if (hasItems)
         {
+            // Ensure header row cells are bold and centered
+            foreach (var cell in headerRow.Elements<TableCell>())
+            {
+                foreach (var para in cell.Elements<Paragraph>())
+                {
+                    MakeParagraphBoldAndCentered(para);
+                }
+            }
+
             var insertPos = templateRow;
             foreach (var item in request.Items!)
             {
@@ -449,6 +524,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                     foreach (var para in cell.Elements<Paragraph>())
                     {
                         ReplaceInParagraph(para, rowReplacements);
+                        MakeParagraphBoldAndCentered(para);
                     }
                 }
 
@@ -508,12 +584,21 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             tcW.Type = TableWidthUnitValues.Dxa;
             tcW.Width = colWidth.ToString();
 
-            // Set cell text preserving existing paragraph properties and run properties
-            SetCellText(cell, values[i]);
+            // Center vertical alignment inside cell
+            var tcVAlign = tcPr.GetFirstChild<TableCellVerticalAlignment>();
+            if (tcVAlign == null)
+            {
+                tcVAlign = new TableCellVerticalAlignment();
+                tcPr.AppendChild(tcVAlign);
+            }
+            tcVAlign.Val = TableVerticalAlignmentValues.Center;
+
+            // Set cell text preserving existing paragraph properties and run properties, and make bold
+            SetCellText(cell, values[i], isBold: true);
         }
     }
 
-    private void SetCellText(TableCell cell, string text)
+    private void SetCellText(TableCell cell, string text, bool isBold = true)
     {
         var para = cell.Elements<Paragraph>().FirstOrDefault();
         if (para == null)
@@ -522,26 +607,108 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             cell.AppendChild(para);
         }
 
+        var pPr = para.GetFirstChild<ParagraphProperties>();
+        if (pPr == null)
+        {
+            pPr = new ParagraphProperties();
+            para.PrependChild(pPr);
+        }
+
+        // Center text inside cell horizontally
+        var jc = pPr.GetFirstChild<Justification>();
+        if (jc == null)
+        {
+            jc = new Justification();
+            pPr.AppendChild(jc);
+        }
+        jc.Val = JustificationValues.Center;
+
         var run = para.Elements<Run>().FirstOrDefault();
-        if (run != null)
+        if (run == null)
+        {
+            run = new Run();
+            para.AppendChild(run);
+        }
+        else
         {
             foreach (var r in para.Elements<Run>().Skip(1).ToList())
             {
                 r.Remove();
             }
-
-            var textElem = run.Elements<Text>().FirstOrDefault();
-            if (textElem == null)
-            {
-                textElem = new Text { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve };
-                run.AppendChild(textElem);
-            }
-            textElem.Text = text;
         }
-        else
+
+        var rPr = run.GetFirstChild<RunProperties>();
+        if (rPr == null)
         {
-            var newRun = new Run(new Text(text) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve });
-            para.AppendChild(newRun);
+            rPr = new RunProperties();
+            run.PrependChild(rPr);
+        }
+
+        if (isBold)
+        {
+            var bold = rPr.GetFirstChild<Bold>();
+            if (bold == null)
+            {
+                rPr.AppendChild(new Bold());
+            }
+            else
+            {
+                bold.Val = true;
+            }
+
+            var boldCs = rPr.GetFirstChild<BoldComplexScript>();
+            if (boldCs == null)
+            {
+                rPr.AppendChild(new BoldComplexScript());
+            }
+            else
+            {
+                boldCs.Val = true;
+            }
+        }
+
+        var textElem = run.Elements<Text>().FirstOrDefault();
+        if (textElem == null)
+        {
+            textElem = new Text { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve };
+            run.AppendChild(textElem);
+        }
+        textElem.Text = text;
+    }
+
+    private static void MakeParagraphBoldAndCentered(Paragraph para)
+    {
+        var pPr = para.GetFirstChild<ParagraphProperties>();
+        if (pPr == null)
+        {
+            pPr = new ParagraphProperties();
+            para.PrependChild(pPr);
+        }
+
+        var jc = pPr.GetFirstChild<Justification>();
+        if (jc == null)
+        {
+            jc = new Justification();
+            pPr.AppendChild(jc);
+        }
+        jc.Val = JustificationValues.Center;
+
+        foreach (var run in para.Elements<Run>())
+        {
+            var rPr = run.GetFirstChild<RunProperties>();
+            if (rPr == null)
+            {
+                rPr = new RunProperties();
+                run.PrependChild(rPr);
+            }
+
+            var bold = rPr.GetFirstChild<Bold>();
+            if (bold == null) rPr.AppendChild(new Bold());
+            else bold.Val = true;
+
+            var boldCs = rPr.GetFirstChild<BoldComplexScript>();
+            if (boldCs == null) rPr.AppendChild(new BoldComplexScript());
+            else boldCs.Val = true;
         }
     }
 
@@ -693,20 +860,44 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                     replaced = true;
                 }
             }
-            if (replaced) continue;
 
             // 2. Cross-run fallback
-            var texts = paragraph.Descendants<Text>().ToList();
-            if (texts.Count <= 1) continue;
-
-            var fullText = string.Concat(texts.Select(t => t.Text));
-            if (fullText.Contains(placeholder))
+            if (!replaced)
             {
-                var newFullText = fullText.Replace(placeholder, replacement);
-                texts[0].Text = newFullText;
-                for (int i = 1; i < texts.Count; i++)
+                var texts = paragraph.Descendants<Text>().ToList();
+                if (texts.Count > 1)
                 {
-                    texts[i].Text = string.Empty;
+                    var fullText = string.Concat(texts.Select(t => t.Text));
+                    if (fullText.Contains(placeholder))
+                    {
+                        var newFullText = fullText.Replace(placeholder, replacement);
+                        texts[0].Text = newFullText;
+                        for (int i = 1; i < texts.Count; i++)
+                        {
+                            texts[i].Text = string.Empty;
+                        }
+                        replaced = true;
+                    }
+                }
+            }
+
+            if (replaced && (placeholder == "{{QuoteNumber}}" || placeholder == "{{Date}}"))
+            {
+                foreach (var run in paragraph.Elements<Run>())
+                {
+                    var rPr = run.GetFirstChild<RunProperties>();
+                    if (rPr == null)
+                    {
+                        rPr = new RunProperties();
+                        run.PrependChild(rPr);
+                    }
+                    var bold = rPr.GetFirstChild<Bold>();
+                    if (bold == null) rPr.AppendChild(new Bold());
+                    else bold.Val = true;
+
+                    var boldCs = rPr.GetFirstChild<BoldComplexScript>();
+                    if (boldCs == null) rPr.AppendChild(new BoldComplexScript());
+                    else boldCs.Val = true;
                 }
             }
         }

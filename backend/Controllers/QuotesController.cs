@@ -132,7 +132,20 @@ public class QuotesController : ControllerBase
                 ? calculatedTotal 
                 : (request.TotalAmount.HasValue && request.TotalAmount.Value > 0 ? request.TotalAmount.Value : 0);
 
-            var quoteNumber = $"Q-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
+            // Determine product row count (entered by the user, excluding header rows)
+            int productCount = 0;
+            if (hasDynamicRows)
+            {
+                productCount = request.Rows!.Count;
+            }
+            else if (hasItems)
+            {
+                productCount = request.Items!.Count;
+            }
+
+            var quoteDate = request.QuoteDate ?? DateTime.Now;
+            // Outgoing number format: [ProductCount]-[dd]-[MM]-[yyyy] (e.g. 02-06-10-2026)
+            var quoteNumber = $"{productCount:D2}-{quoteDate:dd-MM-yyyy}";
 
             // 4. File Paths
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
@@ -298,9 +311,21 @@ public class QuotesController : ControllerBase
             _ => "الأحد"
         };
 
+        int productCount = 0;
+        if (request.Rows != null && request.Rows.Count > 0)
+        {
+            productCount = request.Rows.Count;
+        }
+        else if (request.Items != null && request.Items.Count > 0)
+        {
+            productCount = request.Items.Count;
+        }
+
+        var quoteNumber = $"{productCount:D2}-{dateStr}";
+
         var preview = new
         {
-            quoteNumber = $"Q-{DateTime.UtcNow:yyyyMMdd}-PREVIEW",
+            quoteNumber = quoteNumber,
             date = dateStr,
             day = arabicDay,
             clientName = request.ClientName,
