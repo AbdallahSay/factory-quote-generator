@@ -798,6 +798,16 @@
             }
         }
 
+        function cleanArabicText(str) {
+            if (!str) return '';
+            let s = str.normalize('NFKC');
+            s = s.replace(/[\u200D\u200C\u200B\u2060\uFEFF\u00AD\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '');
+            s = s.replace(/[\uFB50-\uFDFF\uFE70-\uFEFC]/g, '');
+            s = s.trim();
+            s = s.replace(/\u0640+$/, '').trim();
+            return s.normalize('NFC');
+        }
+
         function getQuotePayload() {
             const clientName = document.getElementById('clientNameInput').value.trim();
             const contactTitle = document.getElementById('contactTitle').value;
@@ -807,9 +817,9 @@
             const projectName = document.getElementById('projectName').value.trim();
             const location = document.getElementById('projectLocation').value.trim();
             const quoteDate = document.getElementById('quoteDate').value;
-            const issuerName = document.getElementById('issuerName').value.trim();
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim();
-            const issuerPrefix = document.getElementById('issuerPrefix').value.trim();
+            const issuerName = cleanArabicText(document.getElementById('issuerName').value);
+            const issuerJobTitle = cleanArabicText(document.getElementById('issuerJobTitle').value);
+            const issuerPrefix = cleanArabicText(document.getElementById('issuerPrefix').value);
 
             if (!clientName) {
                 Swal.fire({

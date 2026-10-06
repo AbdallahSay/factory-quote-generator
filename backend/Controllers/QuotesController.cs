@@ -50,6 +50,9 @@ public class QuotesController : ControllerBase
 
         try
         {
+            request.IssuerJobTitle = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerJobTitle);
+            request.IssuerName = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerName);
+            request.IssuerPrefix = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerPrefix);
             // 1. Ensure User exists
             var user = await _db.Users.FindAsync(request.UserId);
             if (user == null)
@@ -310,6 +313,9 @@ public class QuotesController : ControllerBase
 
         try
         {
+            request.IssuerJobTitle = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerJobTitle);
+            request.IssuerName = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerName);
+            request.IssuerPrefix = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerPrefix);
             var clientName = !string.IsNullOrWhiteSpace(request.ClientName) 
                 ? request.ClientName.Trim() 
                 : "شركة اتريم للمقاولات والاعمال المتخصصة";

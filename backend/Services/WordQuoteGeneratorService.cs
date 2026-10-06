@@ -125,9 +125,9 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 { "{{ValidityDays}}", request.ValidityDays?.ToString() ?? "15" },
                 { "{{QuoteNumber}}", quoteNumber },
                 { "{{Date}}", dateStr },
-                { "{{IssuerName}}", request.IssuerName ?? string.Empty },
-                { "{{IssuerJobTitle}}", request.IssuerJobTitle ?? string.Empty },
-                { "{{IssuerPrefix}}", request.IssuerPrefix ?? string.Empty }
+                { "{{IssuerName}}", CleanArabicIssuerText(request.IssuerName ?? string.Empty) },
+                { "{{IssuerJobTitle}}", CleanArabicIssuerText(request.IssuerJobTitle ?? string.Empty) },
+                { "{{IssuerPrefix}}", CleanArabicIssuerText(request.IssuerPrefix ?? string.Empty) }
             };
             ReplacePlaceholdersAcrossBody(body, genericReplacements);
 
@@ -874,18 +874,79 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         }
     }
 
+    public static string CleanArabicIssuerText(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+        // 1. Unicode Compatibility Decomposition (FormKC)
+        // Decomposes Arabic presentation forms (U+FB50-U+FDFF and U+FE70-U+FEFF)
+        // into standard base Arabic characters (U+0600-U+06FF).
+        string text = input.Normalize(NormalizationForm.FormKC);
+
+        // 2. Remove hidden joiners, directional characters, and invisible formatting
+        var sb = new StringBuilder(text.Length);
+        foreach (char c in text)
+        {
+            // Remove:
+            // U+200D: Zero Width Joiner (ZWJ)
+            // U+200C: Zero Width Non-Joiner (ZWNJ)
+            // U+200B: Zero Width Space
+            // U+2060: Word Joiner
+            // U+FEFF: Byte Order Mark / Zero Width No-Break Space
+            // U+00AD: Soft Hyphen
+            // U+200E, U+200F: LRM, RLM (Directional marks)
+            // U+202A - U+202E: Bidi embedding / override controls
+            // U+2066 - U+2069: Bidi isolate controls
+            if (c == '\u200D' || c == '\u200C' || c == '\u200B' || c == '\u2060' ||
+                c == '\uFEFF' || c == '\u00AD' || c == '\u200E' || c == '\u200F' ||
+                (c >= '\u202A' && c <= '\u202E') ||
+                (c >= '\u2066' && c <= '\u2069'))
+            {
+                continue;
+            }
+
+            // Remove any leftover Arabic presentation form code points if any survived
+            if ((c >= '\uFB50' && c <= '\uFDFF') || (c >= '\uFE70' && c <= '\uFEFC'))
+            {
+                continue;
+            }
+
+            sb.Append(c);
+        }
+
+        text = sb.ToString().Trim();
+
+        // 3. Remove any trailing Tatweel / Kashida (U+0640)
+        // A trailing tatweel (ـ) explicitly causes the final letter to render connected!
+        while (text.EndsWith('\u0640'))
+        {
+            text = text.Substring(0, text.Length - 1).TrimEnd();
+        }
+
+        // 4. Canonical Composition Normalization (FormC)
+        text = text.Normalize(NormalizationForm.FormC);
+
+        return text.Trim();
+    }
+
     private void UpdateIssuerDetails(Body body, QuoteRequestDto request)
     {
-        string finalJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
+        string rawJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
             ? request.IssuerJobTitle.Trim()
             : "مدير تطوير الأعمال والمبيعات";
 
+        string finalJobTitle = CleanArabicIssuerText(rawJobTitle);
+        if (string.IsNullOrEmpty(finalJobTitle))
+        {
+            finalJobTitle = "مدير تطوير الأعمال والمبيعات";
+        }
+
         string? rawName = !string.IsNullOrWhiteSpace(request.IssuerName)
-            ? request.IssuerName.Trim()
+            ? CleanArabicIssuerText(request.IssuerName)
             : null;
 
         string? rawPrefix = !string.IsNullOrWhiteSpace(request.IssuerPrefix)
-            ? request.IssuerPrefix.Trim()
+            ? CleanArabicIssuerText(request.IssuerPrefix)
             : null;
 
         string finalIssuer;
@@ -893,7 +954,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         {
             if (!string.IsNullOrEmpty(rawPrefix) && !rawName.StartsWith(rawPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                finalIssuer = $"{rawPrefix} {rawName}".Trim();
+                finalIssuer = CleanArabicIssuerText($"{rawPrefix} {rawName}");
             }
             else
             {
@@ -912,8 +973,8 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
 
             if (text.Contains("مدير تطوير") || text.Contains("اشرف الشربيني") || text.Contains("أشرف الشربيني") ||
                 text.Contains("تطوير الاعمال") || text.Contains("تطوير الأعمال") ||
-                (!string.IsNullOrWhiteSpace(request.IssuerJobTitle) && text.Contains(request.IssuerJobTitle.Trim())) ||
-                (!string.IsNullOrWhiteSpace(request.IssuerName) && text.Contains(request.IssuerName.Trim())))
+                (!string.IsNullOrWhiteSpace(request.IssuerJobTitle) && text.Contains(CleanArabicIssuerText(request.IssuerJobTitle))) ||
+                (!string.IsNullOrWhiteSpace(request.IssuerName) && text.Contains(CleanArabicIssuerText(request.IssuerName))))
             {
                 var runs = p.Elements<Run>().ToList();
                 var protoRun = runs.FirstOrDefault(r => r.GetFirstChild<RunProperties>() != null) ?? runs.FirstOrDefault();
@@ -937,18 +998,25 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 if (rPr.FontSize == null) rPr.FontSize = new FontSize { Val = "28" };
                 if (rPr.FontSizeComplexScript == null) rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "28" };
 
-                p.RemoveAllChildren<Run>();
+                // Cleanly remove all old runs and fragments from the paragraph, preserving pPr
+                var pPr = p.ParagraphProperties;
+                p.RemoveAllChildren();
+                if (pPr != null)
+                {
+                    p.AppendChild(pPr);
+                }
 
                 var runJobTitle = new Run();
                 runJobTitle.AppendChild((RunProperties)rPr.CloneNode(true));
-                runJobTitle.AppendChild(new Text(finalJobTitle) { Space = SpaceProcessingModeValues.Preserve });
+                runJobTitle.AppendChild(new Text(finalJobTitle));
 
                 var breakRun = new Run();
+                breakRun.AppendChild((RunProperties)rPr.CloneNode(true));
                 breakRun.AppendChild(new Break());
 
                 var runIssuer = new Run();
                 runIssuer.AppendChild((RunProperties)rPr.CloneNode(true));
-                runIssuer.AppendChild(new Text(finalIssuer) { Space = SpaceProcessingModeValues.Preserve });
+                runIssuer.AppendChild(new Text(finalIssuer));
 
                 p.AppendChild(runJobTitle);
                 p.AppendChild(breakRun);
