@@ -333,9 +333,9 @@ public class QuotesController : ControllerBase
             contactTitle = request.ContactTitle ?? "المهندس",
             projectName = request.ProjectName,
             location = request.Location,
-            issuerName = request.IssuerName ?? "اشرف الشربيني",
-            issuerJobTitle = request.IssuerJobTitle ?? "مدير تطوير الاعمال والمبيعات",
-            issuerPrefix = request.IssuerPrefix ?? "م / ",
+            issuerName = !string.IsNullOrWhiteSpace(request.IssuerName) ? request.IssuerName : "أشرف الشربيني",
+            issuerJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle) ? request.IssuerJobTitle : "مدير تطوير الأعمال والمبيعات",
+            issuerPrefix = !string.IsNullOrWhiteSpace(request.IssuerPrefix) ? request.IssuerPrefix : "م / ",
             headers = request.Headers,
             rows = request.Rows,
             terms = request.Terms

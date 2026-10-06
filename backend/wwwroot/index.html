@@ -125,27 +125,28 @@
 
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Issuer Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerName">الاسم</label>
+                        <input type="text" id="issuerName" placeholder="مثال: أشرف الشربيني" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
                     <!-- Issuer Job Title -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerJobTitle">المسمى الوظيفي للمُصدِر</label>
-                        <input type="text" id="issuerJobTitle" value="مدير تطوير الاعمال والمبيعات" placeholder="مثال: مدير تطوير الاعمال والمبيعات" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerJobTitle">الوظيفة</label>
+                        <input type="text" id="issuerJobTitle" placeholder="مثال: مدير تطوير الأعمال والمبيعات" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <!-- Issuer Prefix -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerPrefix">اللقب</label>
-                        <select id="issuerPrefix" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium">
-                            <option value="م / " selected>م / (مهندس)</option>
-                            <option value="أ / ">أ / (أستاذ)</option>
-                            <option value="د / ">د / (دكتور)</option>
-                            <option value="السيد / ">السيد / </option>
-                        </select>
-                    </div>
-
-                    <!-- Issuer Name -->
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerName">اسم المسؤول المُصدِر</label>
-                        <input type="text" id="issuerName" value="اشرف الشربيني" placeholder="مثال: اشرف الشربيني" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="issuerPrefix">الاختصار مثل: م /</label>
+                        <input type="text" id="issuerPrefix" list="prefixOptions" placeholder="مثال: م /" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium">
+                        <datalist id="prefixOptions">
+                            <option value="م / ">
+                            <option value="أ / ">
+                            <option value="د / ">
+                            <option value="السيد / ">
+                        </datalist>
                     </div>
                 </div>
             </div>
@@ -265,7 +266,10 @@
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                     تحميل مستند Word الأصلي المعدل
                 </a>
-                <span class="text-xs text-emerald-800 font-medium mr-auto">✓ تم تحديث SmartArt ومخطط التاريخ ورقم الصادر</span>
+                <a id="resWhatsAppBtn" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.203c.043.071.043.419-.101.824z"/></svg>
+                    مشاركة على واتساب
+                </a>
             </div>
         </div>
     </main>
@@ -850,9 +854,9 @@
             const projectName = document.getElementById('projectName').value.trim() || 'مشروع ابراج اتريم';
             const location = document.getElementById('projectLocation').value.trim() || 'القاهرة - التجمع الخامس';
             const quoteDateVal = document.getElementById('quoteDate').value;
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim() || 'مدير تطوير الاعمال والمبيعات';
-            const issuerPrefix = document.getElementById('issuerPrefix').value;
-            const issuerName = document.getElementById('issuerName').value.trim() || 'اشرف الشربيني';
+            const issuerName = document.getElementById('issuerName').value.trim() || 'أشرف الشربيني';
+            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim() || 'مدير تطوير الأعمال والمبيعات';
+            const issuerPrefix = document.getElementById('issuerPrefix').value.trim() || 'م / ';
 
             const isFemale = contactTitle.includes('ة');
             const honorific = isFemale ? 'المحترمة' : 'المحترم';
@@ -931,9 +935,9 @@
             const projectName = document.getElementById('projectName').value.trim();
             const location = document.getElementById('projectLocation').value.trim();
             const quoteDate = document.getElementById('quoteDate').value;
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim();
-            const issuerPrefix = document.getElementById('issuerPrefix').value;
             const issuerName = document.getElementById('issuerName').value.trim();
+            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim();
+            const issuerPrefix = document.getElementById('issuerPrefix').value.trim();
 
             if (!clientName) {
                 Swal.fire({
@@ -1034,6 +1038,23 @@
                 const docxLink = document.getElementById('resDocxLink');
                 docxLink.href = docxUrl;
                 docxLink.onclick = () => recordAudit('QuoteDownloaded', `DOCX: ${result.quoteNumber}`);
+
+                // WhatsApp share button: https://wa.me/?text=...
+                let waLines = [];
+                waLines.push(`عرض سعر جديد`);
+                waLines.push(`العميل: ${clientName}`);
+                if (projectName) {
+                    waLines.push(`المشروع: ${projectName}`);
+                }
+                waLines.push(`رقم العرض: ${result.quoteNumber}`);
+                waLines.push(`رابط عرض السعر (PDF):\n${pdfUrl}`);
+
+                const waText = waLines.join('\n');
+                const waBtn = document.getElementById('resWhatsAppBtn');
+                if (waBtn) {
+                    waBtn.href = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+                    waBtn.onclick = () => recordAudit('QuoteSharedWhatsApp', `WhatsApp: ${result.quoteNumber}`);
+                }
 
                 document.getElementById('resultModal').classList.remove('hidden');
                 document.getElementById('resultModal').scrollIntoView({ behavior: 'smooth' });

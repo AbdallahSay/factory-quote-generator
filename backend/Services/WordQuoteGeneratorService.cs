@@ -124,7 +124,10 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 { "{{PaymentTerms}}", request.PaymentTerms ?? string.Empty },
                 { "{{ValidityDays}}", request.ValidityDays?.ToString() ?? "15" },
                 { "{{QuoteNumber}}", quoteNumber },
-                { "{{Date}}", dateStr }
+                { "{{Date}}", dateStr },
+                { "{{IssuerName}}", request.IssuerName ?? string.Empty },
+                { "{{IssuerJobTitle}}", request.IssuerJobTitle ?? string.Empty },
+                { "{{IssuerPrefix}}", request.IssuerPrefix ?? string.Empty }
             };
             ReplacePlaceholdersAcrossBody(body, genericReplacements);
 
@@ -796,38 +799,115 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
 
     private void UpdateIssuerDetails(Body body, QuoteRequestDto request)
     {
-        string issuerJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
+        string? newJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
             ? request.IssuerJobTitle.Trim()
-            : "مدير تطوير الاعمال والمبيعات";
+            : null;
 
-        string issuerPrefix = request.IssuerPrefix ?? "م / ";
-        string issuerName = !string.IsNullOrWhiteSpace(request.IssuerName)
+        string? rawName = !string.IsNullOrWhiteSpace(request.IssuerName)
             ? request.IssuerName.Trim()
-            : "اشرف الشربيني";
+            : null;
 
-        string fullIssuer = $"{issuerPrefix.Trim()} {issuerName}".Trim();
+        string? rawPrefix = !string.IsNullOrWhiteSpace(request.IssuerPrefix)
+            ? request.IssuerPrefix.Trim()
+            : null;
 
-        foreach (var p in body.Elements<Paragraph>())
+        string? fullIssuer = null;
+        if (!string.IsNullOrEmpty(rawName))
+        {
+            if (!string.IsNullOrEmpty(rawPrefix) && !rawName.StartsWith(rawPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                fullIssuer = $"{rawPrefix} {rawName}".Trim();
+            }
+            else
+            {
+                fullIssuer = rawName;
+            }
+        }
+
+        // Job title target phrases to replace (from most specific to general)
+        var jobTitleTargets = new[]
+        {
+            "مدير تطوير الأعمال والمبيعات",
+            "مدير تطوير الاعمال والمبيعات",
+            "تطوير الأعمال والمبيعات",
+            "تطوير الاعمال والمبيعات"
+        };
+
+        // Name / signature target phrases to replace (from most specific to general)
+        var nameTargets = new[]
+        {
+            "م / أشرف الشربيني",
+            "م / اشرف الشربيني",
+            "م/ أشرف الشربيني",
+            "م/ اشرف الشربيني",
+            "أشرف الشربيني",
+            "اشرف الشربيني"
+        };
+
+        foreach (var p in body.Descendants<Paragraph>())
         {
             var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
-            if (text.Contains("الشربيني") || text.Contains("مدير تطوير الاعمال والمبيعات") || text.Contains("مدير تطوير"))
+            if (string.IsNullOrWhiteSpace(text)) continue;
+
+            // Replace job title if custom title provided
+            if (!string.IsNullOrEmpty(newJobTitle))
             {
-                foreach (var t in p.Descendants<Text>())
+                foreach (var target in jobTitleTargets)
                 {
-                    if (t.Text.Contains("م / اشرف الشربيني"))
+                    if (text.Contains(target))
                     {
-                        t.Text = fullIssuer;
+                        ReplaceTextInParagraph(p, target, newJobTitle);
+                        text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
+                        break;
                     }
-                    else if (t.Text.Contains("اشرف الشربيني"))
+                }
+            }
+
+            // Replace name / signature if custom name provided
+            if (!string.IsNullOrEmpty(fullIssuer))
+            {
+                foreach (var target in nameTargets)
+                {
+                    if (text.Contains(target))
                     {
-                        t.Text = issuerName;
+                        ReplaceTextInParagraph(p, target, fullIssuer);
+                        text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
+                        break;
                     }
-                    else if (t.Text.Contains("تطوير الاعمال والمبيعات"))
+                }
+            }
+        }
+    }
+
+    private static void ReplaceTextInParagraph(Paragraph paragraph, string target, string replacement)
+    {
+        if (string.IsNullOrEmpty(target) || target == replacement) return;
+
+        // 1. Direct single text element check
+        bool replaced = false;
+        foreach (var t in paragraph.Descendants<Text>())
+        {
+            if (t.Text.Contains(target))
+            {
+                t.Text = t.Text.Replace(target, replacement);
+                replaced = true;
+            }
+        }
+
+        // 2. Cross-run fallback if target was split across multiple <w:t> runs
+        if (!replaced)
+        {
+            var texts = paragraph.Descendants<Text>().ToList();
+            if (texts.Count > 1)
+            {
+                var fullText = string.Concat(texts.Select(t => t.Text));
+                if (fullText.Contains(target))
+                {
+                    var newFullText = fullText.Replace(target, replacement);
+                    texts[0].Text = newFullText;
+                    for (int i = 1; i < texts.Count; i++)
                     {
-                        if (issuerJobTitle != "مدير تطوير الاعمال والمبيعات")
-                        {
-                            t.Text = issuerJobTitle;
-                        }
+                        texts[i].Text = string.Empty;
                     }
                 }
             }
