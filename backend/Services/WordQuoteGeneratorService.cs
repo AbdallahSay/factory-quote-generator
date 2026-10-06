@@ -110,7 +110,10 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             // 6. Update Terms & Conditions (Clone prototype term paragraph if custom terms provided)
             UpdateTerms(body, request.Terms);
 
-            // 7. Update Issuer details (Job title, prefix, and name in existing paragraph)
+            // 7. Update Closing Sentence (Ensure exact authentic wording)
+            UpdateClosingSentence(body);
+
+            // 8. Update Issuer details (Job title, prefix, and name in existing paragraph)
             UpdateIssuerDetails(body, request);
 
             // 8. General placeholder fallback replacements
@@ -929,6 +932,39 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
         return text.Trim();
     }
 
+    private void UpdateClosingSentence(Body body)
+    {
+        const string exactClosingText = "تفضلوا بقبول فائق الاحترام والتقدير ،،،،،";
+
+        foreach (var p in body.Descendants<Paragraph>())
+        {
+            var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
+            if (text.Contains("فائق الاحترام والتقدير") || text.Contains("بل بقبول") || text.Contains("تفضلوا بقبول") || text.Contains("وتفضلوا بقبول"))
+            {
+                var protoRun = p.Elements<Run>().FirstOrDefault(r => r.GetFirstChild<RunProperties>() != null) ?? p.Elements<Run>().FirstOrDefault();
+                var rPr = protoRun?.GetFirstChild<RunProperties>()?.CloneNode(true) as RunProperties;
+
+                if (rPr == null)
+                {
+                    rPr = new RunProperties();
+                    rPr.AppendChild(new Bold());
+                    rPr.AppendChild(new BoldComplexScript());
+                    rPr.AppendChild(new FontSize { Val = "28" });
+                    rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
+                    rPr.AppendChild(new RightToLeftText());
+                    rPr.AppendChild(new Languages { Bidi = "ar-QA" });
+                }
+
+                p.RemoveAllChildren<Run>();
+                var run = new Run();
+                run.AppendChild(rPr);
+                run.AppendChild(new Text(exactClosingText) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve });
+                p.AppendChild(run);
+                break;
+            }
+        }
+    }
+
     private void UpdateIssuerDetails(Body body, QuoteRequestDto request)
     {
         string rawJobTitle = !string.IsNullOrWhiteSpace(request.IssuerJobTitle)
@@ -966,115 +1002,136 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
             finalIssuer = "م / أشرف الشربيني";
         }
 
-        foreach (var p in body.Descendants<Paragraph>())
+        // 1. Locate the closing paragraph boundary ("فائق الاحترام والتقدير")
+        Paragraph? closingPara = null;
+        var allParas = body.Descendants<Paragraph>().ToList();
+        int closingIndex = -1;
+
+        for (int i = 0; i < allParas.Count; i++)
         {
-            var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
-            if (string.IsNullOrWhiteSpace(text)) continue;
-
-            if (text.Contains("مدير تطوير") || text.Contains("اشرف الشربيني") || text.Contains("أشرف الشربيني") ||
-                text.Contains("تطوير الاعمال") || text.Contains("تطوير الأعمال") ||
-                (!string.IsNullOrWhiteSpace(request.IssuerJobTitle) && text.Contains(CleanArabicIssuerText(request.IssuerJobTitle))) ||
-                (!string.IsNullOrWhiteSpace(request.IssuerName) && text.Contains(CleanArabicIssuerText(request.IssuerName))))
+            var text = string.Concat(allParas[i].Descendants<Text>().Select(t => t.Text));
+            if (text.Contains("فائق الاحترام والتقدير") || text.Contains("بل بقبول") || text.Contains("تفضلوا بقبول") || text.Contains("وتفضلوا بقبول"))
             {
-                var runs = p.Elements<Run>().ToList();
-                var protoRun = runs.FirstOrDefault(r => r.GetFirstChild<RunProperties>() != null) ?? runs.FirstOrDefault();
-                var rPr = protoRun?.GetFirstChild<RunProperties>()?.CloneNode(true) as RunProperties;
-
-                if (rPr == null)
-                {
-                    rPr = new RunProperties();
-                    rPr.AppendChild(new Bold());
-                    rPr.AppendChild(new BoldComplexScript());
-                    rPr.AppendChild(new FontSize { Val = "28" });
-                    rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
-                    rPr.AppendChild(new RightToLeftText());
-                    rPr.AppendChild(new Languages { Bidi = "ar-QA" });
-                }
-
-                if (rPr.Bold == null) rPr.Bold = new Bold();
-                if (rPr.BoldComplexScript == null) rPr.BoldComplexScript = new BoldComplexScript();
-                if (rPr.RightToLeftText == null) rPr.RightToLeftText = new RightToLeftText();
-                if (rPr.Languages == null) rPr.Languages = new Languages { Bidi = "ar-QA" };
-                if (rPr.FontSize == null) rPr.FontSize = new FontSize { Val = "28" };
-                if (rPr.FontSizeComplexScript == null) rPr.FontSizeComplexScript = new FontSizeComplexScript { Val = "28" };
-
-                // Clone authentic signature paragraph formatting for BOTH paragraphs
-                var pPrJob = p.ParagraphProperties != null
-                    ? (ParagraphProperties)p.ParagraphProperties.CloneNode(true)
-                    : new ParagraphProperties();
-                var pPrName = p.ParagraphProperties != null
-                    ? (ParagraphProperties)p.ParagraphProperties.CloneNode(true)
-                    : new ParagraphProperties();
-
-                // Spacing: ensure tight spacing so Issuer Name is directly below Job Title without large vertical gap
-                var spJob = pPrJob.GetFirstChild<SpacingBetweenLines>() ?? new SpacingBetweenLines();
-                spJob.Before = "0";
-                spJob.After = "0";
-                spJob.Line = "240";
-                spJob.LineRule = LineSpacingRuleValues.Auto;
-                if (pPrJob.GetFirstChild<SpacingBetweenLines>() == null)
-                {
-                    var ind = pPrJob.GetFirstChild<Indentation>();
-                    if (ind != null)
-                        pPrJob.InsertBefore(spJob, ind);
-                    else
-                    {
-                        var jc = pPrJob.GetFirstChild<Justification>();
-                        if (jc != null)
-                            pPrJob.InsertBefore(spJob, jc);
-                        else
-                            pPrJob.AppendChild(spJob);
-                    }
-                }
-
-                var spName = pPrName.GetFirstChild<SpacingBetweenLines>() ?? new SpacingBetweenLines();
-                spName.Before = "0";
-                spName.After = "0";
-                spName.Line = "240";
-                spName.LineRule = LineSpacingRuleValues.Auto;
-                if (pPrName.GetFirstChild<SpacingBetweenLines>() == null)
-                {
-                    var ind = pPrName.GetFirstChild<Indentation>();
-                    if (ind != null)
-                        pPrName.InsertBefore(spName, ind);
-                    else
-                    {
-                        var jc = pPrName.GetFirstChild<Justification>();
-                        if (jc != null)
-                            pPrName.InsertBefore(spName, jc);
-                        else
-                            pPrName.AppendChild(spName);
-                    }
-                }
-
-                // Paragraph 1: Job Title
-                p.RemoveAllChildren();
-                p.AppendChild(pPrJob);
-                var runJobTitle = new Run();
-                runJobTitle.AppendChild((RunProperties)rPr.CloneNode(true));
-                runJobTitle.AppendChild(new Text(finalJobTitle));
-                p.AppendChild(runJobTitle);
-
-                // Paragraph 2: Issuer Name (Directly below)
-                var pName = new Paragraph();
-                pName.AppendChild(pPrName);
-                var runIssuer = new Run();
-                runIssuer.AppendChild((RunProperties)rPr.CloneNode(true));
-                runIssuer.AppendChild(new Text(finalIssuer));
-                pName.AppendChild(runIssuer);
-
-                // Insert Paragraph 2 directly after Paragraph 1
-                if (p.Parent != null)
-                {
-                    p.Parent.InsertAfter(pName, p);
-                }
-                else
-                {
-                    body.AppendChild(pName);
-                }
+                closingPara = allParas[i];
+                closingIndex = i;
                 break;
             }
         }
+
+        // 2. Identify existing signature paragraphs strictly AFTER closingPara
+        var sigParas = new List<Paragraph>();
+        int searchStartIndex = closingIndex >= 0 ? closingIndex + 1 : 0;
+
+        for (int i = searchStartIndex; i < allParas.Count; i++)
+        {
+            var p = allParas[i];
+            var text = string.Concat(p.Descendants<Text>().Select(t => t.Text));
+            if (string.IsNullOrWhiteSpace(text)) continue;
+
+            if (text.Contains("مدير") || text.Contains("تطوير") || text.Contains("شربيني") || text.Contains("الشربيني") ||
+                (!string.IsNullOrWhiteSpace(request.IssuerJobTitle) && text.Contains(CleanArabicIssuerText(request.IssuerJobTitle))) ||
+                (!string.IsNullOrWhiteSpace(request.IssuerName) && text.Contains(CleanArabicIssuerText(request.IssuerName))))
+            {
+                sigParas.Add(p);
+            }
+        }
+
+        // If none matched by keyword, but there are paragraphs after closingPara, pick the next paragraph
+        if (sigParas.Count == 0 && closingIndex >= 0 && closingIndex + 1 < allParas.Count)
+        {
+            sigParas.Add(allParas[closingIndex + 1]);
+        }
+
+        // 3. Extract prototype run formatting (font, size=28/14pt, bold, cs, rtl)
+        RunProperties? rPr = null;
+        foreach (var p in sigParas)
+        {
+            var protoRun = p.Elements<Run>().FirstOrDefault(r => r.GetFirstChild<RunProperties>() != null) ?? p.Elements<Run>().FirstOrDefault();
+            if (protoRun?.GetFirstChild<RunProperties>() != null)
+            {
+                rPr = protoRun.GetFirstChild<RunProperties>()!.CloneNode(true) as RunProperties;
+                break;
+            }
+        }
+
+        if (rPr == null)
+        {
+            rPr = new RunProperties();
+            rPr.AppendChild(new Bold());
+            rPr.AppendChild(new BoldComplexScript());
+            rPr.AppendChild(new FontSize { Val = "28" });
+            rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
+            rPr.AppendChild(new RightToLeftText());
+            rPr.AppendChild(new Languages { Bidi = "ar-QA" });
+        }
+        if (rPr.Bold == null) rPr.AppendChild(new Bold());
+        if (rPr.BoldComplexScript == null) rPr.AppendChild(new BoldComplexScript());
+        if (rPr.RightToLeftText == null) rPr.AppendChild(new RightToLeftText());
+        if (rPr.Languages == null) rPr.AppendChild(new Languages { Bidi = "ar-QA" });
+        if (rPr.FontSize == null) rPr.AppendChild(new FontSize { Val = "28" });
+        if (rPr.FontSizeComplexScript == null) rPr.AppendChild(new FontSizeComplexScript { Val = "28" });
+
+        // 4. Build ParagraphProperties: Left aligned, NO bidi on pPr (so FreeSpire.Doc & Word place visual left), line spacing 240, 0 before/after
+        Func<ParagraphProperties> createSigPPr = () =>
+        {
+            var pPr = new ParagraphProperties();
+            pPr.AppendChild(new Justification { Val = JustificationValues.Left });
+            pPr.AppendChild(new SpacingBetweenLines { Before = "0", After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto });
+            return pPr;
+        };
+
+        // 5. Structure the two paragraphs: Job Title (first line), Issuer Name (second line)
+        Paragraph pJob;
+        Paragraph pName;
+
+        if (sigParas.Count >= 2)
+        {
+            pJob = sigParas[0];
+            pName = sigParas[1];
+
+            // Remove any superfluous extra signature paragraphs beyond 2
+            for (int i = 2; i < sigParas.Count; i++)
+            {
+                sigParas[i].Remove();
+            }
+        }
+        else if (sigParas.Count == 1)
+        {
+            pJob = sigParas[0];
+            pName = new Paragraph();
+            pJob.Parent?.InsertAfter(pName, pJob);
+        }
+        else
+        {
+            pJob = new Paragraph();
+            pName = new Paragraph();
+            if (closingPara?.Parent != null)
+            {
+                closingPara.Parent.InsertAfter(pJob, closingPara);
+                pJob.Parent?.InsertAfter(pName, pJob);
+            }
+            else
+            {
+                body.AppendChild(pJob);
+                body.AppendChild(pName);
+            }
+        }
+
+        // Update Job Title paragraph (Line 1)
+        pJob.RemoveAllChildren();
+        pJob.AppendChild(createSigPPr());
+        var runJobTitle = new Run();
+        runJobTitle.AppendChild((RunProperties)rPr.CloneNode(true));
+        runJobTitle.AppendChild(new Text(finalJobTitle) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve });
+        pJob.AppendChild(runJobTitle);
+
+        // Update Issuer Name paragraph (Line 2)
+        pName.RemoveAllChildren();
+        pName.AppendChild(createSigPPr());
+        var runIssuer = new Run();
+        runIssuer.AppendChild((RunProperties)rPr.CloneNode(true));
+        runIssuer.AppendChild(new Text(finalIssuer) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve });
+        pName.AppendChild(runIssuer);
     }
 
     private static void ReplaceTextInParagraph(Paragraph paragraph, string target, string replacement)
