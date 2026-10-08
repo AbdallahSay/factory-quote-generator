@@ -19,6 +19,7 @@ public class QuotesController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<QuotesController> _logger;
     private readonly ISecurityService _securityService;
+    private readonly IQuoteSequenceService _sequenceService;
 
     public QuotesController(
         ApplicationDbContext db,
@@ -28,7 +29,8 @@ public class QuotesController : ControllerBase
         IConfiguration configuration,
         IWebHostEnvironment env,
         ILogger<QuotesController> logger,
-        ISecurityService securityService)
+        ISecurityService securityService,
+        IQuoteSequenceService sequenceService)
     {
         _db = db;
         _wordGenerator = wordGenerator;
@@ -38,6 +40,7 @@ public class QuotesController : ControllerBase
         _env = env;
         _logger = logger;
         _securityService = securityService;
+        _sequenceService = sequenceService;
     }
 
     [HttpPost("generate")]
@@ -146,20 +149,9 @@ public class QuotesController : ControllerBase
                 ? calculatedTotal 
                 : (request.TotalAmount.HasValue && request.TotalAmount.Value > 0 ? request.TotalAmount.Value : 0);
 
-            // Determine product row count (entered by the user, excluding header rows)
-            int productCount = 0;
-            if (hasDynamicRows)
-            {
-                productCount = request.Rows!.Count;
-            }
-            else if (hasItems)
-            {
-                productCount = request.Items!.Count;
-            }
-
             var quoteDate = request.QuoteDate ?? DateTime.Now;
-            // Outgoing number format: [ProductCount]-[dd]-[MM]-[yyyy] (e.g. 02-06-10-2026)
-            var quoteNumber = $"{productCount:D2}-{quoteDate:dd-MM-yyyy}";
+            // Outgoing number format: [UniqueSequence]-[dd]-[MM]-[yyyy] with 6 digits (e.g. 000123-08-10-2026)
+            var quoteNumber = await _sequenceService.GetNextQuoteNumberAsync(quoteDate);
 
             // 4. File Paths
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
@@ -388,9 +380,8 @@ public class QuotesController : ControllerBase
                 ? calculatedTotal 
                 : (request.TotalAmount.HasValue && request.TotalAmount.Value > 0 ? request.TotalAmount.Value : 0);
 
-            int productCount = hasDynamicRows ? request.Rows!.Count : (hasItems ? request.Items!.Count : 0);
             var quoteDate = request.QuoteDate ?? DateTime.Now;
-            var quoteNumber = $"{productCount:D2}-{quoteDate:dd-MM-yyyy}";
+            var quoteNumber = await _sequenceService.PeekNextQuoteNumberAsync(quoteDate);
 
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
             var quotesDir = Path.Combine(webRoot, "quotes");

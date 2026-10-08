@@ -27,6 +27,7 @@ builder.Services.AddScoped<IWordQuoteGeneratorService, WordQuoteGeneratorService
 builder.Services.AddScoped<IPdfConverterService, PdfConverterService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IQuoteSequenceService, QuoteSequenceService>();
 
 // Register Background Queue
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>(sp => new BackgroundTaskQueue(100));
@@ -140,6 +141,10 @@ using (var scope = app.Services.CreateScope())
         // Initialize and Seed System Credentials (quote, admin, owner)
         var securityService = services.GetRequiredService<ISecurityService>();
         await securityService.EnsureInitializedAsync();
+
+        // Initialize Quote Sequence and Index
+        var sequenceService = services.GetRequiredService<IQuoteSequenceService>();
+        await sequenceService.EnsureInitializedAsync();
     }
     catch (Exception ex)
     {

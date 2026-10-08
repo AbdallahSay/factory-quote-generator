@@ -291,7 +291,7 @@ public class WordQuoteGeneratorService : IWordQuoteGeneratorService
                 var val = m.Groups[1].Value.Trim();
                 if (ArabicDays.Contains(val)) return $"<a:t>{dayName}</a:t>";
                 if (Regex.IsMatch(val, @"^\d{2}-\d{2}-\d{4}$")) return $"<a:t>{dateStr}</a:t>";
-                if (Regex.IsMatch(val, @"^\d{2}-\d{2}-\d{2}-\d{4}$") || val.Contains("06-04-10-2026") || val.StartsWith("Q-", StringComparison.OrdinalIgnoreCase)) return $"<a:t>{quoteNumber}</a:t>";
+                if (Regex.IsMatch(val, @"^\d{2,6}-\d{2}-\d{2}-\d{4}$") || Regex.IsMatch(val, @"^\d{6}-\d{2}-\d{4}$") || val.Contains("06-04-10-2026") || val.StartsWith("Q-", StringComparison.OrdinalIgnoreCase)) return $"<a:t>{quoteNumber}</a:t>";
                 return m.Value;
             });
 
