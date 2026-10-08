@@ -18,6 +18,7 @@ public class QuotesController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<QuotesController> _logger;
+    private readonly ISecurityService _securityService;
 
     public QuotesController(
         ApplicationDbContext db,
@@ -26,7 +27,8 @@ public class QuotesController : ControllerBase
         IBackgroundTaskQueue backgroundQueue,
         IConfiguration configuration,
         IWebHostEnvironment env,
-        ILogger<QuotesController> logger)
+        ILogger<QuotesController> logger,
+        ISecurityService securityService)
     {
         _db = db;
         _wordGenerator = wordGenerator;
@@ -35,11 +37,17 @@ public class QuotesController : ControllerBase
         _configuration = configuration;
         _env = env;
         _logger = logger;
+        _securityService = securityService;
     }
 
     [HttpPost("generate")]
     public async Task<ActionResult<QuoteResponseDto>> GenerateQuote([FromBody] QuoteRequestDto request)
     {
+        if (!await IsAuthorizedQuoteAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور عروض الأسعار." });
+        }
+
         bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
         bool hasItems = request.Items != null && request.Items.Count > 0;
 
@@ -303,6 +311,11 @@ public class QuotesController : ControllerBase
     [HttpPost("preview")]
     public async Task<IActionResult> PreviewQuote([FromBody] QuoteRequestDto request)
     {
+        if (!await IsAuthorizedQuoteAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور عروض الأسعار." });
+        }
+
         bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
         bool hasItems = request.Items != null && request.Items.Count > 0;
 
@@ -493,6 +506,27 @@ public class QuotesController : ControllerBase
         if (string.IsNullOrWhiteSpace(text)) return fallback;
         var clean = System.Text.RegularExpressions.Regex.Replace(text, @"[^\d\.\,\-]", "").Replace(",", "");
         return decimal.TryParse(clean, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : fallback;
+    }
+
+    private async Task<bool> IsAuthorizedQuoteAsync()
+    {
+        var token = ExtractBearerToken();
+        var (isValid, _) = await _securityService.ValidateTokenAsync(token, "quote", "admin", "owner");
+        return isValid;
+    }
+
+    private string? ExtractBearerToken()
+    {
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrWhiteSpace(authHeader))
+            return null;
+
+        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return authHeader.Substring(7).Trim();
+        }
+
+        return null;
     }
 }
 

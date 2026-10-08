@@ -15,10 +15,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteItem> QuoteItems => Set<QuoteItem>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<SystemCredential> SystemCredentials => Set<SystemCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<SystemCredential>()
+            .HasKey(s => s.Role);
 
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)

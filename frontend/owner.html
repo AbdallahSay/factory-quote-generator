@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة كلمات مرور النظام | مصنع المنتجات الإسمنتية</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <style>
+        body, .swal2-popup { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <!-- Owner Authentication Modal (Shown if unauthenticated) -->
+    <div id="ownerAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-center">
+            <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-amber-200 shadow-inner">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول مالك النظام</h2>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور المالك للوصول إلى إدارة كلمات المرور</p>
+
+            <form id="ownerLoginForm" class="space-y-4" onsubmit="handleOwnerLogin(event)">
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة مرور المالك</label>
+                    <input type="password" id="ownerPasswordInput" autofocus required
+                        placeholder="••••••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition text-sm">
+                </div>
+
+                <div id="ownerLoginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 py-2 px-3 rounded-lg text-right font-medium"></div>
+
+                <button type="submit" id="ownerLoginBtn"
+                    class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold rounded-xl shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-2 text-sm">
+                    <span>تسجيل الدخول</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-500">
+                <a href="index.html" class="hover:text-blue-600 transition">← العودة إلى شاشة عروض الأسعار</a>
+                <a href="admin.html" class="hover:text-blue-600 transition">لوحة الإدارة ←</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Owner Content -->
+    <div id="ownerMainContent" class="hidden">
+        <!-- Header -->
+        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="bg-amber-600 p-2 rounded-lg text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold">إدارة كلمات مرور النظام (المالك)</h1>
+                        <p class="text-xs text-slate-400">تحديث كلمات مرور شاشة عروض الأسعار ولوحة الإدارة بصورة مستقلة</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <a href="index.html" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium border border-slate-700 flex items-center gap-1">
+                        شاشة عروض الأسعار
+                    </a>
+                    <a href="admin.html" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium border border-slate-700 flex items-center gap-1">
+                        لوحة الإدارة
+                    </a>
+                    <button onclick="Auth.logout('owner')" class="px-3 py-1.5 text-xs bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition font-semibold flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        تسجيل الخروج
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+            <!-- Info Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+                <div class="text-blue-600 mt-0.5">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="text-xs text-blue-900 leading-relaxed">
+                    <p class="font-bold text-sm mb-1">تعليمات أمان النظام:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li>تغيير كلمة المرور يقوم فوراً بإلغاء جميع الجلسات القديمة المسجلة مسبقاً وتأمين النظام.</li>
+                        <li>كلمة مرور شاشة عروض الأسعار منفصلة تماماً عن كلمة مرور لوحة الإدارة.</li>
+                        <li>الحد الأدنى لطول كلمة المرور هو 6 خانات، وتخزن كرموز تجزئة مشفرة (Cryptographic Hashes) فقط.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Password Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 1. Quotation Password Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+                                <h2 class="font-bold text-slate-800 text-sm">كلمة مرور شاشة عروض الأسعار</h2>
+                            </div>
+                            <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Quotation Area</span>
+                        </div>
+
+                        <form id="quotePwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'quote')">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
+                                <input type="password" id="quoteNewPwd" required minlength="6"
+                                    placeholder="أدخل كلمة المرور الجديدة"
+                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
+                                <input type="password" id="quoteConfirmPwd" required minlength="6"
+                                    placeholder="أعد إدخال كلمة المرور"
+                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                            </div>
+
+                            <button type="submit" id="quotePwdSubmitBtn"
+                                class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span>تحديث كلمة مرور عروض الأسعار</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 2. Admin Dashboard Password Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+                                <h2 class="font-bold text-slate-800 text-sm">كلمة مرور لوحة الإدارة</h2>
+                            </div>
+                            <span class="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">Admin Area</span>
+                        </div>
+
+                        <form id="adminPwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'admin')">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
+                                <input type="password" id="adminNewPwd" required minlength="6"
+                                    placeholder="أدخل كلمة المرور الجديدة"
+                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
+                                <input type="password" id="adminConfirmPwd" required minlength="6"
+                                    placeholder="أعد إدخال كلمة المرور"
+                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
+                            </div>
+
+                            <button type="submit" id="adminPwdSubmitBtn"
+                                class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span>تحديث كلمة مرور لوحة الإدارة</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Check Owner Authentication on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isValid = await Auth.verify('owner');
+            if (isValid) {
+                showOwnerContent();
+            } else {
+                showOwnerModal();
+            }
+        });
+
+        function showOwnerModal() {
+            document.getElementById('ownerAuthModal').classList.remove('hidden');
+            document.getElementById('ownerMainContent').classList.add('hidden');
+            document.getElementById('ownerPasswordInput').focus();
+        }
+
+        function showOwnerContent() {
+            document.getElementById('ownerAuthModal').classList.add('hidden');
+            document.getElementById('ownerMainContent').classList.remove('hidden');
+        }
+
+        async function handleOwnerLogin(event) {
+            event.preventDefault();
+            const pwdInput = document.getElementById('ownerPasswordInput');
+            const errBox = document.getElementById('ownerLoginError');
+            const btn = document.getElementById('ownerLoginBtn');
+
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span>جاري التحقق...</span>';
+
+            try {
+                await Auth.login('owner', pwdInput.value);
+                showOwnerContent();
+            } catch (err) {
+                errBox.textContent = err.message || 'كلمة المرور غير صحيحة';
+                errBox.classList.remove('hidden');
+                pwdInput.select();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>تسجيل الدخول</span>';
+            }
+        }
+
+        async function handleUpdatePassword(event, targetRole) {
+            event.preventDefault();
+            const newPwd = document.getElementById(targetRole === 'quote' ? 'quoteNewPwd' : 'adminNewPwd').value;
+            const confirmPwd = document.getElementById(targetRole === 'quote' ? 'quoteConfirmPwd' : 'adminConfirmPwd').value;
+            const btn = document.getElementById(targetRole === 'quote' ? 'quotePwdSubmitBtn' : 'adminPwdSubmitBtn');
+
+            if (!newPwd || newPwd.length < 6) {
+                Swal.fire({
+                    title: 'تنبيه',
+                    text: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
+                    icon: 'warning',
+                    confirmButtonText: 'حسناً'
+                });
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                Swal.fire({
+                    title: 'تنبيه',
+                    text: 'كلمة المرور وتأكيدها غير متطابقين',
+                    icon: 'error',
+                    confirmButtonText: 'حسناً'
+                });
+                return;
+            }
+
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>جاري التحديث...</span>';
+
+            try {
+                const res = await Auth.changePassword(targetRole, newPwd, confirmPwd);
+                Swal.fire({
+                    title: 'تم بنجاح!',
+                    text: res.message || 'تم تحديث كلمة المرور وإلغاء الجلسات السابقة بنجاح.',
+                    icon: 'success',
+                    confirmButtonText: 'حسناً'
+                });
+                // Reset inputs
+                if (targetRole === 'quote') {
+                    document.getElementById('quotePwdForm').reset();
+                } else {
+                    document.getElementById('adminPwdForm').reset();
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'خطأ',
+                    text: err.message || 'تعذر تحديث كلمة المرور',
+                    icon: 'error',
+                    confirmButtonText: 'حسناً'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>

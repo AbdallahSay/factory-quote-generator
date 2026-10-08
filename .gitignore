@@ -40,6 +40,8 @@ appsettings.Production.json
 .user_uploaded/
 .gemini/
 *.tmp
+scratch/
+prod_test_output/
 
 # Legacy Workspace Folders and Local Scripts
 FactoryQuoteApi/

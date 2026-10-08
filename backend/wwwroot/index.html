@@ -13,13 +13,50 @@
     <!-- SweetAlert2 CDN for Modern Dialogs -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="config.js"></script>
+    <script src="auth.js"></script>
     <style>
         body, .swal2-popup { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
-    <!-- Navbar -->
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
+    <!-- Quote Authentication Modal (Shown when unauthenticated) -->
+    <div id="quoteAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-center">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-blue-200 shadow-inner">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول نظام عروض الأسعار</h2>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور عروض الأسعار للمتابعة</p>
+
+            <form id="quoteLoginForm" class="space-y-4" onsubmit="handleQuoteLogin(event)">
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة مرور عروض الأسعار</label>
+                    <input type="password" id="quotePasswordInput" autofocus required
+                        placeholder="••••••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                </div>
+
+                <div id="quoteLoginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 py-2 px-3 rounded-lg text-right font-medium"></div>
+
+                <button type="submit" id="quoteLoginBtn"
+                    class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 text-sm">
+                    <span>دخول النظام</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-500">
+                <a href="admin.html" class="hover:text-blue-600 transition">لوحة الإدارة ←</a>
+                <a href="owner.html" class="hover:text-amber-600 transition">إدارة كلمات المرور (المالك) ←</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Main Content Wrapper -->
+    <div id="quoteMainContent" class="hidden">
+        <!-- Navbar -->
+        <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3 space-x-reverse">
                 <div class="bg-blue-800 p-2 rounded-lg">
@@ -37,6 +74,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     لوحة الإدارة
                 </a>
+                <button onclick="Auth.logout('quote')" class="px-3 py-1.5 text-sm bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition font-semibold flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    تسجيل الخروج
+                </button>
             </div>
         </div>
     </header>
@@ -195,9 +236,13 @@
                     <span class="text-xs text-slate-400 font-normal mr-2">| الأعمدة المعتمدة: النوع • المقاس • الحمولة • سعر الألف</span>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5">
-                        <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        <span>معاينة العرض</span>
+                    <button type="button" id="previewBtn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-lg shadow hover:shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                        <svg id="previewSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <svg id="previewIcon" class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <span id="previewBtnText">معاينة عرض السعر</span>
                     </button>
                     <button type="button" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:shadow-md transition flex items-center gap-2">
                         <svg id="generateSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -262,103 +307,65 @@
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
                     تحميل مستند Word الأصلي المعدل
                 </a>
-                <a id="resWhatsAppBtn" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm">
+                <button type="button" id="resWhatsAppBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition shadow-sm cursor-pointer">
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.203c.043.071.043.419-.101.824z"/></svg>
                     مشاركة على واتساب
-                </a>
+                </button>
             </div>
         </div>
     </main>
 
-    <!-- 5. Interactive Document Preview Modal -->
-    <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200">
+    <!-- 5. Real Document Preview Modal -->
+    <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
             <!-- Modal Header -->
-            <div class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <h3 class="font-bold text-base">معاينة عرض السعر (مطابق لقالب Word الأصلي)</h3>
+            <div class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <div>
+                        <h3 class="font-bold text-base">معاينة عرض السعر الحقيقي (قالب Word الأصلي)</h3>
+                        <p class="text-xs text-blue-200">معاينة حية لملف PDF الفعلي المولد قبل الاعتماد والحفظ</p>
+                    </div>
                 </div>
-                <button type="button" id="closePreviewBtn" class="text-blue-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                <div class="flex items-center gap-2">
+                    <a id="previewNewTabBtn" href="#" target="_blank" class="text-xs bg-blue-800 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        فتح في نافذة جديدة
+                    </a>
+                    <button type="button" id="closePreviewBtn" class="text-blue-200 hover:text-white text-2xl font-bold leading-none px-2 cursor-pointer">&times;</button>
+                </div>
             </div>
 
-            <!-- Document Simulator Container -->
-            <div class="p-8 max-h-[75vh] overflow-y-auto bg-slate-50 space-y-6">
-                <!-- Word Document Page Simulator -->
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-slate-300 max-w-3xl mx-auto space-y-6 text-slate-800 text-sm">
-                    <!-- Top SmartArt Representation -->
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <div>
-                            <h2 class="text-2xl font-black text-blue-950">عرض سعر</h2>
-                            <p class="text-xs text-slate-500 font-bold">مصنع المنتجات الإسمنتية والخرسانية</p>
-                        </div>
-                        <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 p-2.5 rounded-lg text-xs font-bold text-blue-900">
-                            <div class="text-center px-2 border-l border-blue-200">
-                                <span class="block text-slate-700 text-[10px] font-bold">اليوم</span>
-                                <span id="prevDay" class="font-bold text-slate-900">الأحد</span>
-                            </div>
-                            <div class="text-center px-2 border-l border-blue-200">
-                                <span class="block text-slate-700 text-[10px] font-bold">التاريخ</span>
-                                <span id="prevDate" class="font-bold text-slate-900">--</span>
-                            </div>
-                            <div class="text-center px-2">
-                                <span class="block text-slate-700 text-[10px] font-bold">رقم الصادر</span>
-                                <span id="prevQuoteNo" class="font-mono text-emerald-800 font-bold">02-06-10-2026</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Customer Block -->
-                    <div class="space-y-1.5 leading-relaxed font-semibold">
-                        <p class="text-slate-900">السادة شركة : <span id="prevClientName" class="text-blue-900 font-bold underline underline-offset-4">شركة اتريم</span> المحترمين,,, ,,</p>
-                        <p class="text-slate-800">عناية <span id="prevContactTitle">المهندسة</span> : <span id="prevContactPerson" class="text-blue-900 font-bold underline underline-offset-4">سارة شريف</span> <span id="prevHonorific">المحترمة</span> ,,, ,,</p>
-                        <p class="text-slate-700">اسم المشروع : <span id="prevProjectName" class="font-bold text-slate-900">مشروع النور</span></p>
-                        <p class="text-slate-700">المكان: <span id="prevLocation" class="font-bold text-slate-900">القاهرة</span></p>
-                    </div>
-
-                    <p class="text-xs text-slate-600 font-bold pt-2">نود احاطتكم علما بأسعار المنتجات الاتية: -</p>
-
-                    <!-- Preview Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse border border-slate-400 text-xs text-center" id="prevTable">
-                            <thead class="bg-blue-900 text-white font-bold" id="prevTableHead">
-                                <!-- Injected via JS -->
-                            </thead>
-                            <tbody class="divide-y divide-slate-300" id="prevTableBody">
-                                <!-- Injected via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Terms Block -->
-                    <div class="space-y-2 pt-2">
-                        <h4 class="font-bold text-blue-950 border-b border-slate-200 pb-1 text-xs">الشروط العامة والخاصة لعرض السعر</h4>
-                        <ol id="prevTermsList" class="space-y-1.5 list-decimal list-inside text-xs text-slate-700 leading-relaxed">
-                            <!-- Injected via JS -->
-                        </ol>
-                    </div>
-
-                    <!-- Closing & Issuer Signature -->
-                    <div class="pt-6 border-t border-slate-200 flex justify-between items-end">
-                        <p class="text-xs font-bold text-slate-700">تفضلوا بقبول فائق الاحترام والتقدير ،،،،،</p>
-                        <div class="text-left font-bold text-xs space-y-1">
-                            <p id="prevIssuerJobTitle" class="text-slate-600">مدير تطوير الاعمال والمبيعات</p>
-                            <p id="prevIssuerFullName" class="text-blue-900 text-sm">م / اشرف الشربيني</p>
-                        </div>
-                    </div>
+            <!-- PDF Viewer Container -->
+            <div class="flex-1 bg-slate-100 p-2 sm:p-4 overflow-hidden min-h-[500px] flex flex-col">
+                <div id="previewLoading" class="flex-1 flex flex-col items-center justify-center gap-3 py-20 text-slate-500">
+                    <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-semibold">جارٍ توليد مستند المعاينة الحقيقي من قالب Word...</span>
                 </div>
+                <iframe id="previewPdfFrame" class="hidden w-full h-[65vh] rounded-lg border border-slate-300 shadow-inner bg-white" src=""></iframe>
             </div>
 
             <!-- Modal Footer -->
-            <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
-                <span class="text-xs text-slate-500">معاينة تفاعلية حية قبل التصدير النهائي</span>
-                <div class="flex gap-2">
-                    <button type="button" id="modalCloseBtn" class="px-4 py-2 text-xs font-bold bg-slate-300 hover:bg-slate-400 text-slate-800 rounded-lg transition">إغلاق</button>
-                    <button type="button" id="confirmAndGenerateBtn" class="px-5 py-2 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition shadow">تأكيد وتصدير الآن</button>
+            <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3 shrink-0">
+                <span class="text-xs text-slate-600 font-medium">لم يتم حفظ عرض السعر في قاعدة البيانات بعد. يمكنك مراجعة الملف ثم الاعتماد.</span>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="modalBackToEditBtn" class="px-5 py-2.5 text-sm font-bold bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+                        رجوع للتعديل
+                    </button>
+                    <button type="button" id="modalConfirmAndGenerateBtn" class="px-6 py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-md flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        اعتماد وإنشاء عرض السعر
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+    </div>
+    <!-- End Quote Main Content Wrapper -->
 
     <!-- Application JavaScript Logic -->
     <script>
@@ -369,8 +376,46 @@
         let defaultTerms = [];
         let currentTerms = [];
         let sortableInstance = null;
+        let isInitialized = false;
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        function showQuoteModal() {
+            document.getElementById('quoteAuthModal').classList.remove('hidden');
+            document.getElementById('quoteMainContent').classList.add('hidden');
+            document.getElementById('quotePasswordInput').focus();
+        }
+
+        function showQuoteContent() {
+            document.getElementById('quoteAuthModal').classList.add('hidden');
+            document.getElementById('quoteMainContent').classList.remove('hidden');
+        }
+
+        async function handleQuoteLogin(event) {
+            event.preventDefault();
+            const pwdInput = document.getElementById('quotePasswordInput');
+            const errBox = document.getElementById('quoteLoginError');
+            const btn = document.getElementById('quoteLoginBtn');
+
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span>جاري التحقق...</span>';
+
+            try {
+                await Auth.login('quote', pwdInput.value);
+                showQuoteContent();
+                await initQuotePage();
+            } catch (err) {
+                errBox.textContent = err.message || 'كلمة المرور غير صحيحة';
+                errBox.classList.remove('hidden');
+                pwdInput.select();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>دخول النظام</span>';
+            }
+        }
+
+        async function initQuotePage() {
+            if (isInitialized) return;
+            isInitialized = true;
             // Set default date to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('quoteDate').value = today;
@@ -379,6 +424,16 @@
             await Promise.all([loadClients(), loadProducts(), loadTerms()]);
             // Add initial blank row
             addRow({});
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuth = await Auth.verify('quote');
+            if (isAuth) {
+                showQuoteContent();
+                await initQuotePage();
+            } else {
+                showQuoteModal();
+            }
         });
 
         async function loadClients() {
@@ -806,86 +861,30 @@
             return 0;
         }
 
-        // Preview Functionality
-        document.getElementById('previewBtn').addEventListener('click', openPreviewModal);
-        document.getElementById('closePreviewBtn').addEventListener('click', closePreviewModal);
-        document.getElementById('modalCloseBtn').addEventListener('click', closePreviewModal);
-        document.getElementById('confirmAndGenerateBtn').addEventListener('click', () => {
+        // Real PDF Preview Functionality
+        document.getElementById('previewBtn').addEventListener('click', openRealPdfPreview);
+        document.getElementById('closePreviewBtn')?.addEventListener('click', closePreviewModal);
+        document.getElementById('modalBackToEditBtn')?.addEventListener('click', closePreviewModal);
+        document.getElementById('modalConfirmAndGenerateBtn')?.addEventListener('click', () => {
             closePreviewModal();
             document.getElementById('generateBtn').click();
         });
 
-        function openPreviewModal() {
-            const clientName = document.getElementById('clientNameInput').value.trim() || 'شركة اتريم للمقاولات والاعمال المتخصصة';
-            const contactTitle = document.getElementById('contactTitle').value;
-            const contactPerson = document.getElementById('contactPerson').value.trim() || 'سارة شريف';
-            const projectName = document.getElementById('projectName').value.trim() || 'مشروع ابراج اتريم';
-            const location = document.getElementById('projectLocation').value.trim() || 'القاهرة - التجمع الخامس';
-            const quoteDateVal = document.getElementById('quoteDate').value;
-            const issuerName = document.getElementById('issuerName').value.trim() || 'أشرف الشربيني';
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim() || 'مدير تطوير الأعمال والمبيعات';
-            const issuerPrefix = document.getElementById('issuerPrefix').value.trim() || 'م / ';
-
-            const isFemale = contactTitle.includes('ة');
-            const honorific = isFemale ? 'المحترمة' : 'المحترم';
-
-            const dateObj = quoteDateVal ? new Date(quoteDateVal) : new Date();
-            const daysAr = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-            const dayName = daysAr[dateObj.getDay()];
-            const dd = String(dateObj.getDate()).padStart(2, '0');
-            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const yyyy = dateObj.getFullYear();
-            const formattedDate = `${dd}-${mm}-${yyyy}`;
-
-            const trs = document.querySelectorAll('#productRowsContainer tr');
-            const productCount = trs.length;
-            const countStr = String(productCount).padStart(2, '0');
-            const outgoingNumber = `${countStr}-${formattedDate}`;
-
-            document.getElementById('prevDay').textContent = dayName;
-            document.getElementById('prevDate').textContent = formattedDate;
-            document.getElementById('prevQuoteNo').textContent = outgoingNumber;
-
-            document.getElementById('prevClientName').textContent = clientName;
-            document.getElementById('prevContactTitle').textContent = contactTitle;
-            document.getElementById('prevContactPerson').textContent = contactPerson;
-            document.getElementById('prevHonorific').textContent = honorific;
-            document.getElementById('prevProjectName').textContent = projectName;
-            document.getElementById('prevLocation').textContent = location;
-
-            document.getElementById('prevIssuerJobTitle').textContent = issuerJobTitle;
-            document.getElementById('prevIssuerFullName').textContent = `${issuerPrefix.trim()} ${issuerName}`.trim();
-
-            // Table headers (bold)
-            const thead = document.getElementById('prevTableHead');
-            thead.innerHTML = `<tr>${columns.map(c => `<th class="border border-slate-400 py-2 px-3 font-bold text-center">${c}</th>`).join('')}</tr>`;
-
-            // Table rows (bold cell values)
-            const tbody = document.getElementById('prevTableBody');
-            tbody.innerHTML = '';
-            trs.forEach(tr => {
-                const inputs = tr.querySelectorAll('.cell-input');
-                const rowCells = columns.map((c, i) => `<td class="border border-slate-300 py-2 px-3 font-bold text-center">${inputs[i] ? inputs[i].value : ''}</td>`).join('');
-                tbody.innerHTML += `<tr>${rowCells}</tr>`;
-            });
-
-            // Terms
-            const termsListElem = document.getElementById('prevTermsList');
-            termsListElem.innerHTML = currentTerms.map(t => `<li>${t}</li>`).join('');
-
-            document.getElementById('previewModal').classList.remove('hidden');
-            recordAudit('QuotePreviewed', `Preview: ${clientName}`);
-        }
-
         function closePreviewModal() {
-            document.getElementById('previewModal').classList.add('hidden');
+            const modal = document.getElementById('previewModal');
+            modal.classList.add('hidden');
+            const frame = document.getElementById('previewPdfFrame');
+            if (frame) frame.src = '';
         }
 
         async function recordAudit(action, entityId = null) {
             try {
                 await fetch(`${CONFIG.API_BASE_URL}/api/admin/audit`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
                     body: JSON.stringify({ userId: 1, action, entityId })
                 });
             } catch (e) {
@@ -893,8 +892,17 @@
             }
         }
 
-        // Generate Quote Button Action
-        document.getElementById('generateBtn').addEventListener('click', async () => {
+        function cleanArabicText(str) {
+            if (!str) return '';
+            let s = str.normalize('NFKC');
+            s = s.replace(/[\u200D\u200C\u200B\u2060\uFEFF\u00AD\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '');
+            s = s.replace(/[\uFB50-\uFDFF\uFE70-\uFEFC]/g, '');
+            s = s.trim();
+            s = s.replace(/\u0640+$/, '').trim();
+            return s.normalize('NFC');
+        }
+
+        function getQuotePayload() {
             const clientName = document.getElementById('clientNameInput').value.trim();
             const contactTitle = document.getElementById('contactTitle').value;
             const contactPerson = document.getElementById('contactPerson').value.trim();
@@ -903,9 +911,9 @@
             const projectName = document.getElementById('projectName').value.trim();
             const location = document.getElementById('projectLocation').value.trim();
             const quoteDate = document.getElementById('quoteDate').value;
-            const issuerName = document.getElementById('issuerName').value.trim();
-            const issuerJobTitle = document.getElementById('issuerJobTitle').value.trim();
-            const issuerPrefix = document.getElementById('issuerPrefix').value.trim();
+            const issuerName = cleanArabicText(document.getElementById('issuerName').value);
+            const issuerJobTitle = cleanArabicText(document.getElementById('issuerJobTitle').value);
+            const issuerPrefix = cleanArabicText(document.getElementById('issuerPrefix').value);
 
             if (!clientName) {
                 Swal.fire({
@@ -916,7 +924,7 @@
                 }).then(() => {
                     document.getElementById('clientNameInput').focus();
                 });
-                return;
+                return null;
             }
 
             // Extract dynamic headers from DOM (strictly excluding forbidden columns)
@@ -959,13 +967,13 @@
                     icon: 'error',
                     confirmButtonText: 'إغلاق'
                 });
-                return;
+                return null;
             }
 
             const grandTotal = calcTotals();
 
             // Construct payload matching required schema
-            const payload = {
+            return {
                 userId: 1,
                 clientName: clientName,
                 contactTitle: contactTitle,
@@ -983,6 +991,94 @@
                 headers: headers,
                 rows: rows
             };
+        }
+
+        async function openRealPdfPreview() {
+            const payload = getQuotePayload();
+            if (!payload) return;
+
+            const prevBtn = document.getElementById('previewBtn');
+            const prevSpinner = document.getElementById('previewSpinner');
+            const prevIcon = document.getElementById('previewIcon');
+            const prevText = document.getElementById('previewBtnText');
+
+            const modal = document.getElementById('previewModal');
+            const loading = document.getElementById('previewLoading');
+            const frame = document.getElementById('previewPdfFrame');
+            const newTabBtn = document.getElementById('previewNewTabBtn');
+
+            prevBtn.disabled = true;
+            prevSpinner?.classList.remove('hidden');
+            prevIcon?.classList.add('hidden');
+            if (prevText) prevText.textContent = 'جارٍ إعداد المعاينة...';
+
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            frame.classList.add('hidden');
+            frame.src = '';
+            if (newTabBtn) newTabBtn.href = '#';
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/preview`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 401) {
+                    closePreviewModal();
+                    showQuoteModal();
+                    return;
+                }
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || 'فشل في توليد مستند المعاينة');
+                }
+
+                const result = await response.json();
+                const pdfUrl = result.pdfUrl.startsWith('http') ? result.pdfUrl : `${CONFIG.API_BASE_URL}${result.pdfUrl}`;
+
+                frame.src = pdfUrl;
+                if (newTabBtn) newTabBtn.href = pdfUrl;
+
+                frame.onload = () => {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                };
+
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                }, 1000);
+
+            } catch (err) {
+                console.error('Preview generation failed:', err);
+                closePreviewModal();
+                Swal.fire({
+                    title: 'خطأ في المعاينة',
+                    text: err.message || 'حدث خطأ أثناء إعداد مستند المعاينة. يرجى المحاولة مرة أخرى.',
+                    icon: 'error',
+                    confirmButtonText: 'إغلاق'
+                });
+            } finally {
+                prevBtn.disabled = false;
+                prevSpinner?.classList.add('hidden');
+                prevIcon?.classList.remove('hidden');
+                if (prevText) prevText.textContent = 'معاينة عرض السعر';
+            }
+        }
+
+        // Generate Quote Button Action
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const payload = getQuotePayload();
+            if (!payload) return;
+
+            const clientName = payload.clientName;
+            const projectName = payload.projectName;
 
             const btn = document.getElementById('generateBtn');
             const btnText = document.getElementById('generateBtnText');
@@ -995,9 +1091,17 @@
 
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/generate`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
                     body: JSON.stringify(payload)
                 });
+
+                if (response.status === 401) {
+                    showQuoteModal();
+                    return;
+                }
 
                 if (!response.ok) {
                     const err = await response.json();
@@ -1023,21 +1127,64 @@
                 docxLink.href = docxUrl;
                 docxLink.onclick = () => recordAudit('QuoteDownloaded', `DOCX: ${result.quoteNumber}`);
 
-                // WhatsApp share button: https://wa.me/?text=...
-                let waLines = [];
-                waLines.push(`عرض سعر جديد`);
-                waLines.push(`العميل: ${clientName}`);
-                if (projectName) {
-                    waLines.push(`المشروع: ${projectName}`);
-                }
-                waLines.push(`رقم العرض: ${result.quoteNumber}`);
-                waLines.push(`رابط عرض السعر (PDF):\n${pdfUrl}`);
+                // Preload production PDF Blob for instant Web Share API support
+                let preloadedPdfFile = null;
+                fetch(pdfUrl)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        preloadedPdfFile = new File([blob], `${result.quoteNumber}.pdf`, { type: 'application/pdf' });
+                    })
+                    .catch(err => {
+                        console.warn('PDF preload failed:', err);
+                    });
 
-                const waText = waLines.join('\n');
+                // Web Share API handler to share PDF File directly
                 const waBtn = document.getElementById('resWhatsAppBtn');
                 if (waBtn) {
-                    waBtn.href = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-                    waBtn.onclick = () => recordAudit('QuoteSharedWhatsApp', `WhatsApp: ${result.quoteNumber}`);
+                    waBtn.onclick = async () => {
+                        recordAudit('QuoteSharedWhatsApp', `WhatsApp: ${result.quoteNumber}`);
+
+                        let shareText = `عرض سعر جديد\nالعميل: ${clientName}`;
+                        if (projectName) {
+                            shareText += `\nالمشروع: ${projectName}`;
+                        }
+                        shareText += `\nرقم العرض: ${result.quoteNumber}`;
+
+                        try {
+                            let pdfFile = preloadedPdfFile;
+                            if (!pdfFile) {
+                                const res = await fetch(pdfUrl);
+                                const blob = await res.blob();
+                                pdfFile = new File([blob], `${result.quoteNumber}.pdf`, { type: 'application/pdf' });
+                                preloadedPdfFile = pdfFile;
+                            }
+
+                            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                                await navigator.share({
+                                    files: [pdfFile],
+                                    text: shareText
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'مشاركة الملفات غير مدعومة',
+                                    text: 'متصفحك الحالي لا يدعم مشاركة الملفات مباشرة عبر Web Share API. يرجى استخدام زر "تحميل مستند PDF" لمشاركة الملف.',
+                                    icon: 'info',
+                                    confirmButtonText: 'حسناً'
+                                });
+                            }
+                        } catch (err) {
+                            if (err.name === 'AbortError') {
+                                return; // User cancelled share sheet
+                            }
+                            console.error('Share error:', err);
+                            Swal.fire({
+                                title: 'تنبيه',
+                                text: 'تعذر مشاركة الملف من هذا المتصفح. يمكنك تحميل مستند PDF ومشاركته يدوياً.',
+                                icon: 'warning',
+                                confirmButtonText: 'حسناً'
+                            });
+                        }
+                    };
                 }
 
                 document.getElementById('resultModal').classList.remove('hidden');

@@ -13,13 +13,50 @@
     <!-- SweetAlert2 CDN for Modern Dialogs -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="config.js"></script>
+    <script src="auth.js"></script>
     <style>
         body, .swal2-popup { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
-    <!-- Navbar -->
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
+    <!-- Quote Authentication Modal (Shown when unauthenticated) -->
+    <div id="quoteAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-center">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-blue-200 shadow-inner">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول نظام عروض الأسعار</h2>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور عروض الأسعار للمتابعة</p>
+
+            <form id="quoteLoginForm" class="space-y-4" onsubmit="handleQuoteLogin(event)">
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة مرور عروض الأسعار</label>
+                    <input type="password" id="quotePasswordInput" autofocus required
+                        placeholder="••••••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                </div>
+
+                <div id="quoteLoginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 py-2 px-3 rounded-lg text-right font-medium"></div>
+
+                <button type="submit" id="quoteLoginBtn"
+                    class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 text-sm">
+                    <span>دخول النظام</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-500">
+                <a href="admin.html" class="hover:text-blue-600 transition">لوحة الإدارة ←</a>
+                <a href="owner.html" class="hover:text-amber-600 transition">إدارة كلمات المرور (المالك) ←</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Main Content Wrapper -->
+    <div id="quoteMainContent" class="hidden">
+        <!-- Navbar -->
+        <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3 space-x-reverse">
                 <div class="bg-blue-800 p-2 rounded-lg">
@@ -37,6 +74,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     لوحة الإدارة
                 </a>
+                <button onclick="Auth.logout('quote')" class="px-3 py-1.5 text-sm bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition font-semibold flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    تسجيل الخروج
+                </button>
             </div>
         </div>
     </header>
@@ -323,6 +364,8 @@
             </div>
         </div>
     </div>
+    </div>
+    <!-- End Quote Main Content Wrapper -->
 
     <!-- Application JavaScript Logic -->
     <script>
@@ -333,8 +376,46 @@
         let defaultTerms = [];
         let currentTerms = [];
         let sortableInstance = null;
+        let isInitialized = false;
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        function showQuoteModal() {
+            document.getElementById('quoteAuthModal').classList.remove('hidden');
+            document.getElementById('quoteMainContent').classList.add('hidden');
+            document.getElementById('quotePasswordInput').focus();
+        }
+
+        function showQuoteContent() {
+            document.getElementById('quoteAuthModal').classList.add('hidden');
+            document.getElementById('quoteMainContent').classList.remove('hidden');
+        }
+
+        async function handleQuoteLogin(event) {
+            event.preventDefault();
+            const pwdInput = document.getElementById('quotePasswordInput');
+            const errBox = document.getElementById('quoteLoginError');
+            const btn = document.getElementById('quoteLoginBtn');
+
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span>جاري التحقق...</span>';
+
+            try {
+                await Auth.login('quote', pwdInput.value);
+                showQuoteContent();
+                await initQuotePage();
+            } catch (err) {
+                errBox.textContent = err.message || 'كلمة المرور غير صحيحة';
+                errBox.classList.remove('hidden');
+                pwdInput.select();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>دخول النظام</span>';
+            }
+        }
+
+        async function initQuotePage() {
+            if (isInitialized) return;
+            isInitialized = true;
             // Set default date to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('quoteDate').value = today;
@@ -343,6 +424,16 @@
             await Promise.all([loadClients(), loadProducts(), loadTerms()]);
             // Add initial blank row
             addRow({});
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuth = await Auth.verify('quote');
+            if (isAuth) {
+                showQuoteContent();
+                await initQuotePage();
+            } else {
+                showQuoteModal();
+            }
         });
 
         async function loadClients() {
@@ -790,7 +881,10 @@
             try {
                 await fetch(`${CONFIG.API_BASE_URL}/api/admin/audit`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
                     body: JSON.stringify({ userId: 1, action, entityId })
                 });
             } catch (e) {
@@ -927,9 +1021,18 @@
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/preview`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
                     body: JSON.stringify(payload)
                 });
+
+                if (response.status === 401) {
+                    closePreviewModal();
+                    showQuoteModal();
+                    return;
+                }
 
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
@@ -988,9 +1091,17 @@
 
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/quotes/generate`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader('quote')
+                    },
                     body: JSON.stringify(payload)
                 });
+
+                if (response.status === 401) {
+                    showQuoteModal();
+                    return;
+                }
 
                 if (!response.ok) {
                     const err = await response.json();

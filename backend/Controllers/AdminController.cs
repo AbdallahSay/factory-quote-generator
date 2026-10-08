@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FactoryQuoteApi.Data;
 using FactoryQuoteApi.Models;
+using FactoryQuoteApi.Services;
 
 namespace FactoryQuoteApi.Controllers;
 
@@ -10,15 +11,22 @@ namespace FactoryQuoteApi.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly ISecurityService _securityService;
 
-    public AdminController(ApplicationDbContext db)
+    public AdminController(ApplicationDbContext db, ISecurityService securityService)
     {
         _db = db;
+        _securityService = securityService;
     }
 
     [HttpGet("logs")]
     public async Task<ActionResult<IEnumerable<object>>> GetLogs()
     {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
         var logs = await _db.AuditLogs
             .Include(a => a.User)
             .OrderByDescending(a => a.Timestamp)
@@ -45,6 +53,11 @@ public class AdminController : ControllerBase
     [HttpGet("quotes")]
     public async Task<ActionResult<IEnumerable<object>>> GetRecentQuotes()
     {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
         var quotes = await _db.Quotes
             .Include(q => q.User)
             .Include(q => q.Items)
@@ -84,6 +97,13 @@ public class AdminController : ControllerBase
     [HttpPost("audit")]
     public async Task<IActionResult> RecordAudit([FromBody] AuditLogRequestDto dto)
     {
+        var token = ExtractBearerToken();
+        var (isAuthorized, _) = await _securityService.ValidateTokenAsync(token, "quote", "admin", "owner");
+        if (!isAuthorized)
+        {
+            return Unauthorized(new { message = "غير مصرح بتسجيل التدقيق" });
+        }
+
         var audit = new AuditLog
         {
             UserId = dto.UserId ?? 1,
@@ -99,6 +119,11 @@ public class AdminController : ControllerBase
     [HttpGet("stats")]
     public async Task<ActionResult<object>> GetDashboardStats()
     {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
         var totalQuotes = await _db.Quotes.CountAsync();
         var totalRevenue = await _db.Quotes.SumAsync(q => q.TotalAmount);
         var totalClients = await _db.Clients.CountAsync();
@@ -111,5 +136,26 @@ public class AdminController : ControllerBase
             TotalClients = totalClients,
             TotalAuditLogs = totalAuditLogs
         });
+    }
+
+    private async Task<bool> IsAuthorizedAdminAsync()
+    {
+        var token = ExtractBearerToken();
+        var (isValid, _) = await _securityService.ValidateTokenAsync(token, "admin", "owner");
+        return isValid;
+    }
+
+    private string? ExtractBearerToken()
+    {
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrWhiteSpace(authHeader))
+            return null;
+
+        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return authHeader.Substring(7).Trim();
+        }
+
+        return null;
     }
 }
