@@ -59,6 +59,7 @@ public class Quote
     [Required, MaxLength(50)]
     public string QuoteNumber { get; set; } = string.Empty;
     public int UserId { get; set; }
+    public int? CreatedByUserId { get; set; }
     public User? User { get; set; }
     [Required, MaxLength(200)]
     public string ClientName { get; set; } = string.Empty;

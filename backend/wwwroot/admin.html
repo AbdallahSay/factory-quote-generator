@@ -26,7 +26,7 @@
                 </svg>
             </div>
             <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول لوحة الإدارة</h2>
-            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور الإدارة للوصول إلى بيانات التدقيق والإحصائيات</p>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور الإدارة للوصول إلى بيانات التدقيق والإحصائيات وإدارة الحسابات</p>
 
             <form id="adminLoginForm" class="space-y-4" onsubmit="handleAdminLogin(event)">
                 <div class="text-right">
@@ -64,7 +64,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold">لوحة المراقبة والتدقيق الإداري</h1>
-                        <p class="text-xs text-slate-400">متابعة سجلات التدقيق (Audit Logs) وعروض الأسعار الصادرة مع تفاصيل جهة الإصدار</p>
+                        <p class="text-xs text-slate-400">متابعة سجلات التدقيق (Audit Logs) وإدارة حسابات الموظفين وعروض الأسعار الصادرة</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2.5 space-x-reverse">
@@ -84,112 +84,170 @@
             </div>
         </header>
 
+        <!-- Navigation Tabs -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 space-x-reverse">
+                <button id="tabQuotesBtn" onclick="switchAdminTab('quotes')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    لوحة المراقبة وعروض الأسعار
+                </button>
+                <button id="tabEmployeesBtn" onclick="switchAdminTab('employees')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    إدارة الحسابات
+                </button>
+            </div>
+        </div>
+
         <!-- Main Container -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-            <!-- KPI Cards Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي عروض الأسعار</span>
-                        <span id="kpiTotalQuotes" class="text-3xl font-black text-slate-900">--</span>
+            <!-- Section: Quotes & Logs Monitoring -->
+            <div id="quotesSection" class="space-y-8">
+                <!-- KPI Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي عروض الأسعار</span>
+                            <span id="kpiTotalQuotes" class="text-3xl font-black text-slate-900">--</span>
+                        </div>
+                        <div class="bg-blue-50 text-blue-600 p-3 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
                     </div>
-                    <div class="bg-blue-50 text-blue-600 p-3 rounded-xl">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي المبيعات التقديرية</span>
+                            <span id="kpiTotalRevenue" class="text-2xl font-black text-emerald-700">--</span>
+                            <span class="text-xs text-slate-500 mr-1">ج.م</span>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">العملاء النشطون</span>
+                            <span id="kpiTotalClients" class="text-3xl font-black text-purple-900">--</span>
+                        </div>
+                        <div class="bg-purple-50 text-purple-600 p-3 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">عمليات التدقيق المسجلة</span>
+                            <span id="kpiTotalLogs" class="text-3xl font-black text-amber-900">--</span>
+                        </div>
+                        <div class="bg-amber-50 text-amber-600 p-3 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي المبيعات التقديرية</span>
-                        <span id="kpiTotalRevenue" class="text-2xl font-black text-emerald-700">--</span>
-                        <span class="text-xs text-slate-500 mr-1">ج.م</span>
+                <!-- Section 1: Recent Quotes Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                            <h2 class="font-bold text-slate-800 text-base">أحدث عروض الأسعار الصادرة والموظف المنشئ</h2>
+                        </div>
+                        <span class="text-xs text-slate-500">منسوبة بدقة إلى الموظف المنشئ ومحفوظة في قاعدة البيانات</span>
                     </div>
-                    <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 border-b">رقم العرض</th>
+                                    <th class="py-3 px-4 border-b">اسم العميل</th>
+                                    <th class="py-3 px-4 border-b">أنشأه (الموظف)</th>
+                                    <th class="py-3 px-4 border-b">المشروع / الموقع</th>
+                                    <th class="py-3 px-4 border-b">جهة الإصدار</th>
+                                    <th class="py-3 px-4 border-b">عدد الأصناف</th>
+                                    <th class="py-3 px-4 border-b">إجمالي القيمة</th>
+                                    <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
+                                    <th class="py-3 px-4 border-b text-center">التحميل</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quotesTableBody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="9" class="py-8 text-center text-slate-400">جاري تحميل عروض الأسعار...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-semibold text-slate-500 block mb-1">العملاء النشطون</span>
-                        <span id="kpiTotalClients" class="text-3xl font-black text-purple-900">--</span>
+                <!-- Section 2: Audit Logs Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <h2 class="font-bold text-slate-800 text-base">سجل تدقيق الأنشطة والعمليات (Audit Logs)</h2>
+                        </div>
+                        <span class="text-xs text-slate-500">سجل غير قابل للتعديل للحركات الإدارية وإنشاء المستندات</span>
                     </div>
-                    <div class="bg-purple-50 text-purple-600 p-3 rounded-xl">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    </div>
-                </div>
 
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-semibold text-slate-500 block mb-1">عمليات التدقيق المسجلة</span>
-                        <span id="kpiTotalLogs" class="text-3xl font-black text-amber-900">--</span>
-                    </div>
-                    <div class="bg-amber-50 text-amber-600 p-3 rounded-xl">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 border-b"># المعرف</th>
+                                    <th class="py-3 px-4 border-b">التوقيت (UTC)</th>
+                                    <th class="py-3 px-4 border-b">المستخدم</th>
+                                    <th class="py-3 px-4 border-b">نوع الإجراء (Action)</th>
+                                    <th class="py-3 px-4 border-b">معرف الكيان / التفاصيل</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-slate-400">جاري تحميل سجل التدقيق...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 1: Recent Quotes Table -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                        <h2 class="font-bold text-slate-800 text-base">أحدث عروض الأسعار الصادرة</h2>
+            <!-- Section: Employees Management -->
+            <div id="employeesSection" class="hidden space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50/70">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                                حسابات الموظفين المصرح لهم
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">إدارة حسابات الموظفين، تغيير كلمات المرور، وتفعيل أو تعطيل الحسابات</p>
+                        </div>
+                        <button onclick="openCreateEmployeeModal()" class="px-3.5 py-2 text-xs bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                            إضافة حساب موظف جديد
+                        </button>
                     </div>
-                    <span class="text-xs text-slate-500">محدث تلقائياً من SQL Server مع بيانات جهة الإصدار والمشروع</span>
-                </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right text-sm">
-                        <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                            <tr>
-                                <th class="py-3 px-4 border-b">رقم العرض</th>
-                                <th class="py-3 px-4 border-b">اسم العميل</th>
-                                <th class="py-3 px-4 border-b">المشروع / الموقع</th>
-                                <th class="py-3 px-4 border-b">جهة الإصدار</th>
-                                <th class="py-3 px-4 border-b">عدد الأصناف</th>
-                                <th class="py-3 px-4 border-b">إجمالي القيمة</th>
-                                <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
-                                <th class="py-3 px-4 border-b text-center">التحميل</th>
-                            </tr>
-                        </thead>
-                        <tbody id="quotesTableBody" class="divide-y divide-slate-100 text-xs">
-                            <tr>
-                                <td colspan="8" class="py-8 text-center text-slate-400">جاري تحميل عروض الأسعار...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Section 2: Audit Logs Table -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                        <h2 class="font-bold text-slate-800 text-base">سجل تدقيق الأنشطة والعمليات (Audit Logs)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 border-b"># المعرف</th>
+                                    <th class="py-3 px-4 border-b">الاسم الكامل</th>
+                                    <th class="py-3 px-4 border-b">البريد الإلكتروني</th>
+                                    <th class="py-3 px-4 border-b">عروض الأسعار</th>
+                                    <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
+                                    <th class="py-3 px-4 border-b">الحالة</th>
+                                    <th class="py-3 px-4 border-b text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTableBody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل بيانات الموظفين...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <span class="text-xs text-slate-500">سجل غير قابل للتعديل للحركات الإدارية وإنشاء المستندات</span>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right text-sm">
-                        <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                            <tr>
-                                <th class="py-3 px-4 border-b"># المعرف</th>
-                                <th class="py-3 px-4 border-b">التوقيت (UTC)</th>
-                                <th class="py-3 px-4 border-b">المستخدم</th>
-                                <th class="py-3 px-4 border-b">نوع الإجراء (Action)</th>
-                                <th class="py-3 px-4 border-b">معرف الكيان / التفاصيل</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logsTableBody" class="divide-y divide-slate-100 text-xs">
-                            <tr>
-                                <td colspan="5" class="py-8 text-center text-slate-400">جاري تحميل سجل التدقيق...</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </main>
@@ -207,7 +265,14 @@
             }
         });
 
-        document.getElementById('refreshBtn').addEventListener('click', () => fetchDashboardData(true));
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            const isEmployeesActive = !document.getElementById('employeesSection').classList.contains('hidden');
+            if (isEmployeesActive) {
+                loadEmployees(true);
+            } else {
+                fetchDashboardData(true);
+            }
+        });
 
         function showAdminModal() {
             document.getElementById('adminAuthModal').classList.remove('hidden');
@@ -244,6 +309,27 @@
             }
         }
 
+        function switchAdminTab(tab) {
+            const quotesSec = document.getElementById('quotesSection');
+            const empSec = document.getElementById('employeesSection');
+            const qBtn = document.getElementById('tabQuotesBtn');
+            const eBtn = document.getElementById('tabEmployeesBtn');
+
+            if (tab === 'employees') {
+                quotesSec.classList.add('hidden');
+                empSec.classList.remove('hidden');
+                qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+                eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2";
+                loadEmployees();
+            } else {
+                empSec.classList.add('hidden');
+                quotesSec.classList.remove('hidden');
+                eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+                qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2";
+                fetchDashboardData(false);
+            }
+        }
+
         async function fetchDashboardData(isManual = false) {
             try {
                 await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
@@ -258,15 +344,7 @@
                     });
                 }
             } catch (err) {
-                console.error('Dashboard load error:', err);
-                if (isManual) {
-                    Swal.fire({
-                        title: 'خطأ!',
-                        text: 'تعذر تحديث بعض بيانات لوحة الإدارة.',
-                        icon: 'error',
-                        confirmButtonText: 'إغلاق'
-                    });
-                }
+                console.error('Fetch error:', err);
             }
         }
 
@@ -281,10 +359,10 @@
                 }
                 if (!res.ok) return;
                 const stats = await res.json();
-                document.getElementById('kpiTotalQuotes').textContent = stats.totalQuotes || 0;
-                document.getElementById('kpiTotalRevenue').textContent = (stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('kpiTotalClients').textContent = stats.totalClients || 0;
-                document.getElementById('kpiTotalLogs').textContent = stats.totalAuditLogs || 0;
+                document.getElementById('kpiTotalQuotes').textContent = stats.totalQuotes || '0';
+                document.getElementById('kpiTotalRevenue').textContent = (stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('kpiTotalClients').textContent = stats.totalClients || '0';
+                document.getElementById('kpiTotalLogs').textContent = stats.totalAuditLogs || '0';
             } catch (err) {
                 console.error('Stats error:', err);
             }
@@ -304,7 +382,7 @@
                 const tbody = document.getElementById('quotesTableBody');
                 
                 if (quotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-400">لا توجد عروض أسعار مسجلة بعد.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" class="py-6 text-center text-slate-400">لا توجد عروض أسعار مسجلة بعد.</td></tr>';
                     return;
                 }
 
@@ -322,12 +400,23 @@
                         ? `<div><span class="font-bold text-slate-800 text-xs">${q.issuerPrefix || ''}${q.issuerName || ''}</span><span class="block text-[11px] text-slate-500">${q.issuerJobTitle || ''}</span></div>`
                         : '<span class="text-xs text-slate-400">-</span>';
 
+                    const creatorName = q.createdByFullName || q.createdBy || 'غير محدد';
+
                     return `
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-mono font-bold text-blue-900">${q.quoteNumber}</td>
+                        <td class="py-3 px-4 font-mono font-bold text-blue-900">
+                            <div>${q.quoteNumber}</div>
+                        </td>
                         <td class="py-3 px-4">
                             <span class="font-semibold text-slate-800">${q.clientName}</span>
+                            <span class="block text-[11px] font-bold text-purple-700 mt-0.5">أنشأه: ${creatorName}</span>
                             ${clientAttention}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                أنشأه: ${creatorName}
+                            </span>
                         </td>
                         <td class="py-3 px-4">
                             <span class="text-slate-700 font-medium">${q.projectName || '-'}</span>
@@ -353,6 +442,301 @@
                 `}).join('');
             } catch (err) {
                 console.error('Quotes error:', err);
+            }
+        }
+
+        async function loadEmployees(isManual = false) {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
+                    headers: { ...Auth.getAuthHeader('admin') }
+                });
+                if (res.status === 401) {
+                    showAdminModal();
+                    return;
+                }
+                if (!res.ok) return;
+                const employees = await res.json();
+                const tbody = document.getElementById('employeesTableBody');
+
+                if (employees.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">لا يوجد موظفون مسجلون بعد.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = employees.map(emp => {
+                    const statusBadge = emp.isActive
+                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط</span>'
+                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل</span>';
+
+                    const toggleBtnText = emp.isActive ? 'تعطيل' : 'تفعيل';
+                    const toggleBtnClass = emp.isActive 
+                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' 
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200';
+
+                    const safeName = (emp.fullName || '').replace(/'/g, "\\'");
+                    const safeEmail = (emp.email || '').replace(/'/g, "\\'");
+
+                    return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${emp.id}</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">${emp.fullName}</td>
+                        <td class="py-3 px-4 font-mono text-slate-600">${emp.email}</td>
+                        <td class="py-3 px-4 font-bold text-purple-700">${emp.quotesCount} عرض سعر</td>
+                        <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(emp.createdAt).toLocaleDateString('ar-EG')}</td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openEditEmployeeModal(${emp.id}, '${safeName}', '${safeEmail}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition">
+                                    تعديل
+                                </button>
+                                <button onclick="openResetPasswordModal(${emp.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded border border-blue-200 transition">
+                                    تغيير كلمة المرور
+                                </button>
+                                <button onclick="toggleEmployeeStatus(${emp.id}, ${emp.isActive}, '${safeName}')" class="px-2.5 py-1 text-xs font-semibold rounded border transition ${toggleBtnClass}">
+                                    ${toggleBtnText}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `}).join('');
+
+                if (isManual) {
+                    Swal.fire({
+                        title: 'تم بنجاح!',
+                        text: 'تم تحديث قائمة حسابات الموظفين بنجاح.',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (err) {
+                console.error('Employees load error:', err);
+            }
+        }
+
+        async function openCreateEmployeeModal() {
+            const { value: formValues } = await Swal.fire({
+                title: 'إضافة حساب موظف جديد',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
+                            <input id="swalFullName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: عبدالله سيد">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني *</label>
+                            <input id="swalEmail" type="email" class="swal2-input !m-0 !w-full !text-sm" placeholder="employee@factory-eg.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور (6 أحرف على الأقل) *</label>
+                            <input id="swalPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
+                            <input id="swalConfirmPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'إنشاء الحساب',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#7e22ce',
+                preConfirm: () => {
+                    const fullName = document.getElementById('swalFullName').value.trim();
+                    const email = document.getElementById('swalEmail').value.trim();
+                    const password = document.getElementById('swalPassword').value;
+                    const confirmPassword = document.getElementById('swalConfirmPassword').value;
+
+                    if (!fullName) {
+                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل للموظف');
+                        return false;
+                    }
+                    if (!email) {
+                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
+                        return false;
+                    }
+                    if (!password || password.length < 6) {
+                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
+                        return false;
+                    }
+                    if (password !== confirmPassword) {
+                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
+                        return false;
+                    }
+                    return { fullName, email, password, confirmPassword };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل إنشاء الحساب');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function openEditEmployeeModal(id, currentName, currentEmail) {
+            const { value: formValues } = await Swal.fire({
+                title: 'تعديل بيانات الموظف',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
+                            <input id="swalEditName" class="swal2-input !m-0 !w-full !text-sm" value="${currentName}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني *</label>
+                            <input id="swalEditEmail" type="email" class="swal2-input !m-0 !w-full !text-sm" value="${currentEmail}">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ التعديلات',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#7e22ce',
+                preConfirm: () => {
+                    const fullName = document.getElementById('swalEditName').value.trim();
+                    const email = document.getElementById('swalEditEmail').value.trim();
+                    if (!fullName) {
+                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل');
+                        return false;
+                    }
+                    if (!email) {
+                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
+                        return false;
+                    }
+                    return { fullName, email };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تحديث البيانات');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function openResetPasswordModal(id, employeeName) {
+            const { value: formValues } = await Swal.fire({
+                title: `تغيير كلمة المرور: ${employeeName}`,
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة (6 أحرف على الأقل) *</label>
+                            <input id="swalNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
+                            <input id="swalConfirmNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'تحديث كلمة المرور',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#2563eb',
+                preConfirm: () => {
+                    const newPassword = document.getElementById('swalNewPassword').value;
+                    const confirmPassword = document.getElementById('swalConfirmNewPassword').value;
+                    if (!newPassword || newPassword.length < 6) {
+                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
+                        return false;
+                    }
+                    if (newPassword !== confirmPassword) {
+                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
+                        return false;
+                    }
+                    return { newPassword, confirmPassword };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/reset-password`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تغيير كلمة المرور');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function toggleEmployeeStatus(id, currentActive, employeeName) {
+            const actionText = currentActive ? 'إلغاء تفعيل وتعطيل' : 'تفعيل';
+            const result = await Swal.fire({
+                title: `${actionText} الحساب؟`,
+                text: currentActive 
+                    ? `هل أنت متأكد من تعطيل حساب (${employeeName})؟ لن يتمكن من تسجيل الدخول بعد الآن، ولكن ستبقى جميع عروض أسعاره السابقة منسوبة إليه بدقة.`
+                    : `هل أنت متأكد من تفعيل حساب (${employeeName})؟`,
+                icon: currentActive ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: `نعم، ${actionText}`,
+                cancelButtonText: 'تراجع',
+                confirmButtonColor: currentActive ? '#dc2626' : '#16a34a'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/toggle-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify({ isActive: !currentActive })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تغيير حالة الحساب');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
             }
         }
 

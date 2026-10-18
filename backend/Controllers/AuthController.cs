@@ -18,7 +18,8 @@ public class AuthController : ControllerBase
 
     public class LoginRequestDto
     {
-        public string Role { get; set; } = string.Empty; // "quote", "admin", "owner"
+        public string? Role { get; set; } // "quote", "admin", "owner", or "employee"
+        public string? Email { get; set; }
         public string Password { get; set; } = string.Empty;
     }
 
@@ -37,7 +38,32 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "كلمة المرور مطلوبة" });
         }
 
-        var (success, token, error) = await _securityService.AuthenticateAsync(request.Role, request.Password);
+        // 1. Employee login via Email + Password
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var (empSuccess, empToken, empUser, empError) = await _securityService.AuthenticateEmployeeAsync(request.Email, request.Password);
+            if (!empSuccess || string.IsNullOrEmpty(empToken) || empUser == null)
+            {
+                return Unauthorized(new { success = false, message = empError ?? "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                token = empToken,
+                role = "employee",
+                user = new
+                {
+                    id = empUser.Id,
+                    fullName = empUser.FullName,
+                    email = empUser.Email
+                }
+            });
+        }
+
+        // 2. Role login (admin, owner, quote)
+        var role = request.Role?.Trim().ToLowerInvariant() ?? "quote";
+        var (success, token, error) = await _securityService.AuthenticateAsync(role, request.Password);
         if (!success || string.IsNullOrEmpty(token))
         {
             return Unauthorized(new { success = false, message = error ?? "كلمة المرور غير صحيحة" });
@@ -47,12 +73,12 @@ public class AuthController : ControllerBase
         {
             success = true,
             token,
-            role = request.Role.Trim().ToLowerInvariant()
+            role
         });
     }
 
     [HttpGet("verify")]
-    public async Task<IActionResult> VerifySession([FromQuery] string role)
+    public async Task<IActionResult> VerifySession([FromQuery] string? role)
     {
         string? token = ExtractBearerToken();
         if (string.IsNullOrWhiteSpace(token))
@@ -60,13 +86,35 @@ public class AuthController : ControllerBase
             return Unauthorized(new { valid = false, message = "غير مصرح" });
         }
 
-        var (isValid, verifiedRole) = await _securityService.ValidateTokenAsync(token, role);
-        if (!isValid)
+        var (isValid, user, verifiedRole) = await _securityService.ValidateUserTokenAsync(token);
+        if (!isValid || verifiedRole == null)
         {
             return Unauthorized(new { valid = false, message = "الجلسة منتهية أو غير صالحة" });
         }
 
-        return Ok(new { valid = true, role = verifiedRole });
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            bool allowed = string.Equals(role, verifiedRole, StringComparison.OrdinalIgnoreCase);
+            if (!allowed && string.Equals(role, "quote", StringComparison.OrdinalIgnoreCase) && verifiedRole == "employee")
+                allowed = true;
+
+            if (!allowed)
+            {
+                return Unauthorized(new { valid = false, message = "نوع الصلاحية غير متطابق" });
+            }
+        }
+
+        return Ok(new
+        {
+            valid = true,
+            role = verifiedRole,
+            user = user != null ? new
+            {
+                id = user.Id,
+                fullName = user.FullName,
+                email = user.Email
+            } : null
+        });
     }
 
     [HttpPost("change-password")]

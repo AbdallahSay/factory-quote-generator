@@ -1,12 +1,13 @@
 /**
  * Authentication Client Helper for Factory Quote Generation System
- * Handles independent role tokens for:
- * - 'quote' (Quotation screen)
+ * Handles tokens and sessions for:
+ * - 'employee' / 'quote' (Quotation screen - employee login)
  * - 'admin' (Admin dashboard)
  * - 'owner' (Owner password management)
  */
 const Auth = {
     getKey(role) {
+        if (role === 'employee') return 'fq_token_quote';
         return `fq_token_${role}`;
     },
 
@@ -32,9 +33,64 @@ const Auth = {
         sessionStorage.removeItem(key);
     },
 
+    getUser() {
+        try {
+            const raw = localStorage.getItem('fq_user') || sessionStorage.getItem('fq_user');
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    },
+
+    setUser(user, remember = true) {
+        if (!user) return;
+        const raw = JSON.stringify(user);
+        if (remember) {
+            localStorage.setItem('fq_user', raw);
+            sessionStorage.removeItem('fq_user');
+        } else {
+            sessionStorage.setItem('fq_user', raw);
+            localStorage.removeItem('fq_user');
+        }
+    },
+
+    clearUser() {
+        localStorage.removeItem('fq_user');
+        sessionStorage.removeItem('fq_user');
+    },
+
     getAuthHeader(role) {
         const token = this.getToken(role);
         return token ? { 'Authorization': `Bearer ${token}` } : {};
+    },
+
+    async employeeLogin(email, password, remember = true) {
+        if (!email || !email.trim()) {
+            throw new Error('يرجى إدخال البريد الإلكتروني للموظف');
+        }
+        if (!password || !password.trim()) {
+            throw new Error('يرجى إدخال كلمة المرور');
+        }
+
+        const baseUrl = typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : '';
+        const response = await fetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email.trim(), password: password.trim() })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        }
+
+        this.setToken('quote', data.token, remember);
+        if (data.user) {
+            this.setUser(data.user, remember);
+        }
+        return data;
     },
 
     async login(role, password, remember = true) {
@@ -74,18 +130,22 @@ const Auth = {
 
             if (!response.ok) {
                 this.clearToken(role);
+                if (role === 'quote' || role === 'employee') this.clearUser();
                 return false;
             }
 
             const data = await response.json().catch(() => ({}));
             if (data.valid === true) {
+                if (data.user) {
+                    this.setUser(data.user);
+                }
                 return true;
             } else {
                 this.clearToken(role);
+                if (role === 'quote' || role === 'employee') this.clearUser();
                 return false;
             }
         } catch (e) {
-            // If offline or network issue, do not immediately discard valid session, but return true if token format is valid
             console.warn('Auth verify network issue:', e);
             return true;
         }
@@ -117,6 +177,9 @@ const Auth = {
 
     logout(role) {
         this.clearToken(role);
+        if (role === 'quote' || role === 'employee') {
+            this.clearUser();
+        }
         window.location.reload();
     }
 };

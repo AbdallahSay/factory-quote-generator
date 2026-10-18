@@ -46,9 +46,11 @@ public class QuotesController : ControllerBase
     [HttpPost("generate")]
     public async Task<ActionResult<QuoteResponseDto>> GenerateQuote([FromBody] QuoteRequestDto request)
     {
-        if (!await IsAuthorizedQuoteAsync())
+        string? token = ExtractBearerToken();
+        var (isValid, authenticatedUser, authRole) = await _securityService.ValidateUserTokenAsync(token);
+        if (!isValid || authenticatedUser == null)
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور عروض الأسعار." });
+            return Unauthorized(new { message = "غير مصرح. يرجى تسجيل الدخول بحساب موظف معتمد لإصدار عروض الأسعار." });
         }
 
         bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
@@ -64,23 +66,7 @@ public class QuotesController : ControllerBase
             request.IssuerJobTitle = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerJobTitle);
             request.IssuerName = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerName);
             request.IssuerPrefix = WordQuoteGeneratorService.CleanArabicIssuerText(request.IssuerPrefix);
-            // 1. Ensure User exists
-            var user = await _db.Users.FindAsync(request.UserId);
-            if (user == null)
-            {
-                user = await _db.Users.FirstOrDefaultAsync() ?? new User
-                {
-                    FullName = "Sales Representative",
-                    Email = "sales@factory-eg.com",
-                    PasswordHash = "hashed_default_pwd",
-                    Role = "Sales"
-                };
-                if (user.Id == 0)
-                {
-                    _db.Users.Add(user);
-                    await _db.SaveChangesAsync();
-                }
-            }
+            var user = authenticatedUser;
 
             // 2. Extract Client & Project Details
             var clientName = !string.IsNullOrWhiteSpace(request.ClientName) 
@@ -187,6 +173,7 @@ public class QuotesController : ControllerBase
             {
                 QuoteNumber = quoteNumber,
                 UserId = user.Id,
+                CreatedByUserId = user.Id,
                 ClientName = clientName,
                 ClientEmail = clientEmail,
                 ClientPhone = clientPhone,

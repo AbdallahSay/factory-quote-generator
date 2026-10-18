@@ -167,19 +167,36 @@ public class SecurityService : ISecurityService
         return $"{payloadB64}.{sigB64}";
     }
 
-    public async Task<(bool IsValid, string? Role)> ValidateTokenAsync(string? token, params string[] allowedRoles)
+    public string GenerateUserToken(User user, TimeSpan expiry)
+    {
+        long expiryUnix = DateTimeOffset.UtcNow.Add(expiry).ToUnixTimeSeconds();
+        var pwdSig = user.PasswordHash.Length >= 16 
+            ? user.PasswordHash.Substring(user.PasswordHash.Length - 16) 
+            : user.PasswordHash;
+        string payload = $"employee|{user.Id}:{pwdSig}|{expiryUnix}";
+        byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+        string payloadB64 = Base64UrlEncode(payloadBytes);
+
+        using var hmac = new HMACSHA256(_signingKey);
+        byte[] sigBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(payloadB64));
+        string sigB64 = Base64UrlEncode(sigBytes);
+
+        return $"{payloadB64}.{sigB64}";
+    }
+
+    public async Task<(bool IsValid, User? User, string? Role)> ValidateUserTokenAsync(string? token)
     {
         if (string.IsNullOrWhiteSpace(token))
-            return (false, null);
+            return (false, null, null);
 
         var parts = token.Trim().Split('.');
         if (parts.Length != 2)
-            return (false, null);
+            return (false, null, null);
 
         string payloadB64 = parts[0];
         string sigB64 = parts[1];
 
-        // 1. Verify HMAC
+        // 1. Verify HMAC signature
         using var hmac = new HMACSHA256(_signingKey);
         byte[] expectedSig = hmac.ComputeHash(Encoding.UTF8.GetBytes(payloadB64));
         byte[] actualSig;
@@ -189,11 +206,11 @@ public class SecurityService : ISecurityService
         }
         catch
         {
-            return (false, null);
+            return (false, null, null);
         }
 
         if (!CryptographicOperations.FixedTimeEquals(actualSig, expectedSig))
-            return (false, null);
+            return (false, null, null);
 
         // 2. Decode payload
         string payload;
@@ -203,32 +220,98 @@ public class SecurityService : ISecurityService
         }
         catch
         {
-            return (false, null);
+            return (false, null, null);
         }
 
         var segments = payload.Split('|');
         if (segments.Length != 3)
-            return (false, null);
+            return (false, null, null);
 
         string role = segments[0];
-        string tokenSalt = segments[1];
+        string subject = segments[1];
         if (!long.TryParse(segments[2], out long expiryUnix))
-            return (false, null);
+            return (false, null, null);
 
-        // 3. Check expiration
+        // 3. Expiration check
         if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiryUnix)
-            return (false, null);
+            return (false, null, null);
 
-        // 4. Role checking
-        if (allowedRoles.Length > 0 && !allowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-            return (false, null);
+        // 4. Employee token validation
+        if (role == "employee")
+        {
+            var subParts = subject.Split(':');
+            if (subParts.Length != 2 || !int.TryParse(subParts[0], out int userId))
+                return (false, null, null);
 
-        // 5. Database session salt match check (ensures invalidated tokens upon password change)
+            var user = await _db.Users.FindAsync(userId);
+            if (user == null || !user.IsActive)
+                return (false, null, null);
+
+            var expectedPwdSig = user.PasswordHash.Length >= 16 
+                ? user.PasswordHash.Substring(user.PasswordHash.Length - 16) 
+                : user.PasswordHash;
+            if (subParts[1] != expectedPwdSig)
+                return (false, null, null); // session invalidated due to password change
+
+            return (true, user, "employee");
+        }
+
+        // 5. System credential check (quote, admin, owner)
         var cred = await _db.SystemCredentials.FirstOrDefaultAsync(s => s.Role == role);
-        if (cred == null || cred.SessionSalt != tokenSalt)
+        if (cred == null || cred.SessionSalt != subject)
+            return (false, null, null);
+
+        var systemUser = await _db.Users.FirstOrDefaultAsync(u => u.Role == "Admin") 
+                         ?? await _db.Users.FirstOrDefaultAsync();
+
+        return (true, systemUser, role);
+    }
+
+    public async Task<(bool IsValid, string? Role)> ValidateTokenAsync(string? token, params string[] allowedRoles)
+    {
+        var (isValid, user, role) = await ValidateUserTokenAsync(token);
+        if (!isValid || string.IsNullOrEmpty(role))
             return (false, null);
+
+        if (allowedRoles.Length > 0)
+        {
+            bool allowed = allowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase);
+            if (!allowed && allowedRoles.Contains("quote", StringComparer.OrdinalIgnoreCase) && role == "employee")
+                allowed = true;
+
+            if (!allowed)
+                return (false, null);
+        }
 
         return (true, role);
+    }
+
+    public async Task<(bool Success, string? Token, User? User, string? ErrorMessage)> AuthenticateEmployeeAsync(string email, string password)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return (false, null, null, "يرجى إدخال البريد الإلكتروني وكلمة المرور");
+        }
+
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+        if (user == null)
+        {
+            return (false, null, null, "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        }
+
+        if (!VerifyPassword(password, user.PasswordHash))
+        {
+            return (false, null, null, "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        }
+
+        if (!user.IsActive)
+        {
+            return (false, null, null, "هذا الحساب معطل. يرجى التواصل مع إدارة النظام.");
+        }
+
+        string token = GenerateUserToken(user, TimeSpan.FromDays(7));
+        return (true, token, user, null);
     }
 
     public async Task<(bool Success, string? Token, string? ErrorMessage)> AuthenticateAsync(string role, string password)
