@@ -131,6 +131,18 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("telegram-info")]
+    public async Task<IActionResult> GetTelegramInfo()
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var info = await _telegramService.GetBotInfoAsync();
+        return Ok(info);
+    }
+
     public class AuditLogRequestDto
     {
         public int? UserId { get; set; } = 1;

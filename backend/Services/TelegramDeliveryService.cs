@@ -70,6 +70,45 @@ public class TelegramDeliveryService : ITelegramDeliveryService
         return await ProcessDeliveriesInternalAsync(quoteId, null, isRetry: true, cancellationToken);
     }
 
+    public async Task<TelegramBotInfoDto> GetBotInfoAsync(CancellationToken cancellationToken = default)
+    {
+        var token = GetBotToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return new TelegramBotInfoDto { IsConfigured = false, ErrorMessage = "رمز البوت غير مهيأ في بيئة التشغيل." };
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+            var response = await client.GetAsync($"https://api.telegram.org/bot{token}/getMe", cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var result))
+                {
+                    var username = result.TryGetProperty("username", out var u) ? u.GetString() : null;
+                    var firstName = result.TryGetProperty("first_name", out var fn) ? fn.GetString() : null;
+                    var id = result.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : (long?)null;
+                    return new TelegramBotInfoDto
+                    {
+                        IsConfigured = true,
+                        BotUsername = username,
+                        BotFirstName = firstName,
+                        BotId = id
+                    };
+                }
+            }
+            return new TelegramBotInfoDto { IsConfigured = true, ErrorMessage = "تعذر الاتصال بـ Telegram getMe." };
+        }
+        catch (Exception ex)
+        {
+            return new TelegramBotInfoDto { IsConfigured = true, ErrorMessage = SanitizeErrorMessage(ex.Message, token) };
+        }
+    }
+
     private async Task<List<QuoteTelegramDeliveryResult>> ProcessDeliveriesInternalAsync(int quoteId, string? pdfPath, bool isRetry, CancellationToken cancellationToken)
     {
         var results = new List<QuoteTelegramDeliveryResult>();
