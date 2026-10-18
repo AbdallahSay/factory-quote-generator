@@ -91,6 +91,7 @@ public class Quote
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<QuoteItem> Items { get; set; } = new List<QuoteItem>();
+    public ICollection<QuoteTelegramDelivery> TelegramDeliveries { get; set; } = new List<QuoteTelegramDelivery>();
 }
 
 public class QuoteItem
@@ -123,3 +124,24 @@ public class AuditLog
     public string? EntityId { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
+
+public class QuoteTelegramDelivery
+{
+    public int Id { get; set; }
+    public int QuoteId { get; set; }
+    public Quote? Quote { get; set; }
+    [Required, MaxLength(100)]
+    public string QuoteNumber { get; set; } = string.Empty;
+    [Required, MaxLength(50)]
+    public string ChatId { get; set; } = string.Empty;
+    [Required, MaxLength(20)]
+    public string Status { get; set; } = "Pending"; // Pending, Sent, Failed
+    [MaxLength(100)]
+    public string? TelegramMessageId { get; set; }
+    [MaxLength(2000)]
+    public string? ErrorMessage { get; set; }
+    public int RetryCount { get; set; } = 0;
+    public DateTime? SentAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+

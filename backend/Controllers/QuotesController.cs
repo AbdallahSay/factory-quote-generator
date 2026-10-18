@@ -224,11 +224,22 @@ public class QuotesController : ControllerBase
             await _backgroundQueue.QueueBackgroundWorkItemAsync(async (sp, ct) =>
             {
                 var notificationService = sp.GetRequiredService<INotificationService>();
+                var telegramService = sp.GetRequiredService<ITelegramDeliveryService>();
                 var logger = sp.GetRequiredService<ILogger<QuotesController>>();
 
                 logger.LogInformation("Processing background notifications for quote {QuoteNumber}...", quoteNumber);
 
-                // Send WhatsApp Webhook only if ClientPhone is provided
+                // 1. Send Telegram Document automatically to configured recipients
+                try
+                {
+                    await telegramService.SendQuoteDocumentAsync(quote.Id, pdfPath, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to send Telegram quotation document for quote {QuoteNumber}.", quoteNumber);
+                }
+
+                // 2. Send WhatsApp Webhook only if ClientPhone is provided
                 if (!string.IsNullOrEmpty(clientPhone))
                 {
                     await notificationService.SendWhatsAppWebhookAsync(webhookPayload, ct);

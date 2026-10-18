@@ -13,11 +13,16 @@ public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ISecurityService _securityService;
+    private readonly ITelegramDeliveryService _telegramService;
 
-    public AdminController(ApplicationDbContext db, ISecurityService securityService)
+    public AdminController(
+        ApplicationDbContext db, 
+        ISecurityService securityService,
+        ITelegramDeliveryService telegramService)
     {
         _db = db;
         _securityService = securityService;
+        _telegramService = telegramService;
     }
 
     [HttpGet("logs")]
@@ -62,6 +67,7 @@ public class AdminController : ControllerBase
         var quotes = await _db.Quotes
             .Include(q => q.User)
             .Include(q => q.Items)
+            .Include(q => q.TelegramDeliveries)
             .OrderByDescending(q => q.CreatedAt)
             .Take(50)
             .Select(q => new
@@ -84,11 +90,45 @@ public class AdminController : ControllerBase
                 q.PdfUrl,
                 q.DocxUrl,
                 q.CreatedAt,
-                ItemCount = q.Items.Count
+                ItemCount = q.Items.Count,
+                TelegramDeliveries = q.TelegramDeliveries.Select(td => new
+                {
+                    td.ChatId,
+                    td.Status,
+                    td.TelegramMessageId,
+                    td.SentAt,
+                    td.RetryCount,
+                    td.ErrorMessage
+                }).ToList()
             })
             .ToListAsync();
 
         return Ok(quotes);
+    }
+
+    [HttpPost("quotes/{id:int}/retry-telegram")]
+    public async Task<IActionResult> RetryTelegramDelivery(int id)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var quote = await _db.Quotes.FindAsync(id);
+        if (quote == null)
+        {
+            return NotFound(new { success = false, message = "عرض السعر غير موجود." });
+        }
+
+        var results = await _telegramService.RetryQuoteDeliveryAsync(id);
+
+        return Ok(new
+        {
+            success = true,
+            quoteId = id,
+            quoteNumber = quote.QuoteNumber,
+            results = results
+        });
     }
 
     public class AuditLogRequestDto

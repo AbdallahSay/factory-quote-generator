@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<QuoteItem> QuoteItems => Set<QuoteItem>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemCredential> SystemCredentials => Set<SystemCredential>();
+    public DbSet<QuoteTelegramDelivery> QuoteTelegramDeliveries => Set<QuoteTelegramDelivery>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,5 +50,15 @@ public class ApplicationDbContext : DbContext
             .WithMany(u => u.AuditLogs)
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<QuoteTelegramDelivery>()
+            .HasOne(qtd => qtd.Quote)
+            .WithMany(q => q.TelegramDeliveries)
+            .HasForeignKey(qtd => qtd.QuoteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<QuoteTelegramDelivery>()
+            .HasIndex(qtd => new { qtd.QuoteId, qtd.ChatId })
+            .IsUnique();
     }
 }

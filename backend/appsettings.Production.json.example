@@ -12,5 +12,9 @@
     "AllowedOrigins": [
       "https://factory-quote-frontend.vercel.app"
     ]
+  },
+  "Telegram": {
+    "BotToken": "<YOUR_TELEGRAM_BOT_TOKEN>",
+    "ChatIds": "5600249013,1284402479"
   }
 }

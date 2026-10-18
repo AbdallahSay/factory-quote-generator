@@ -28,6 +28,7 @@ builder.Services.AddScoped<IPdfConverterService, PdfConverterService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IQuoteSequenceService, QuoteSequenceService>();
+builder.Services.AddScoped<ITelegramDeliveryService, TelegramDeliveryService>();
 
 // Register Background Queue
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>(sp => new BackgroundTaskQueue(100));
@@ -145,6 +146,10 @@ using (var scope = app.Services.CreateScope())
         // Initialize Quote Sequence and Index
         var sequenceService = services.GetRequiredService<IQuoteSequenceService>();
         await sequenceService.EnsureInitializedAsync();
+
+        // Initialize Telegram Delivery Table
+        var telegramService = services.GetRequiredService<ITelegramDeliveryService>();
+        await telegramService.EnsureInitializedAsync();
     }
     catch (Exception ex)
     {
