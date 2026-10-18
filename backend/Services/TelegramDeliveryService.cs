@@ -246,9 +246,49 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                       $"أنشأه: {employeeFullName}\n" +
                       $"التاريخ: {quoteDateStr}";
 
-        // 4. Resolve PDF file on disk
+        // 4. Resolve and validate PDF file on disk
         pdfPath = ResolvePdfPath(quote, pdfPath);
         bool pdfExists = !string.IsNullOrEmpty(pdfPath) && File.Exists(pdfPath);
+
+        byte[]? fileBytes = null;
+        string? pdfValidationError = null;
+        string? fileSha256 = null;
+
+        if (!pdfExists)
+        {
+            pdfValidationError = "ملف PDF غير موجود على الخادم للإرسال.";
+        }
+        else
+        {
+            try
+            {
+                fileBytes = await File.ReadAllBytesAsync(pdfPath!, cancellationToken);
+                if (fileBytes == null || fileBytes.Length == 0)
+                {
+                    pdfValidationError = "ملف PDF فارغ (0 بايت).";
+                }
+                else
+                {
+                    // Verify PDF signature %PDF-
+                    var headerLength = Math.Min(fileBytes.Length, 1024);
+                    var headerAscii = System.Text.Encoding.ASCII.GetString(fileBytes, 0, headerLength);
+                    if (!headerAscii.Contains("%PDF-"))
+                    {
+                        pdfValidationError = "توقيع ملف PDF غير صالح (%PDF- غير موجود في ترويسة الملف).";
+                    }
+                    else
+                    {
+                        fileSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(fileBytes));
+                        _logger.LogInformation("Quotation PDF verified for quote {QuoteNumber}: path={Path}, size={Size} bytes, SHA256={Hash}",
+                            quote.QuoteNumber, pdfPath, fileBytes.Length, fileSha256);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                pdfValidationError = $"تعذر قراءة ملف PDF من القرص: {ex.Message}";
+            }
+        }
 
         // 5. Get Bot Token & Recipients
         var botToken = GetBotToken();
@@ -276,7 +316,8 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     Success = true,
                     AlreadySent = true,
                     Status = "Sent",
-                    MessageId = delivery.TelegramMessageId
+                    MessageId = delivery.TelegramMessageId,
+                    FileSha256 = fileSha256
                 });
                 continue;
             }
@@ -295,11 +336,11 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 _db.QuoteTelegramDeliveries.Add(delivery);
             }
 
-            // Check if PDF file exists
-            if (!pdfExists)
+            // Check if PDF file is valid
+            if (pdfValidationError != null || fileBytes == null)
             {
                 delivery.Status = "Failed";
-                delivery.ErrorMessage = "ملف PDF غير موجود على الخادم للإرسال.";
+                delivery.ErrorMessage = pdfValidationError ?? "ملف PDF غير متوفر.";
                 delivery.RetryCount++;
 
                 results.Add(new QuoteTelegramDeliveryResult
@@ -307,7 +348,8 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     ChatId = chatId,
                     Success = false,
                     Status = "Failed",
-                    ErrorMessage = delivery.ErrorMessage
+                    ErrorMessage = delivery.ErrorMessage,
+                    FileSha256 = fileSha256
                 });
                 continue;
             }
@@ -327,7 +369,8 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     ChatId = chatId,
                     Success = false,
                     Status = "Failed",
-                    ErrorMessage = delivery.ErrorMessage
+                    ErrorMessage = delivery.ErrorMessage,
+                    FileSha256 = fileSha256
                 });
                 continue;
             }
@@ -342,14 +385,18 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 form.Add(new StringContent(chatId), "chat_id");
                 form.Add(new StringContent(caption), "caption");
 
-                var fileBytes = await File.ReadAllBytesAsync(pdfPath!, cancellationToken);
+                var safeAsciiFileName = $"EG-BLOCK-{quote.QuoteNumber}.pdf";
                 var fileContent = new ByteArrayContent(fileBytes);
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+                fileContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+                {
+                    Name = "\"document\"",
+                    FileName = $"\"{safeAsciiFileName}\""
+                };
+                form.Add(fileContent);
 
-                var pdfFileName = Path.GetFileName(pdfPath!) ?? $"{quote.QuoteNumber}.pdf";
-                form.Add(fileContent, "document", pdfFileName);
-
-                _logger.LogInformation("Sending Telegram document to chat {ChatId} for quote {QuoteNumber}...", chatId, quote.QuoteNumber);
+                _logger.LogInformation("Sending Telegram PDF document ({FileName}, {Bytes} bytes, SHA256: {Hash}) to chat {ChatId} for quote {QuoteNumber}...",
+                    safeAsciiFileName, fileBytes.Length, fileSha256, chatId, quote.QuoteNumber);
 
                 // Never log the raw token in log output or error strings
                 var endpoint = $"https://api.telegram.org/bot{botToken}/sendDocument";
@@ -359,20 +406,27 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 if (response.IsSuccessStatusCode)
                 {
                     string? messageId = ExtractMessageId(responseBody);
+                    var (tgFileName, tgMime, tgSize, tgFileId) = ExtractDocumentInfo(responseBody);
+
                     delivery.Status = "Sent";
                     delivery.TelegramMessageId = messageId;
                     delivery.SentAt = DateTime.UtcNow;
                     delivery.ErrorMessage = null;
 
-                    _logger.LogInformation("Telegram document sent successfully to chat {ChatId} for quote {QuoteNumber} (MsgId: {MsgId}).",
-                        chatId, quote.QuoteNumber, messageId);
+                    _logger.LogInformation("Telegram document sent successfully to chat {ChatId} for quote {QuoteNumber} (MsgId: {MsgId}, File: {File}, Mime: {Mime}, Size: {Size}, FileId: {FileId}).",
+                        chatId, quote.QuoteNumber, messageId, tgFileName, tgMime, tgSize, tgFileId);
 
                     results.Add(new QuoteTelegramDeliveryResult
                     {
                         ChatId = chatId,
                         Success = true,
                         Status = "Sent",
-                        MessageId = messageId
+                        MessageId = messageId,
+                        DocumentFileName = tgFileName ?? safeAsciiFileName,
+                        DocumentMimeType = tgMime ?? "application/pdf",
+                        DocumentFileSize = tgSize ?? fileBytes.Length,
+                        DocumentFileId = tgFileId,
+                        FileSha256 = fileSha256
                     });
                 }
                 else
@@ -390,7 +444,8 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                         ChatId = chatId,
                         Success = false,
                         Status = "Failed",
-                        ErrorMessage = delivery.ErrorMessage
+                        ErrorMessage = delivery.ErrorMessage,
+                        FileSha256 = fileSha256
                     });
                 }
             }
@@ -409,7 +464,8 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     ChatId = chatId,
                     Success = false,
                     Status = "Failed",
-                    ErrorMessage = sanitized
+                    ErrorMessage = sanitized,
+                    FileSha256 = fileSha256
                 });
             }
         }
@@ -518,6 +574,135 @@ public class TelegramDeliveryService : ITelegramDeliveryService
         }
         catch { }
         return null;
+    }
+
+    private static (string? fileName, string? mimeType, long? fileSize, string? fileId) ExtractDocumentInfo(string responseJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(responseJson);
+            if (doc.RootElement.TryGetProperty("result", out var result) &&
+                result.TryGetProperty("document", out var docElem))
+            {
+                string? fileName = docElem.TryGetProperty("file_name", out var fn) ? fn.GetString() : null;
+                string? mimeType = docElem.TryGetProperty("mime_type", out var mt) ? mt.GetString() : null;
+                long? fileSize = docElem.TryGetProperty("file_size", out var fs) ? fs.GetInt64() : null;
+                string? fileId = docElem.TryGetProperty("file_id", out var fid) ? fid.GetString() : null;
+                return (fileName, mimeType, fileSize, fileId);
+            }
+        }
+        catch { }
+        return (null, null, null, null);
+    }
+
+    public async Task<TelegramVerificationResultDto> VerifyDeliveredPdfAsync(string fileId, int quoteId, CancellationToken cancellationToken = default)
+    {
+        var token = GetBotToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return new TelegramVerificationResultDto { Success = false, ErrorMessage = "رمز البوت غير مهيأ." };
+        }
+
+        var quote = await _db.Quotes.FindAsync(new object[] { quoteId }, cancellationToken);
+        if (quote == null)
+        {
+            return new TelegramVerificationResultDto { Success = false, ErrorMessage = "عرض السعر غير موجود." };
+        }
+
+        var localPath = ResolvePdfPath(quote, null);
+        if (string.IsNullOrEmpty(localPath) || !File.Exists(localPath))
+        {
+            return new TelegramVerificationResultDto { Success = false, QuoteNumber = quote.QuoteNumber, ErrorMessage = "ملف PDF المحلي غير موجود على الخادم." };
+        }
+
+        try
+        {
+            var localBytes = await File.ReadAllBytesAsync(localPath, cancellationToken);
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var localHash = Convert.ToHexString(sha.ComputeHash(localBytes));
+
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(60);
+
+            // 1. Call getFile
+            var getFileResp = await client.GetAsync($"https://api.telegram.org/bot{token}/getFile?file_id={fileId}", cancellationToken);
+            var getFileJson = await getFileResp.Content.ReadAsStringAsync(cancellationToken);
+            if (!getFileResp.IsSuccessStatusCode)
+            {
+                return new TelegramVerificationResultDto
+                {
+                    Success = false,
+                    QuoteNumber = quote.QuoteNumber,
+                    ErrorMessage = $"Telegram getFile failed: {SanitizeErrorMessage(getFileJson, token)}"
+                };
+            }
+
+            using var doc = JsonDocument.Parse(getFileJson);
+            if (!doc.RootElement.TryGetProperty("result", out var res) ||
+                !res.TryGetProperty("file_path", out var fpProp))
+            {
+                return new TelegramVerificationResultDto
+                {
+                    Success = false,
+                    QuoteNumber = quote.QuoteNumber,
+                    ErrorMessage = "Telegram getFile did not return file_path."
+                };
+            }
+
+            var filePath = fpProp.GetString();
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return new TelegramVerificationResultDto
+                {
+                    Success = false,
+                    QuoteNumber = quote.QuoteNumber,
+                    ErrorMessage = "Empty file_path from Telegram."
+                };
+            }
+
+            // 2. Download actual file from Telegram
+            var fileUrl = $"https://api.telegram.org/file/bot{token}/{filePath}";
+            var fileResp = await client.GetAsync(fileUrl, cancellationToken);
+            if (!fileResp.IsSuccessStatusCode)
+            {
+                return new TelegramVerificationResultDto
+                {
+                    Success = false,
+                    QuoteNumber = quote.QuoteNumber,
+                    ErrorMessage = $"Failed to download file from Telegram: HTTP {(int)fileResp.StatusCode}"
+                };
+            }
+
+            var telegramBytes = await fileResp.Content.ReadAsByteArrayAsync(cancellationToken);
+            var telegramHash = Convert.ToHexString(sha.ComputeHash(telegramBytes));
+
+            var headerAscii = System.Text.Encoding.ASCII.GetString(telegramBytes, 0, Math.Min(telegramBytes.Length, 1024));
+            bool hasValidSig = headerAscii.Contains("%PDF-");
+            bool hashesMatch = string.Equals(telegramHash, localHash, StringComparison.OrdinalIgnoreCase);
+
+            return new TelegramVerificationResultDto
+            {
+                Success = true,
+                QuoteNumber = quote.QuoteNumber,
+                DocumentFileName = Path.GetFileName(filePath),
+                DocumentMimeType = "application/pdf",
+                TelegramFileSize = telegramBytes.Length,
+                TelegramFileSha256 = telegramHash,
+                LocalFileSize = localBytes.Length,
+                LocalFileSha256 = localHash,
+                HashesMatch = hashesMatch,
+                HasValidPdfSignature = hasValidSig
+            };
+        }
+        catch (Exception ex)
+        {
+            return new TelegramVerificationResultDto
+            {
+                Success = false,
+                QuoteNumber = quote.QuoteNumber,
+                ErrorMessage = SanitizeErrorMessage(ex.Message, token)
+            };
+        }
     }
 
     private static string SanitizeErrorMessage(string message, string? token)

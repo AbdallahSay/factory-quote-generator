@@ -8,8 +8,28 @@ public class QuoteTelegramDeliveryResult
     public bool Success { get; set; }
     public string Status { get; set; } = string.Empty; // Sent, Failed, Skipped
     public string? MessageId { get; set; }
+    public string? DocumentFileName { get; set; }
+    public string? DocumentMimeType { get; set; }
+    public long? DocumentFileSize { get; set; }
+    public string? DocumentFileId { get; set; }
+    public string? FileSha256 { get; set; }
     public string? ErrorMessage { get; set; }
     public bool AlreadySent { get; set; }
+}
+
+public class TelegramVerificationResultDto
+{
+    public bool Success { get; set; }
+    public string? QuoteNumber { get; set; }
+    public string? DocumentFileName { get; set; }
+    public string? DocumentMimeType { get; set; }
+    public long? TelegramFileSize { get; set; }
+    public string? TelegramFileSha256 { get; set; }
+    public long? LocalFileSize { get; set; }
+    public string? LocalFileSha256 { get; set; }
+    public bool HashesMatch { get; set; }
+    public bool HasValidPdfSignature { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class TelegramRecentChatDto
@@ -39,4 +59,5 @@ public interface ITelegramDeliveryService
     Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, CancellationToken cancellationToken = default);
     Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, CancellationToken cancellationToken = default);
     Task<TelegramBotInfoDto> GetBotInfoAsync(CancellationToken cancellationToken = default);
+    Task<TelegramVerificationResultDto> VerifyDeliveredPdfAsync(string fileId, int quoteId, CancellationToken cancellationToken = default);
 }

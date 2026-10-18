@@ -143,6 +143,23 @@ public class AdminController : ControllerBase
         return Ok(info);
     }
 
+    [HttpGet("quotes/{id:int}/verify-telegram-pdf")]
+    public async Task<IActionResult> VerifyTelegramPdf(int id, [FromQuery] string fileId)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        if (string.IsNullOrWhiteSpace(fileId))
+        {
+            return BadRequest(new { success = false, message = "معرّف الملف fileId مطلوب للتحقق." });
+        }
+
+        var result = await _telegramService.VerifyDeliveredPdfAsync(fileId, id);
+        return Ok(result);
+    }
+
     public class AuditLogRequestDto
     {
         public int? UserId { get; set; } = 1;
