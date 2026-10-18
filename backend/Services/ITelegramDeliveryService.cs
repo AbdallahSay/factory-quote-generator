@@ -28,6 +28,8 @@ public class TelegramBotInfoDto
     public string? BotFirstName { get; set; }
     public long? BotId { get; set; }
     public string? ErrorMessage { get; set; }
+    public string? WebhookUrl { get; set; }
+    public string? UpdatesStatus { get; set; }
     public List<TelegramRecentChatDto> RecentChats { get; set; } = new();
 }
 

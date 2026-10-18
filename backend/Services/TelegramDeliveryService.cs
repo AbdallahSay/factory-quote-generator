@@ -102,7 +102,29 @@ public class TelegramDeliveryService : ITelegramDeliveryService
 
                     try
                     {
-                        var updatesResp = await client.GetAsync($"https://api.telegram.org/bot{token}/getUpdates?limit=25", cancellationToken);
+                        // Check Webhook Info
+                        var whResp = await client.GetAsync($"https://api.telegram.org/bot{token}/getWebhookInfo", cancellationToken);
+                        if (whResp.IsSuccessStatusCode)
+                        {
+                            var whJson = await whResp.Content.ReadAsStringAsync(cancellationToken);
+                            using var whDoc = JsonDocument.Parse(whJson);
+                            if (whDoc.RootElement.TryGetProperty("result", out var whRes))
+                            {
+                                if (whRes.TryGetProperty("url", out var urlProp))
+                                {
+                                    info.WebhookUrl = urlProp.GetString();
+                                    if (!string.IsNullOrEmpty(info.WebhookUrl))
+                                    {
+                                        // Delete webhook so bot can poll updates
+                                        await client.PostAsync($"https://api.telegram.org/bot{token}/deleteWebhook", null, cancellationToken);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Retrieve last 50 updates using negative offset
+                        var updatesResp = await client.GetAsync($"https://api.telegram.org/bot{token}/getUpdates?offset=-50&limit=50", cancellationToken);
+                        info.UpdatesStatus = $"HTTP {(int)updatesResp.StatusCode}";
                         if (updatesResp.IsSuccessStatusCode)
                         {
                             var updatesJson = await updatesResp.Content.ReadAsStringAsync(cancellationToken);
@@ -110,9 +132,11 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                             if (updatesDoc.RootElement.TryGetProperty("result", out var updatesResult) &&
                                 updatesResult.ValueKind == JsonValueKind.Array)
                             {
+                                int count = 0;
                                 var seen = new HashSet<long>();
                                 foreach (var update in updatesResult.EnumerateArray())
                                 {
+                                    count++;
                                     JsonElement chatElem = default;
                                     if (update.TryGetProperty("message", out var msg) && msg.TryGetProperty("chat", out var c1))
                                     {
@@ -121,6 +145,10 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                                     else if (update.TryGetProperty("my_chat_member", out var mcm) && mcm.TryGetProperty("chat", out var c2))
                                     {
                                         chatElem = c2;
+                                    }
+                                    else if (update.TryGetProperty("channel_post", out var cp) && cp.TryGetProperty("chat", out var c3))
+                                    {
+                                        chatElem = c3;
                                     }
 
                                     if (chatElem.ValueKind == JsonValueKind.Object && chatElem.TryGetProperty("id", out var chatIdProp))
@@ -139,12 +167,14 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                                         }
                                     }
                                 }
+                                info.UpdatesStatus = $"OK ({count} updates, {seen.Count} distinct chats)";
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to retrieve Telegram getUpdates.");
+                        info.UpdatesStatus = SanitizeErrorMessage(ex.Message, token);
+                        _logger.LogWarning(ex, "Failed to inspect Telegram updates.");
                     }
 
                     return info;
