@@ -92,13 +92,62 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     var username = result.TryGetProperty("username", out var u) ? u.GetString() : null;
                     var firstName = result.TryGetProperty("first_name", out var fn) ? fn.GetString() : null;
                     var id = result.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : (long?)null;
-                    return new TelegramBotInfoDto
+                    var info = new TelegramBotInfoDto
                     {
                         IsConfigured = true,
                         BotUsername = username,
                         BotFirstName = firstName,
                         BotId = id
                     };
+
+                    try
+                    {
+                        var updatesResp = await client.GetAsync($"https://api.telegram.org/bot{token}/getUpdates?limit=25", cancellationToken);
+                        if (updatesResp.IsSuccessStatusCode)
+                        {
+                            var updatesJson = await updatesResp.Content.ReadAsStringAsync(cancellationToken);
+                            using var updatesDoc = JsonDocument.Parse(updatesJson);
+                            if (updatesDoc.RootElement.TryGetProperty("result", out var updatesResult) &&
+                                updatesResult.ValueKind == JsonValueKind.Array)
+                            {
+                                var seen = new HashSet<long>();
+                                foreach (var update in updatesResult.EnumerateArray())
+                                {
+                                    JsonElement chatElem = default;
+                                    if (update.TryGetProperty("message", out var msg) && msg.TryGetProperty("chat", out var c1))
+                                    {
+                                        chatElem = c1;
+                                    }
+                                    else if (update.TryGetProperty("my_chat_member", out var mcm) && mcm.TryGetProperty("chat", out var c2))
+                                    {
+                                        chatElem = c2;
+                                    }
+
+                                    if (chatElem.ValueKind == JsonValueKind.Object && chatElem.TryGetProperty("id", out var chatIdProp))
+                                    {
+                                        var chatId = chatIdProp.GetInt64();
+                                        if (seen.Add(chatId))
+                                        {
+                                            info.RecentChats.Add(new TelegramRecentChatDto
+                                            {
+                                                ChatId = chatId,
+                                                Type = chatElem.TryGetProperty("type", out var tp) ? tp.GetString() : null,
+                                                Username = chatElem.TryGetProperty("username", out var un) ? un.GetString() : null,
+                                                FirstName = chatElem.TryGetProperty("first_name", out var fn2) ? fn2.GetString() : null,
+                                                LastName = chatElem.TryGetProperty("last_name", out var ln) ? ln.GetString() : null
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to retrieve Telegram getUpdates.");
+                    }
+
+                    return info;
                 }
             }
             return new TelegramBotInfoDto { IsConfigured = true, ErrorMessage = "تعذر الاتصال بـ Telegram getMe." };

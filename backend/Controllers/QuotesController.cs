@@ -20,6 +20,8 @@ public class QuotesController : ControllerBase
     private readonly ILogger<QuotesController> _logger;
     private readonly ISecurityService _securityService;
     private readonly IQuoteSequenceService _sequenceService;
+    private readonly ITelegramDeliveryService _telegramService;
+    private readonly INotificationService _notificationService;
 
     public QuotesController(
         ApplicationDbContext db,
@@ -30,7 +32,9 @@ public class QuotesController : ControllerBase
         IWebHostEnvironment env,
         ILogger<QuotesController> logger,
         ISecurityService securityService,
-        IQuoteSequenceService sequenceService)
+        IQuoteSequenceService sequenceService,
+        ITelegramDeliveryService telegramService,
+        INotificationService notificationService)
     {
         _db = db;
         _wordGenerator = wordGenerator;
@@ -41,6 +45,8 @@ public class QuotesController : ControllerBase
         _logger = logger;
         _securityService = securityService;
         _sequenceService = sequenceService;
+        _telegramService = telegramService;
+        _notificationService = notificationService;
     }
 
     [HttpPost("generate")]
@@ -208,7 +214,6 @@ public class QuotesController : ControllerBase
 
             await _db.SaveChangesAsync();
 
-            // 8. Fire-and-forget Background Tasks for Notifications
             var webhookPayload = new WebhookPayloadDto
             {
                 Event = "QuoteGenerated",
@@ -221,50 +226,54 @@ public class QuotesController : ControllerBase
                 Timestamp = DateTime.UtcNow
             };
 
-            await _backgroundQueue.QueueBackgroundWorkItemAsync(async (sp, ct) =>
+            // 8. Automatic Telegram Quotation PDF Delivery (strictly server-side, after DB save)
+            try
             {
-                var notificationService = sp.GetRequiredService<INotificationService>();
-                var telegramService = sp.GetRequiredService<ITelegramDeliveryService>();
-                var logger = sp.GetRequiredService<ILogger<QuotesController>>();
+                await _telegramService.SendQuoteDocumentAsync(quote.Id, pdfPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send automatic Telegram quotation document for quote {QuoteNumber}.", quoteNumber);
+            }
 
-                logger.LogInformation("Processing background notifications for quote {QuoteNumber}...", quoteNumber);
-
-                // 1. Send Telegram Document automatically to configured recipients
+            // 9. Optional WhatsApp Webhook notification
+            if (!string.IsNullOrEmpty(clientPhone))
+            {
                 try
                 {
-                    await telegramService.SendQuoteDocumentAsync(quote.Id, pdfPath, ct);
+                    await _notificationService.SendWhatsAppWebhookAsync(webhookPayload);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failed to send Telegram quotation document for quote {QuoteNumber}.", quoteNumber);
+                    _logger.LogError(ex, "Failed to send WhatsApp webhook for quote {QuoteNumber}.", quoteNumber);
                 }
+            }
+            else
+            {
+                _logger.LogInformation("Skipping WhatsApp webhook: ClientPhone is empty.");
+            }
 
-                // 2. Send WhatsApp Webhook only if ClientPhone is provided
-                if (!string.IsNullOrEmpty(clientPhone))
+            // 10. Optional Email notification
+            if (!string.IsNullOrEmpty(clientEmail))
+            {
+                try
                 {
-                    await notificationService.SendWhatsAppWebhookAsync(webhookPayload, ct);
-                }
-                else
-                {
-                    logger.LogInformation("Skipping WhatsApp webhook: ClientPhone is empty.");
-                }
-
-                // Send Email Notification only if ClientEmail is provided
-                if (!string.IsNullOrEmpty(clientEmail))
-                {
-                    await notificationService.SendEmailNotificationAsync(
+                    await _notificationService.SendEmailNotificationAsync(
                         clientEmail,
                         clientName,
                         quoteNumber,
                         totalAmount,
-                        pdfPath,
-                        ct);
+                        pdfPath);
                 }
-                else
+                catch (Exception ex)
                 {
-                    logger.LogInformation("Skipping Email notification: ClientEmail is empty.");
+                    _logger.LogError(ex, "Failed to send Email notification for quote {QuoteNumber}.", quoteNumber);
                 }
-            });
+            }
+            else
+            {
+                _logger.LogInformation("Skipping Email notification: ClientEmail is empty.");
+            }
 
             // 9. Return immediate 200 OK
             return Ok(new QuoteResponseDto

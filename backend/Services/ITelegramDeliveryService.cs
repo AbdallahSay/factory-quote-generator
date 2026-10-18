@@ -12,6 +12,15 @@ public class QuoteTelegramDeliveryResult
     public bool AlreadySent { get; set; }
 }
 
+public class TelegramRecentChatDto
+{
+    public long ChatId { get; set; }
+    public string? Type { get; set; }
+    public string? Username { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+}
+
 public class TelegramBotInfoDto
 {
     public bool IsConfigured { get; set; }
@@ -19,6 +28,7 @@ public class TelegramBotInfoDto
     public string? BotFirstName { get; set; }
     public long? BotId { get; set; }
     public string? ErrorMessage { get; set; }
+    public List<TelegramRecentChatDto> RecentChats { get; set; } = new();
 }
 
 public interface ITelegramDeliveryService
