@@ -5,6 +5,7 @@ namespace FactoryQuoteApi.Services;
 public class QuoteTelegramDeliveryResult
 {
     public string ChatId { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
     public bool Success { get; set; }
     public string Status { get; set; } = string.Empty; // Sent, Failed, Skipped
     public string? MessageId { get; set; }
@@ -56,8 +57,8 @@ public class TelegramBotInfoDto
 public interface ITelegramDeliveryService
 {
     Task EnsureInitializedAsync();
-    Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, CancellationToken cancellationToken = default);
-    Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, CancellationToken cancellationToken = default);
+    Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, string? specificChatId = null, CancellationToken cancellationToken = default);
+    Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, string? specificChatId = null, CancellationToken cancellationToken = default);
     Task<TelegramBotInfoDto> GetBotInfoAsync(CancellationToken cancellationToken = default);
     Task<TelegramVerificationResultDto> VerifyDeliveredPdfAsync(string fileId, int quoteId, CancellationToken cancellationToken = default);
 }

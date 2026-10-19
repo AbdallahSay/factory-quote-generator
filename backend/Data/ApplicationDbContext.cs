@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemCredential> SystemCredentials => Set<SystemCredential>();
     public DbSet<QuoteTelegramDelivery> QuoteTelegramDeliveries => Set<QuoteTelegramDelivery>();
+    public DbSet<TelegramRecipient> TelegramRecipients => Set<TelegramRecipient>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +60,10 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<QuoteTelegramDelivery>()
             .HasIndex(qtd => new { qtd.QuoteId, qtd.ChatId })
+            .IsUnique();
+
+        modelBuilder.Entity<TelegramRecipient>()
+            .HasIndex(r => r.ChatId)
             .IsUnique();
     }
 }

@@ -52,22 +52,77 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     CREATE UNIQUE NONCLUSTERED INDEX IX_QuoteTelegramDeliveries_QuoteId_ChatId 
                     ON QuoteTelegramDeliveries (QuoteId, ChatId);
                 END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'TelegramRecipients')
+                BEGIN
+                    CREATE TABLE TelegramRecipients (
+                        Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        ChatId NVARCHAR(100) NOT NULL,
+                        DisplayName NVARCHAR(150) NOT NULL,
+                        IsActive BIT NOT NULL DEFAULT 1,
+                        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+
+                    CREATE UNIQUE NONCLUSTERED INDEX IX_TelegramRecipients_ChatId 
+                    ON TelegramRecipients (ChatId);
+                END
             ");
+
+            // Seed/Import the default Chat IDs once without duplicates
+            var defaultRecipients = new (string ChatId, string DisplayName)[]
+            {
+                ("5600249013", "إدارة المصنع (5600249013)"),
+                ("1284402479", "إدارة المبيعات (1284402479)")
+            };
+
+            foreach (var (chatId, displayName) in defaultRecipients)
+            {
+                var exists = await _db.TelegramRecipients.AnyAsync(r => r.ChatId == chatId);
+                if (!exists)
+                {
+                    _db.TelegramRecipients.Add(new TelegramRecipient
+                    {
+                        ChatId = chatId,
+                        DisplayName = displayName,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // Also import any additional chat IDs from configuration if not already present
+            var configuredIds = GetConfiguredChatIds();
+            foreach (var cid in configuredIds)
+            {
+                var exists = await _db.TelegramRecipients.AnyAsync(r => r.ChatId == cid);
+                if (!exists)
+                {
+                    _db.TelegramRecipients.Add(new TelegramRecipient
+                    {
+                        ChatId = cid,
+                        DisplayName = $"المستلم {cid}",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await _db.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not ensure QuoteTelegramDeliveries table (may already exist or DB provider unsupported).");
+            _logger.LogWarning(ex, "Could not ensure Telegram tables or seed recipients (may already exist or DB provider unsupported).");
         }
     }
 
-    public async Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, CancellationToken cancellationToken = default)
+    public async Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, string? specificChatId = null, CancellationToken cancellationToken = default)
     {
-        return await ProcessDeliveriesInternalAsync(quoteId, pdfPath, isRetry: false, cancellationToken);
+        return await ProcessDeliveriesInternalAsync(quoteId, pdfPath, isRetry: false, specificChatId, cancellationToken);
     }
 
-    public async Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, CancellationToken cancellationToken = default)
+    public async Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, string? specificChatId = null, CancellationToken cancellationToken = default)
     {
-        return await ProcessDeliveriesInternalAsync(quoteId, null, isRetry: true, cancellationToken);
+        return await ProcessDeliveriesInternalAsync(quoteId, null, isRetry: true, specificChatId, cancellationToken);
     }
 
     public async Task<TelegramBotInfoDto> GetBotInfoAsync(CancellationToken cancellationToken = default)
@@ -188,7 +243,12 @@ public class TelegramDeliveryService : ITelegramDeliveryService
         }
     }
 
-    private async Task<List<QuoteTelegramDeliveryResult>> ProcessDeliveriesInternalAsync(int quoteId, string? pdfPath, bool isRetry, CancellationToken cancellationToken)
+    private async Task<List<QuoteTelegramDeliveryResult>> ProcessDeliveriesInternalAsync(
+        int quoteId, 
+        string? pdfPath, 
+        bool isRetry, 
+        string? specificChatId, 
+        CancellationToken cancellationToken)
     {
         var results = new List<QuoteTelegramDeliveryResult>();
 
@@ -290,12 +350,17 @@ public class TelegramDeliveryService : ITelegramDeliveryService
             }
         }
 
-        // 5. Get Bot Token & Recipients
+        // 5. Get Bot Token
         var botToken = GetBotToken();
-        var chatIds = GetRecipientChatIds();
 
-        foreach (var chatId in chatIds)
+        // 6. Resolve Target Recipients
+        var targetRecipients = await ResolveTargetRecipientsAsync(quote, isRetry, specificChatId, cancellationToken);
+
+        foreach (var recipient in targetRecipients)
         {
+            var chatId = recipient.ChatId;
+            var displayName = recipient.DisplayName;
+
             // Find existing delivery record for idempotency
             var delivery = quote.TelegramDeliveries.FirstOrDefault(d => d.ChatId == chatId);
             if (delivery == null)
@@ -304,15 +369,16 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     .FirstOrDefaultAsync(d => d.QuoteId == quote.Id && d.ChatId == chatId, cancellationToken);
             }
 
-            // If already sent, do not duplicate!
+            // If already sent, do not duplicate! (Requirement 8)
             if (delivery != null && delivery.Status == "Sent")
             {
-                _logger.LogInformation("Quote {QuoteNumber} already delivered to Telegram chat {ChatId} (MsgId: {MsgId}). Skipping to prevent duplicates.",
-                    quote.QuoteNumber, chatId, delivery.TelegramMessageId);
+                _logger.LogInformation("Quote {QuoteNumber} already delivered to Telegram chat {ChatId} ({DisplayName}, MsgId: {MsgId}). Skipping to prevent duplicates.",
+                    quote.QuoteNumber, chatId, displayName, delivery.TelegramMessageId);
 
                 results.Add(new QuoteTelegramDeliveryResult
                 {
                     ChatId = chatId,
+                    DisplayName = displayName,
                     Success = true,
                     AlreadySent = true,
                     Status = "Sent",
@@ -322,7 +388,7 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 continue;
             }
 
-            // Create record if not exists
+            // Create record if not exists with Pending status (Requirement 4)
             if (delivery == null)
             {
                 delivery = new QuoteTelegramDelivery
@@ -334,21 +400,51 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     CreatedAt = DateTime.UtcNow
                 };
                 _db.QuoteTelegramDeliveries.Add(delivery);
+                try
+                {
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Concurrency while creating delivery record for chat {ChatId}", chatId);
+                    // Reload
+                    delivery = await _db.QuoteTelegramDeliveries
+                        .FirstOrDefaultAsync(d => d.QuoteId == quote.Id && d.ChatId == chatId, cancellationToken);
+                    if (delivery != null && delivery.Status == "Sent")
+                    {
+                        results.Add(new QuoteTelegramDeliveryResult
+                        {
+                            ChatId = chatId,
+                            DisplayName = displayName,
+                            Success = true,
+                            AlreadySent = true,
+                            Status = "Sent",
+                            MessageId = delivery.TelegramMessageId,
+                            FileSha256 = fileSha256
+                        });
+                        continue;
+                    }
+                }
             }
 
             // Check if PDF file is valid
             if (pdfValidationError != null || fileBytes == null)
             {
-                delivery.Status = "Failed";
-                delivery.ErrorMessage = pdfValidationError ?? "ملف PDF غير متوفر.";
-                delivery.RetryCount++;
+                if (delivery != null)
+                {
+                    delivery.Status = "Failed";
+                    delivery.ErrorMessage = pdfValidationError ?? "ملف PDF غير متوفر.";
+                    delivery.RetryCount++;
+                    await TrySaveChangesAsync(cancellationToken);
+                }
 
                 results.Add(new QuoteTelegramDeliveryResult
                 {
                     ChatId = chatId,
+                    DisplayName = displayName,
                     Success = false,
                     Status = "Failed",
-                    ErrorMessage = delivery.ErrorMessage,
+                    ErrorMessage = delivery?.ErrorMessage ?? pdfValidationError,
                     FileSha256 = fileSha256
                 });
                 continue;
@@ -360,16 +456,21 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 _logger.LogWarning("Telegram bot token is not configured (Telegram__BotToken). Skipping delivery to {ChatId} for quote {QuoteNumber}.",
                     chatId, quote.QuoteNumber);
 
-                delivery.Status = "Failed";
-                delivery.ErrorMessage = "رمز بوت التيليجرام غير مهيأ في بيئة التشغيل (Telegram__BotToken).";
-                delivery.RetryCount++;
+                if (delivery != null)
+                {
+                    delivery.Status = "Failed";
+                    delivery.ErrorMessage = "رمز بوت التيليجرام غير مهيأ في بيئة التشغيل (Telegram__BotToken).";
+                    delivery.RetryCount++;
+                    await TrySaveChangesAsync(cancellationToken);
+                }
 
                 results.Add(new QuoteTelegramDeliveryResult
                 {
                     ChatId = chatId,
+                    DisplayName = displayName,
                     Success = false,
                     Status = "Failed",
-                    ErrorMessage = delivery.ErrorMessage,
+                    ErrorMessage = delivery?.ErrorMessage,
                     FileSha256 = fileSha256
                 });
                 continue;
@@ -395,10 +496,9 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 };
                 form.Add(fileContent);
 
-                _logger.LogInformation("Sending Telegram PDF document ({FileName}, {Bytes} bytes, SHA256: {Hash}) to chat {ChatId} for quote {QuoteNumber}...",
-                    safeAsciiFileName, fileBytes.Length, fileSha256, chatId, quote.QuoteNumber);
+                _logger.LogInformation("Sending Telegram PDF document ({FileName}, {Bytes} bytes, SHA256: {Hash}) to chat {ChatId} ({DisplayName}) for quote {QuoteNumber}...",
+                    safeAsciiFileName, fileBytes.Length, fileSha256, chatId, displayName, quote.QuoteNumber);
 
-                // Never log the raw token in log output or error strings
                 var endpoint = $"https://api.telegram.org/bot{botToken}/sendDocument";
                 var response = await client.PostAsync(endpoint, form, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -408,17 +508,22 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                     string? messageId = ExtractMessageId(responseBody);
                     var (tgFileName, tgMime, tgSize, tgFileId) = ExtractDocumentInfo(responseBody);
 
-                    delivery.Status = "Sent";
-                    delivery.TelegramMessageId = messageId;
-                    delivery.SentAt = DateTime.UtcNow;
-                    delivery.ErrorMessage = null;
+                    if (delivery != null)
+                    {
+                        delivery.Status = "Sent";
+                        delivery.TelegramMessageId = messageId;
+                        delivery.SentAt = DateTime.UtcNow;
+                        delivery.ErrorMessage = null;
+                        await TrySaveChangesAsync(cancellationToken);
+                    }
 
-                    _logger.LogInformation("Telegram document sent successfully to chat {ChatId} for quote {QuoteNumber} (MsgId: {MsgId}, File: {File}, Mime: {Mime}, Size: {Size}, FileId: {FileId}).",
-                        chatId, quote.QuoteNumber, messageId, tgFileName, tgMime, tgSize, tgFileId);
+                    _logger.LogInformation("Telegram document sent successfully to chat {ChatId} ({DisplayName}) for quote {QuoteNumber} (MsgId: {MsgId}).",
+                        chatId, displayName, quote.QuoteNumber, messageId);
 
                     results.Add(new QuoteTelegramDeliveryResult
                     {
                         ChatId = chatId,
+                        DisplayName = displayName,
                         Success = true,
                         Status = "Sent",
                         MessageId = messageId,
@@ -432,19 +537,24 @@ public class TelegramDeliveryService : ITelegramDeliveryService
                 else
                 {
                     string errorDesc = ExtractErrorDescription(responseBody) ?? $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
-                    delivery.Status = "Failed";
-                    delivery.ErrorMessage = SanitizeErrorMessage(errorDesc, botToken);
-                    delivery.RetryCount++;
+                    if (delivery != null)
+                    {
+                        delivery.Status = "Failed";
+                        delivery.ErrorMessage = SanitizeErrorMessage(errorDesc, botToken);
+                        delivery.RetryCount++;
+                        await TrySaveChangesAsync(cancellationToken);
+                    }
 
-                    _logger.LogWarning("Telegram sendDocument failed for chat {ChatId} on quote {QuoteNumber}: {Error}",
-                        chatId, quote.QuoteNumber, delivery.ErrorMessage);
+                    _logger.LogWarning("Telegram sendDocument failed for chat {ChatId} ({DisplayName}) on quote {QuoteNumber}: {Error}",
+                        chatId, displayName, quote.QuoteNumber, delivery?.ErrorMessage);
 
                     results.Add(new QuoteTelegramDeliveryResult
                     {
                         ChatId = chatId,
+                        DisplayName = displayName,
                         Success = false,
                         Status = "Failed",
-                        ErrorMessage = delivery.ErrorMessage,
+                        ErrorMessage = delivery?.ErrorMessage,
                         FileSha256 = fileSha256
                     });
                 }
@@ -452,16 +562,21 @@ public class TelegramDeliveryService : ITelegramDeliveryService
             catch (Exception ex)
             {
                 var sanitized = SanitizeErrorMessage(ex.Message, botToken);
-                delivery.Status = "Failed";
-                delivery.ErrorMessage = sanitized;
-                delivery.RetryCount++;
+                if (delivery != null)
+                {
+                    delivery.Status = "Failed";
+                    delivery.ErrorMessage = sanitized;
+                    delivery.RetryCount++;
+                    await TrySaveChangesAsync(cancellationToken);
+                }
 
-                _logger.LogError(ex, "Exception while sending Telegram document to chat {ChatId} for quote {QuoteNumber}.",
-                    chatId, quote.QuoteNumber);
+                _logger.LogError(ex, "Exception while sending Telegram document to chat {ChatId} ({DisplayName}) for quote {QuoteNumber}.",
+                    chatId, displayName, quote.QuoteNumber);
 
                 results.Add(new QuoteTelegramDeliveryResult
                 {
                     ChatId = chatId,
+                    DisplayName = displayName,
                     Success = false,
                     Status = "Failed",
                     ErrorMessage = sanitized,
@@ -470,16 +585,111 @@ public class TelegramDeliveryService : ITelegramDeliveryService
             }
         }
 
+        return results;
+    }
+
+    private class TargetRecipientInfo
+    {
+        public string ChatId { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    private async Task<List<TargetRecipientInfo>> ResolveTargetRecipientsAsync(
+        Quote quote, 
+        bool isRetry, 
+        string? specificChatId, 
+        CancellationToken cancellationToken)
+    {
+        var targets = new List<TargetRecipientInfo>();
+
+        if (!string.IsNullOrWhiteSpace(specificChatId))
+        {
+            var trimmed = specificChatId.Trim();
+            var rec = await _db.TelegramRecipients
+                .FirstOrDefaultAsync(r => r.ChatId == trimmed, cancellationToken);
+
+            targets.Add(new TargetRecipientInfo
+            {
+                ChatId = trimmed,
+                DisplayName = rec?.DisplayName ?? $"المستلم {trimmed}"
+            });
+            return targets;
+        }
+
+        // Fetch active recipients from DB (Requirement 6)
+        var activeRecipients = await _db.TelegramRecipients
+            .Where(r => r.IsActive)
+            .OrderBy(r => r.Id)
+            .ToListAsync(cancellationToken);
+
+        if (activeRecipients.Count == 0)
+        {
+            var configured = GetConfiguredChatIds();
+            foreach (var cid in configured)
+            {
+                targets.Add(new TargetRecipientInfo
+                {
+                    ChatId = cid,
+                    DisplayName = $"المستلم {cid}"
+                });
+            }
+            return targets;
+        }
+
+        if (isRetry)
+        {
+            // For retry on an existing quote without specificChatId:
+            // Target recipients that already had a delivery record for this quote OR active recipients
+            var existingChatIds = quote.TelegramDeliveries.Select(d => d.ChatId).ToHashSet();
+            var activeMap = activeRecipients.ToDictionary(r => r.ChatId, r => r.DisplayName);
+
+            foreach (var cid in existingChatIds)
+            {
+                targets.Add(new TargetRecipientInfo
+                {
+                    ChatId = cid,
+                    DisplayName = activeMap.TryGetValue(cid, out var name) ? name : $"المستلم {cid}"
+                });
+            }
+
+            foreach (var r in activeRecipients)
+            {
+                if (!existingChatIds.Contains(r.ChatId))
+                {
+                    targets.Add(new TargetRecipientInfo
+                    {
+                        ChatId = r.ChatId,
+                        DisplayName = r.DisplayName
+                    });
+                }
+            }
+        }
+        else
+        {
+            // Fresh quote: ONLY send to ACTIVE recipients! (Requirement 6 & 7)
+            foreach (var r in activeRecipients)
+            {
+                targets.Add(new TargetRecipientInfo
+                {
+                    ChatId = r.ChatId,
+                    DisplayName = r.DisplayName
+                });
+            }
+        }
+
+        return targets;
+    }
+
+    private async Task TrySaveChangesAsync(CancellationToken cancellationToken)
+    {
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving Telegram delivery statuses for quote {QuoteNumber}.", quote.QuoteNumber);
+            _logger.LogError(ex, "Error saving Telegram delivery record.");
         }
-
-        return results;
     }
 
     private string? ResolvePdfPath(Quote quote, string? suggestedPath)
@@ -526,7 +736,7 @@ public class TelegramDeliveryService : ITelegramDeliveryService
         return token.Trim();
     }
 
-    private List<string> GetRecipientChatIds()
+    public List<string> GetConfiguredChatIds()
     {
         var raw = _configuration["Telegram:ChatIds"]
                   ?? _configuration["Telegram__ChatIds"]

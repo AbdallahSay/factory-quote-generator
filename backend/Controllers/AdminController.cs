@@ -64,6 +64,9 @@ public class AdminController : ControllerBase
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
 
+        var recipientsMap = await _db.TelegramRecipients
+            .ToDictionaryAsync(r => r.ChatId, r => r.DisplayName);
+
         var quotes = await _db.Quotes
             .Include(q => q.User)
             .Include(q => q.Items)
@@ -94,6 +97,7 @@ public class AdminController : ControllerBase
                 TelegramDeliveries = q.TelegramDeliveries.Select(td => new
                 {
                     td.ChatId,
+                    DisplayName = recipientsMap.ContainsKey(td.ChatId) ? recipientsMap[td.ChatId] : td.ChatId,
                     td.Status,
                     td.TelegramMessageId,
                     td.SentAt,
@@ -107,12 +111,15 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("quotes/{id:int}/retry-telegram")]
-    public async Task<IActionResult> RetryTelegramDelivery(int id)
+    [HttpPost("quotes/{id:int}/telegram-deliveries/{routeChatId}/retry")]
+    public async Task<IActionResult> RetryTelegramDelivery(int id, [FromQuery] string? chatId = null, [FromRoute] string? routeChatId = null)
     {
         if (!await IsAuthorizedAdminAsync())
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
+
+        var targetChatId = !string.IsNullOrWhiteSpace(routeChatId) ? routeChatId : chatId;
 
         var quote = await _db.Quotes.FindAsync(id);
         if (quote == null)
@@ -120,14 +127,193 @@ public class AdminController : ControllerBase
             return NotFound(new { success = false, message = "عرض السعر غير موجود." });
         }
 
-        var results = await _telegramService.RetryQuoteDeliveryAsync(id);
+        var results = await _telegramService.RetryQuoteDeliveryAsync(id, targetChatId);
 
         return Ok(new
         {
             success = true,
             quoteId = id,
             quoteNumber = quote.QuoteNumber,
+            chatId = targetChatId,
             results = results
+        });
+    }
+
+    [HttpGet("telegram/recipients")]
+    public async Task<IActionResult> GetTelegramRecipients()
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var recipients = await _db.TelegramRecipients
+            .OrderByDescending(r => r.IsActive)
+            .ThenBy(r => r.Id)
+            .ToListAsync();
+
+        var chatIds = recipients.Select(r => r.ChatId).ToList();
+
+        var deliveryStats = await _db.QuoteTelegramDeliveries
+            .Where(d => chatIds.Contains(d.ChatId))
+            .GroupBy(d => d.ChatId)
+            .Select(g => new
+            {
+                ChatId = g.Key,
+                TotalSent = g.Count(d => d.Status == "Sent"),
+                TotalFailed = g.Count(d => d.Status == "Failed"),
+                LastDeliveryAt = g.Max(d => d.SentAt),
+                LastStatus = g.OrderByDescending(d => d.CreatedAt).Select(d => d.Status).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var statsMap = deliveryStats.ToDictionary(s => s.ChatId);
+
+        var result = recipients.Select(r => new TelegramRecipientResponseDto
+        {
+            Id = r.Id,
+            ChatId = r.ChatId,
+            DisplayName = r.DisplayName,
+            IsActive = r.IsActive,
+            CreatedAt = r.CreatedAt,
+            TotalSent = statsMap.TryGetValue(r.ChatId, out var s) ? s.TotalSent : 0,
+            TotalFailed = statsMap.TryGetValue(r.ChatId, out var s2) ? s2.TotalFailed : 0,
+            LastDeliveryAt = statsMap.TryGetValue(r.ChatId, out var s3) ? s3.LastDeliveryAt : null,
+            LastStatus = statsMap.TryGetValue(r.ChatId, out var s4) ? s4.LastStatus : null
+        });
+
+        return Ok(result);
+    }
+
+    [HttpPost("telegram/recipients")]
+    public async Task<IActionResult> AddTelegramRecipient([FromBody] CreateTelegramRecipientRequestDto dto)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ChatId))
+        {
+            return BadRequest(new { success = false, message = "معرف المحادثة (Chat ID) مطلوب." });
+        }
+
+        var trimmedChatId = dto.ChatId.Trim();
+        var existing = await _db.TelegramRecipients.FirstOrDefaultAsync(r => r.ChatId == trimmedChatId);
+        if (existing != null)
+        {
+            return BadRequest(new { success = false, message = "معرف المحادثة مسجل بالفعل مسبقاً." });
+        }
+
+        var recipient = new TelegramRecipient
+        {
+            ChatId = trimmedChatId,
+            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? $"مستلم {trimmedChatId}" : dto.DisplayName.Trim(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.TelegramRecipients.Add(recipient);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, recipient, message = "تمت إضافة مستلم التيليجرام بنجاح." });
+    }
+
+    [HttpPut("telegram/recipients/{id:int}")]
+    public async Task<IActionResult> UpdateTelegramRecipient(int id, [FromBody] UpdateTelegramRecipientRequestDto dto)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var recipient = await _db.TelegramRecipients.FindAsync(id);
+        if (recipient == null)
+        {
+            return NotFound(new { success = false, message = "مستلم التيليجرام غير موجود." });
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.DisplayName))
+        {
+            recipient.DisplayName = dto.DisplayName.Trim();
+        }
+        if (dto.IsActive.HasValue)
+        {
+            recipient.IsActive = dto.IsActive.Value;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, recipient, message = "تم تحديث بيانات المستلم بنجاح." });
+    }
+
+    [HttpPost("telegram/recipients/{id:int}/toggle-active")]
+    public async Task<IActionResult> ToggleTelegramRecipientActive(int id, [FromBody] ToggleActiveRequestDto? dto = null)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var recipient = await _db.TelegramRecipients.FindAsync(id);
+        if (recipient == null)
+        {
+            return NotFound(new { success = false, message = "مستلم التيليجرام غير موجود." });
+        }
+
+        if (dto?.IsActive.HasValue == true)
+        {
+            recipient.IsActive = dto.IsActive.Value;
+        }
+        else
+        {
+            recipient.IsActive = !recipient.IsActive;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            success = true,
+            isActive = recipient.IsActive,
+            message = recipient.IsActive ? "تم تفعيل المستلم بنجاح." : "تم تعطيل المستلم بنجاح."
+        });
+    }
+
+    [HttpDelete("telegram/recipients/{id:int}")]
+    public async Task<IActionResult> DeleteTelegramRecipient(int id)
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var recipient = await _db.TelegramRecipients.FindAsync(id);
+        if (recipient == null)
+        {
+            return NotFound(new { success = false, message = "مستلم التيليجرام غير موجود." });
+        }
+
+        bool hasDeliveries = await _db.QuoteTelegramDeliveries.AnyAsync(d => d.ChatId == recipient.ChatId);
+        if (hasDeliveries)
+        {
+            recipient.IsActive = false;
+            await _db.SaveChangesAsync();
+            return Ok(new
+            {
+                success = true,
+                deactivated = true,
+                message = "تم تعطيل المستلم بدلاً من حذفه للحفاظ على سجلات عروض الأسعار السابقة."
+            });
+        }
+
+        _db.TelegramRecipients.Remove(recipient);
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            success = true,
+            message = "تم حذف المستلم بنجاح."
         });
     }
 

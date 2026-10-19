@@ -95,6 +95,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     إدارة الحسابات
                 </button>
+                <button id="tabTelegramBtn" onclick="switchAdminTab('telegram')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    مستلمو التيليجرام
+                </button>
             </div>
         </div>
 
@@ -250,6 +254,78 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Section: Telegram Recipients Management -->
+            <div id="telegramSection" class="hidden space-y-6">
+                <!-- Top Bot Info & Status Card -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-sm">
+                            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.18 3.35-1.38 3.73-1.39.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-black text-slate-800 text-base" id="tgBotName">بوت تيليجرام EG BLOCK</h3>
+                                <span id="tgBotStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">جاري الفحص...</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">إرسال كل عرض سعر جديد تلقائياً بصيغة PDF قابلة للفتح المباشر إلى المستلمين النشطين فقط</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openAddRecipientModal()" class="px-3.5 py-2 text-xs bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            إضافة مستلم جديد
+                        </button>
+                        <button onclick="loadTelegramRecipients(true); loadTelegramBotInfo();" class="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg border border-slate-200 transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            تحديث
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recipients Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50/70">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-sky-600"></span>
+                                قائمة مستلمي إشعارات عروض الأسعار (Telegram Recipients)
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">يمكن تفعيل أو تعطيل أي مستلم دون التأثير على المستلمين الآخرين ودون فقدان السجلات السابقة</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 border-b"># المعرف</th>
+                                    <th class="py-3 px-4 border-b">الاسم التعريفي</th>
+                                    <th class="py-3 px-4 border-b">معرف المحادثة (Chat ID)</th>
+                                    <th class="py-3 px-4 border-b">الحالة</th>
+                                    <th class="py-3 px-4 border-b">إحصائيات التسليم</th>
+                                    <th class="py-3 px-4 border-b">تاريخ الإضافة</th>
+                                    <th class="py-3 px-4 border-b text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="telegramRecipientsTableBody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل قائمة المستلمين...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section for Detected Chats from Bot Updates (Auto-Discovery Helper) -->
+                <div id="detectedChatsContainer" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hidden">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-1.5 text-sky-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        محادثات بدأت التواصل مؤخراً مع البوت (اضغط لإضافتها بضغطة واحدة):
+                    </h3>
+                    <div id="detectedChatsList" class="flex flex-wrap gap-2 text-xs"></div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -267,8 +343,12 @@
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
             const isEmployeesActive = !document.getElementById('employeesSection').classList.contains('hidden');
+            const isTelegramActive = !document.getElementById('telegramSection').classList.contains('hidden');
             if (isEmployeesActive) {
                 loadEmployees(true);
+            } else if (isTelegramActive) {
+                loadTelegramRecipients(true);
+                loadTelegramBotInfo();
             } else {
                 fetchDashboardData(true);
             }
@@ -312,19 +392,30 @@
         function switchAdminTab(tab) {
             const quotesSec = document.getElementById('quotesSection');
             const empSec = document.getElementById('employeesSection');
+            const tgSec = document.getElementById('telegramSection');
             const qBtn = document.getElementById('tabQuotesBtn');
             const eBtn = document.getElementById('tabEmployeesBtn');
+            const tBtn = document.getElementById('tabTelegramBtn');
+
+            quotesSec.classList.add('hidden');
+            empSec.classList.add('hidden');
+            tgSec.classList.add('hidden');
+
+            qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+            eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+            tBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
 
             if (tab === 'employees') {
-                quotesSec.classList.add('hidden');
                 empSec.classList.remove('hidden');
-                qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
                 eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2";
                 loadEmployees();
+            } else if (tab === 'telegram') {
+                tgSec.classList.remove('hidden');
+                tBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-sky-600 text-sky-700 transition flex items-center gap-2";
+                loadTelegramRecipients();
+                loadTelegramBotInfo();
             } else {
-                empSec.classList.add('hidden');
                 quotesSec.classList.remove('hidden');
-                eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
                 qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2";
                 fetchDashboardData(false);
             }
@@ -430,22 +521,30 @@
                             <div class="flex items-center justify-center gap-1.5 flex-wrap">
                                 ${(() => {
                                     const deliveries = q.telegramDeliveries || [];
-                                    if (deliveries.length === 0) return '';
-                                    const allSent = deliveries.every(d => d.status === 'Sent');
-                                    const anyFailed = deliveries.some(d => d.status === 'Failed');
-                                    if (allSent) {
-                                        return `<span class="px-2 py-1 text-xs bg-sky-100 text-sky-800 font-bold rounded flex items-center gap-1" title="تم تسليم ملف PDF عبر التيليجرام بنجاح">
-                                            <svg class="w-3.5 h-3.5 text-sky-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                                            تيليجرام
-                                        </span>`;
-                                    } else if (anyFailed) {
-                                        return `<button onclick="retryTelegram(${q.id}, '${q.quoteNumber}')" class="px-2 py-1 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded flex items-center gap-1 transition shadow-sm" title="فشل إرسال التيليجرام. اضغط لإعادة المحاولة">
-                                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                            إعادة تيليجرام
+                                    if (deliveries.length === 0) {
+                                        return `<button onclick="retryTelegram(${q.id}, '${q.quoteNumber}')" class="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded flex items-center gap-1 transition" title="إرسال إلى المستلمين النشطين">
+                                            <svg class="w-3.5 h-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.18 3.35-1.38 3.73-1.39.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                                            إرسال تيليجرام
                                         </button>`;
-                                    } else {
-                                        return `<span class="px-2 py-1 text-xs bg-slate-100 text-slate-600 font-medium rounded flex items-center gap-1">تيليجرام: معلق</span>`;
                                     }
+
+                                    return deliveries.map(d => {
+                                        const name = d.displayName || d.chatId;
+                                        const safeName = (name || '').replace(/'/g, "\\'");
+                                        if (d.status === 'Sent') {
+                                            return `<span class="px-2 py-0.5 text-[11px] bg-sky-100 text-sky-800 font-bold rounded flex items-center gap-1 border border-sky-200" title="${name} (${d.chatId}): تم التسليم بنجاح (معرف: ${d.telegramMessageId || '-'})">
+                                                <svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                                                ${name}
+                                            </span>`;
+                                        } else if (d.status === 'Failed') {
+                                            return `<button onclick="retryTelegramSingle(${q.id}, '${q.quoteNumber}', '${d.chatId}', '${safeName}')" class="px-2 py-0.5 text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded flex items-center gap-1 transition shadow-sm border border-amber-300" title="${d.errorMessage || 'فشل الإرسال'} - اضغط لإعادة المحاولة لهذا المستلم فقط">
+                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                إعادة: ${name}
+                                            </button>`;
+                                        } else {
+                                            return `<span class="px-2 py-0.5 text-[11px] bg-slate-100 text-slate-600 font-medium rounded flex items-center gap-1 border border-slate-200">${name}: معلق</span>`;
+                                        }
+                                    }).join('');
                                 })()}
                                 <a href="${pdfUrl}" target="_blank" onclick="trackDownload('PDF', '${q.quoteNumber}')" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
@@ -490,6 +589,51 @@
                         Swal.fire({
                             title: 'لم يكتمل الإرسال',
                             text: firstError || 'فشل إرسال ملف العرض عبر تيليجرام. يرجى التأكد من تهيئة التوكن.',
+                            icon: 'warning'
+                        });
+                    }
+                    loadQuotes();
+                } else {
+                    Swal.fire({
+                        title: 'تنبيه',
+                        text: data.message || 'تعذر استكمال العملية.',
+                        icon: 'warning'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'خطأ في الاتصال',
+                    text: err.message,
+                    icon: 'error'
+                });
+            }
+        };
+
+        window.retryTelegramSingle = async function(quoteId, quoteNum, chatId, displayName) {
+            try {
+                Swal.fire({
+                    title: 'جاري إعادة الإرسال...',
+                    text: `إعادة إرسال عرض السعر ${quoteNum} إلى ${displayName} (${chatId})`,
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/quotes/${quoteId}/retry-telegram?chatId=${encodeURIComponent(chatId)}`, {
+                    method: 'POST',
+                    headers: { ...Auth.getAuthHeader('admin') }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const firstRes = data.results && data.results.find(r => r.chatId === chatId);
+                    if (firstRes && firstRes.success) {
+                        Swal.fire({
+                            title: 'تم الإرسال بنجاح!',
+                            text: `تم إرسال ملف العرض إلى ${displayName} بنجاح.`,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'لم يكتمل الإرسال',
+                            text: (firstRes && firstRes.errorMessage) || 'تعذر إرسال المستند لهذا المستلم.',
                             icon: 'warning'
                         });
                     }
@@ -854,6 +998,304 @@
                 `}).join('');
             } catch (err) {
                 console.error('Logs error:', err);
+            }
+        }
+
+        async function loadTelegramRecipients(isManual = false) {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/recipients`, {
+                    headers: { ...Auth.getAuthHeader('admin') }
+                });
+                if (res.status === 401) {
+                    showAdminModal();
+                    return;
+                }
+                if (!res.ok) return;
+                const recipients = await res.json();
+                const tbody = document.getElementById('telegramRecipientsTableBody');
+
+                if (recipients.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">لا يوجد مستلمون مسجلون بعد. اضغط على "إضافة مستلم جديد".</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = recipients.map(rec => {
+                    const statusBadge = rec.isActive
+                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط (يستلم تلقائياً)</span>'
+                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل</span>';
+
+                    const toggleBtnText = rec.isActive ? 'تعطيل' : 'تفعيل';
+                    const toggleBtnClass = rec.isActive 
+                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' 
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200';
+
+                    const safeName = (rec.displayName || '').replace(/'/g, "\\'");
+
+                    const statsText = `
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 text-emerald-700 font-bold" title="تم التسليم بنجاح">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                                ${rec.totalSent} ناجح
+                            </span>
+                            <span class="text-slate-300">|</span>
+                            <span class="inline-flex items-center gap-1 text-rose-600 font-bold" title="فشل التسليم">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                ${rec.totalFailed} فاشل
+                            </span>
+                        </div>
+                    `;
+
+                    return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${rec.id}</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">${rec.displayName}</td>
+                        <td class="py-3 px-4 font-mono text-sky-800 font-bold">${rec.chatId}</td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4">${statsText}</td>
+                        <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(rec.createdAt).toLocaleDateString('ar-EG')}</td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openEditRecipientModal(${rec.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition">
+                                    تعديل الاسم
+                                </button>
+                                <button onclick="toggleRecipientStatus(${rec.id}, ${rec.isActive}, '${safeName}')" class="px-2.5 py-1 text-xs font-semibold rounded border transition ${toggleBtnClass}">
+                                    ${toggleBtnText}
+                                </button>
+                                <button onclick="deleteRecipient(${rec.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded border border-rose-200 transition" title="حذف أو تعطيل">
+                                    حذف
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `}).join('');
+
+                if (isManual) {
+                    Swal.fire({
+                        title: 'تم بنجاح!',
+                        text: 'تم تحديث قائمة مستلمي التيليجرام بنجاح.',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (err) {
+                console.error('Telegram recipients load error:', err);
+            }
+        }
+
+        async function loadTelegramBotInfo() {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram-info`, {
+                    headers: { ...Auth.getAuthHeader('admin') }
+                });
+                if (!res.ok) return;
+                const info = await res.json();
+                const badge = document.getElementById('tgBotStatusBadge');
+                const nameElem = document.getElementById('tgBotName');
+
+                if (info.isConfigured && info.botUsername) {
+                    nameElem.textContent = `${info.botFirstName || 'بوت تيليجرام'} (@${info.botUsername})`;
+                    badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>متصل ويعمل';
+                } else {
+                    nameElem.textContent = 'بوت تيليجرام EG BLOCK';
+                    badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200";
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>غير مهيأ أو التوكن غير صالح';
+                }
+
+                const detectedContainer = document.getElementById('detectedChatsContainer');
+                const detectedList = document.getElementById('detectedChatsList');
+                if (info.recentChats && info.recentChats.length > 0) {
+                    detectedContainer.classList.remove('hidden');
+                    detectedList.innerHTML = info.recentChats.map(c => {
+                        const title = `${c.firstName || c.username || ''} (${c.chatId})`.trim();
+                        const safeTitle = title.replace(/'/g, "\\'");
+                        return `
+                            <button onclick="openAddRecipientModal('${c.chatId}', '${safeTitle}')" class="inline-flex items-center gap-1 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg transition font-medium">
+                                <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                إضافة: ${title}
+                            </button>
+                        `;
+                    }).join('');
+                } else {
+                    detectedContainer.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error('Bot info load error:', err);
+            }
+        }
+
+        async function openAddRecipientModal(prefillChatId = '', prefillName = '') {
+            const { value: formValues } = await Swal.fire({
+                title: 'إضافة مستلم تيليجرام جديد',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">معرف المحادثة (Chat ID) *</label>
+                            <input id="swalChatId" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: 1284402479 أو -100..." value="${prefillChatId}">
+                            <p class="text-[11px] text-slate-500 mt-1">يمكن للمستلم الحصول على معرف حسابه بإرسال رسالة إلى @userinfobot في تيليجرام</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي للمستلم *</label>
+                            <input id="swalDisplayName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: م/ عبدالله سيد (إدارة المبيعات)" value="${prefillName}">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'إضافة المستلم',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#0284c7',
+                preConfirm: () => {
+                    const chatId = document.getElementById('swalChatId').value.trim();
+                    const displayName = document.getElementById('swalDisplayName').value.trim();
+
+                    if (!chatId) {
+                        Swal.showValidationMessage('يرجى إدخال معرف المحادثة (Chat ID)');
+                        return false;
+                    }
+                    if (!displayName) {
+                        Swal.showValidationMessage('يرجى إدخال الاسم التعريفي للمستلم');
+                        return false;
+                    }
+                    return { chatId, displayName };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/recipients`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل إضافة المستلم');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadTelegramRecipients();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function openEditRecipientModal(id, currentName) {
+            const { value: formValues } = await Swal.fire({
+                title: 'تعديل الاسم التعريفي للمستلم',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي *</label>
+                            <input id="swalEditDisplayName" class="swal2-input !m-0 !w-full !text-sm" value="${currentName}">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ التعديل',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#0284c7',
+                preConfirm: () => {
+                    const displayName = document.getElementById('swalEditDisplayName').value.trim();
+                    if (!displayName) {
+                        Swal.showValidationMessage('يرجى كتابة الاسم التعريفي');
+                        return false;
+                    }
+                    return { displayName };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/recipients/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تحديث البيانات');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadTelegramRecipients();
+                    loadQuotes();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function toggleRecipientStatus(id, currentActive, name) {
+            const actionText = currentActive ? 'تعطيل' : 'تفعيل';
+            const result = await Swal.fire({
+                title: `${actionText} المستلم؟`,
+                text: currentActive 
+                    ? `هل أنت متأكد من تعطيل (${name})؟ لن يستلم عروض الأسعار الجديدة بعد الآن، وستبقى سجلات التسليم السابقة محفوظة دون تغيير.`
+                    : `هل أنت متأكد من تفعيل (${name})؟ سيستلم جميع عروض الأسعار الجديدة الصادرة فور حفظها.`,
+                icon: currentActive ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: `نعم، ${actionText}`,
+                cancelButtonText: 'تراجع',
+                confirmButtonColor: currentActive ? '#dc2626' : '#16a34a'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/recipients/${id}/toggle-active`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('admin')
+                        },
+                        body: JSON.stringify({ isActive: !currentActive })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تغيير حالة المستلم');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadTelegramRecipients();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function deleteRecipient(id, name) {
+            const result = await Swal.fire({
+                title: `حذف المستلم (${name})؟`,
+                text: 'في حال وجود عروض أسعار سابقة مسجلة لهذا المستلم، سيتم تعطيله تلقائياً بدلاً من الحذف للحفاظ على السجلات التاريخية.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، حذف / تعطيل',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#dc2626'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/recipients/${id}`, {
+                        method: 'DELETE',
+                        headers: { ...Auth.getAuthHeader('admin') }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل حذف المستلم');
+                    }
+                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadTelegramRecipients();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                }
             }
         }
     </script>
