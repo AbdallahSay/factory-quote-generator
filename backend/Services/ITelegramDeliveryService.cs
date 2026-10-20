@@ -58,7 +58,7 @@ public interface ITelegramDeliveryService
 {
     Task EnsureInitializedAsync();
     Task<List<QuoteTelegramDeliveryResult>> SendQuoteDocumentAsync(int quoteId, string? pdfPath = null, string? specificChatId = null, CancellationToken cancellationToken = default);
-    Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, string? specificChatId = null, CancellationToken cancellationToken = default);
+    Task<List<QuoteTelegramDeliveryResult>> RetryQuoteDeliveryAsync(int quoteId, string? specificChatId = null, bool allowNewRecipient = false, CancellationToken cancellationToken = default);
     Task<TelegramBotInfoDto> GetBotInfoAsync(CancellationToken cancellationToken = default);
     Task<TelegramVerificationResultDto> VerifyDeliveredPdfAsync(string fileId, int quoteId, CancellationToken cancellationToken = default);
 }

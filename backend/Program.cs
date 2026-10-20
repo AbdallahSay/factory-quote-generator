@@ -69,6 +69,69 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Ensuring SQL Server database is created...");
         db.Database.EnsureCreated();
 
+        // Additive schema upgrades for F15 metadata
+        if (db.Database.IsSqlServer())
+        {
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Quotes') AND name = 'PdfSha256')
+                    BEGIN
+                        ALTER TABLE Quotes ADD PdfSha256 NVARCHAR(64) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Quotes') AND name = 'PdfSizeBytes')
+                    BEGIN
+                        ALTER TABLE Quotes ADD PdfSizeBytes BIGINT NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Quotes') AND name = 'StorageFileName')
+                    BEGIN
+                        ALTER TABLE Quotes ADD StorageFileName NVARCHAR(260) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Quotes') AND name = 'DocxStorageFileName')
+                    BEGIN
+                        ALTER TABLE Quotes ADD DocxStorageFileName NVARCHAR(260) NULL;
+                    END
+                ");
+                logger.LogInformation("Database additive schema upgrades checked.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not run additive schema upgrade SQL; may already exist.");
+            }
+        }
+
+        // Migrate legacy public files outside wwwroot (F03)
+        try
+        {
+            var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+            var legacyDir = Path.Combine(webRoot, "quotes");
+            var privateDir = Path.Combine(app.Environment.ContentRootPath, "App_Data", "quotes");
+            Directory.CreateDirectory(privateDir);
+
+            if (Directory.Exists(legacyDir))
+            {
+                foreach (var file in Directory.GetFiles(legacyDir))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var destPath = Path.Combine(privateDir, fileName);
+                    if (!File.Exists(destPath))
+                    {
+                        File.Copy(file, destPath, overwrite: false);
+                        logger.LogInformation("Migrated historical quote document {FileName} to private storage.", fileName);
+                    }
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error while migrating legacy public files.");
+        }
+
         // Initial users are provisioned exclusively by the Owner; no hardcoded bootstrap accounts
         if (!db.Users.Any())
         {

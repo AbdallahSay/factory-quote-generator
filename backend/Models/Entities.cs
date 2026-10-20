@@ -88,6 +88,13 @@ public class Quote
     public string? PdfUrl { get; set; }
     [MaxLength(500)]
     public string? DocxUrl { get; set; }
+    [MaxLength(64)]
+    public string? PdfSha256 { get; set; }
+    public long? PdfSizeBytes { get; set; }
+    [MaxLength(260)]
+    public string? StorageFileName { get; set; }
+    [MaxLength(260)]
+    public string? DocxStorageFileName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<QuoteItem> Items { get; set; } = new List<QuoteItem>();

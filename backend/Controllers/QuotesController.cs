@@ -145,16 +145,16 @@ public class QuotesController : ControllerBase
             // Outgoing number format: [UniqueSequence]-[dd]-[MM]-[yyyy] with 6 digits (e.g. 000123-08-10-2026)
             var quoteNumber = await _sequenceService.GetNextQuoteNumberAsync(quoteDate);
 
-            // 4. File Paths
-            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            var quotesDir = Path.Combine(webRoot, "quotes");
-            System.IO.Directory.CreateDirectory(quotesDir);
+            // 4. Secure File Paths in App_Data/quotes (outside publicly served wwwroot)
+            var appDataQuotesDir = Path.Combine(_env.ContentRootPath, "App_Data", "quotes");
+            Directory.CreateDirectory(appDataQuotesDir);
 
-            var baseFileName = _wordGenerator.SanitizeFileName(clientName, projectName, quoteNumber);
-            var docxFilename = $"{baseFileName}.docx";
-            var pdfFilename = $"{baseFileName}.pdf";
-            var docxPath = Path.Combine(quotesDir, docxFilename);
-            var pdfPath = Path.Combine(quotesDir, pdfFilename);
+            // Generate unique, immutable storage filenames per quotation to prevent overwrites (F15)
+            var storageGuid = Guid.NewGuid().ToString("N");
+            var docxStorageName = $"quote_{quoteNumber}_{storageGuid}.docx";
+            var pdfStorageName = $"quote_{quoteNumber}_{storageGuid}.pdf";
+            var docxPath = Path.Combine(appDataQuotesDir, docxStorageName);
+            var pdfPath = Path.Combine(appDataQuotesDir, pdfStorageName);
 
             // Locate Template
             var templatePath = Path.Combine(_env.ContentRootPath, "..", "Templates", "عرض سعر شركة اتريم.docx");
@@ -169,12 +169,21 @@ public class QuotesController : ControllerBase
             // 6. Convert to PDF
             await _pdfConverter.ConvertDocxToPdfAsync(docxPath, pdfPath);
 
-            // Generate URLs
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfFilename)}";
-            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxFilename)}";
+            // Compute PDF file integrity metadata (SHA-256 and byte size) (F15)
+            var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
+            var pdfSizeBytes = (long)pdfBytes.Length;
+            var pdfSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(pdfBytes));
 
-            // 7. Save Quote & Items to SQL Server Database
+            // Generate scoped document capability tokens with 7-day validity (F03)
+            var pdfToken = _securityService.GenerateDocumentToken(pdfStorageName, "pdf", user.Id, TimeSpan.FromDays(7));
+            var docxToken = _securityService.GenerateDocumentToken(docxStorageName, "docx", user.Id, TimeSpan.FromDays(7));
+
+            // Generate URLs with signed capability tokens
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfStorageName)}?token={Uri.EscapeDataString(pdfToken)}";
+            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxStorageName)}?token={Uri.EscapeDataString(docxToken)}";
+
+            // 7. Save Quote & Items to SQL Server Database with immutable storage metadata (F15)
             var quote = new Quote
             {
                 QuoteNumber = quoteNumber,
@@ -196,6 +205,10 @@ public class QuotesController : ControllerBase
                 TotalAmount = totalAmount,
                 PdfUrl = pdfUrl,
                 DocxUrl = docxUrl,
+                PdfSha256 = pdfSha256,
+                PdfSizeBytes = pdfSizeBytes,
+                StorageFileName = pdfStorageName,
+                DocxStorageFileName = docxStorageName,
                 CreatedAt = DateTime.UtcNow,
                 Items = quoteItems
             };
@@ -275,7 +288,7 @@ public class QuotesController : ControllerBase
                 _logger.LogInformation("Skipping Email notification: ClientEmail is empty.");
             }
 
-            // 9. Return immediate 200 OK
+            // Return immediate 200 OK
             return Ok(new QuoteResponseDto
             {
                 QuoteId = quote.Id,
@@ -392,18 +405,18 @@ public class QuotesController : ControllerBase
             var quoteDate = request.QuoteDate ?? DateTime.Now;
             var quoteNumber = await _sequenceService.PeekNextQuoteNumberAsync(quoteDate);
 
-            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            var quotesDir = Path.Combine(webRoot, "quotes");
-            System.IO.Directory.CreateDirectory(quotesDir);
+            // Store preview files in App_Data/quotes (outside wwwroot)
+            var appDataQuotesDir = Path.Combine(_env.ContentRootPath, "App_Data", "quotes");
+            Directory.CreateDirectory(appDataQuotesDir);
 
             // Safely clean up temporary preview files older than 1 hour
-            CleanupOldPreviewFiles(quotesDir);
+            CleanupOldPreviewFiles(appDataQuotesDir);
 
             var previewId = Guid.NewGuid().ToString("N");
             var docxFilename = $"preview_{previewId}.docx";
             var pdfFilename = $"preview_{previewId}.pdf";
-            var docxPath = Path.Combine(quotesDir, docxFilename);
-            var pdfPath = Path.Combine(quotesDir, pdfFilename);
+            var docxPath = Path.Combine(appDataQuotesDir, docxFilename);
+            var pdfPath = Path.Combine(appDataQuotesDir, pdfFilename);
 
             var templatePath = Path.Combine(_env.ContentRootPath, "..", "Templates", "عرض سعر شركة اتريم.docx");
             if (!System.IO.File.Exists(templatePath))
@@ -414,9 +427,13 @@ public class QuotesController : ControllerBase
             await _wordGenerator.GenerateQuoteDocumentAsync(templatePath, docxPath, request, quoteNumber, totalAmount);
             await _pdfConverter.ConvertDocxToPdfAsync(docxPath, pdfPath);
 
+            // Previews have authenticated capability tokens with 2-hour validity (F03)
+            var previewPdfToken = _securityService.GenerateDocumentToken(pdfFilename, "pdf", authenticatedUser.Id, TimeSpan.FromHours(2));
+            var previewDocxToken = _securityService.GenerateDocumentToken(docxFilename, "docx", authenticatedUser.Id, TimeSpan.FromHours(2));
+
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfFilename)}";
-            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxFilename)}";
+            var pdfUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(pdfFilename)}?token={Uri.EscapeDataString(previewPdfToken)}";
+            var docxUrl = $"{baseUrl}/quotes/{Uri.EscapeDataString(docxFilename)}?token={Uri.EscapeDataString(previewDocxToken)}";
 
             return Ok(new
             {
@@ -473,9 +490,6 @@ public class QuotesController : ControllerBase
             }
 
             var employeeId = authenticatedUser.Id;
-            // Never infer historical ownership from UserId alone or conflicting creator IDs.
-            // Shared role sessions use an Admin row as a surrogate (or any user if none exists).
-            // Such attribution cannot establish personal employee ownership, even when IDs match.
             query = query.Where(q => q.UserId == employeeId && q.CreatedByUserId == employeeId
                 && _db.Users.Any(u => u.Role == "Admin")
                 && !_db.Users.Any(u => u.Id == employeeId && u.Role == "Admin"));
@@ -513,22 +527,156 @@ public class QuotesController : ControllerBase
         }).FirstOrDefaultAsync(HttpContext.RequestAborted);
 
         if (quote == null) return NotFound();
+
+        // Attach fresh capability tokens so authorized users can open documents directly (F03)
+        var entity = await _db.Quotes.AsNoTracking().FirstOrDefaultAsync(q => q.Id == id, HttpContext.RequestAborted);
+        if (entity != null)
+        {
+            var pdfIdent = entity.StorageFileName ?? entity.QuoteNumber;
+            var docxIdent = entity.DocxStorageFileName ?? entity.QuoteNumber;
+            var pdfToken = _securityService.GenerateDocumentToken(pdfIdent, "pdf", entity.UserId, TimeSpan.FromDays(7));
+            var docxToken = _securityService.GenerateDocumentToken(docxIdent, "docx", entity.UserId, TimeSpan.FromDays(7));
+            quote.PdfUrl = AppendOrUpdateToken(quote.PdfUrl, pdfToken);
+            quote.DocxUrl = AppendOrUpdateToken(quote.DocxUrl, docxToken);
+        }
+
         return Ok(quote);
     }
 
-    [HttpGet("/quotes/{fileName}")]
-    public IActionResult DownloadQuoteFile(string fileName)
+    [HttpGet("{id:int}/download")]
+    public async Task<IActionResult> DownloadQuoteById(int id, [FromQuery] string fileType = "pdf", [FromQuery] string? token = null)
     {
-        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-        var filePath = Path.Combine(webRoot, "quotes", Path.GetFileName(fileName));
-        if (!System.IO.File.Exists(filePath))
+        var quote = await _db.Quotes.AsNoTracking().FirstOrDefaultAsync(q => q.Id == id);
+        if (quote == null)
         {
-            return NotFound(new { message = $"File {fileName} not found." });
+            return NotFound(new { message = "عرض السعر غير موجود." });
         }
 
-        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        var isDocx = fileType.Equals("docx", StringComparison.OrdinalIgnoreCase);
+        var targetFile = isDocx
+            ? (quote.DocxStorageFileName ?? $"EG-BLOCK-{quote.QuoteNumber}.docx")
+            : (quote.StorageFileName ?? $"EG-BLOCK-{quote.QuoteNumber}.pdf");
+
+        return await DownloadQuoteFile(targetFile, token);
+    }
+
+    [HttpGet("/quotes/{fileName}")]
+    [HttpGet("download/{fileName}")]
+    public async Task<IActionResult> DownloadQuoteFile(string fileName, [FromQuery] string? token = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return BadRequest(new { message = "اسم الملف مطلوب." });
+        }
+
+        var cleanFileName = Path.GetFileName(Uri.UnescapeDataString(fileName));
+        var ext = Path.GetExtension(cleanFileName).ToLowerInvariant();
+        var extClean = ext.TrimStart('.');
+
+        bool isAuthorized = false;
+        Quote? matchedQuote = null;
+
+        // 1. Validate Scoped Document Capability Token if present (F03)
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            var (isDocValid, _) = _securityService.ValidateDocumentToken(token, cleanFileName, extClean);
+            if (isDocValid)
+            {
+                isAuthorized = true;
+            }
+            else
+            {
+                // Fallback: validate against quote sequence number if available
+                matchedQuote = await FindQuoteForFileNameAsync(cleanFileName);
+                if (matchedQuote != null)
+                {
+                    var (isQuoteNoValid, _) = _securityService.ValidateDocumentToken(token, matchedQuote.QuoteNumber, extClean);
+                    if (isQuoteNoValid)
+                    {
+                        isAuthorized = true;
+                    }
+                }
+
+                if (!isAuthorized)
+                {
+                    return Unauthorized(new { message = "رمز الوصول للمستند غير صالح أو منتهي الصلاحية." });
+                }
+            }
+        }
+
+        // 2. Validate Session Bearer Token if no capability token (F03)
+        if (!isAuthorized)
+        {
+            var bearerToken = ExtractBearerToken();
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return Unauthorized(new { message = "غير مصرح بالوصول إلى هذا المستند. يرجى تسجيل الدخول أو استخدام رابط مصرح به." });
+            }
+
+            var (isValidUser, user, role) = await _securityService.ValidateUserTokenAsync(bearerToken);
+            if (!isValidUser || user == null)
+            {
+                return Unauthorized(new { message = "جلسة المستخدم غير صالحة." });
+            }
+
+            if (role == "owner" || role == "admin")
+            {
+                isAuthorized = true;
+            }
+            else if (role == "employee")
+            {
+                if (cleanFileName.StartsWith("preview_", StringComparison.OrdinalIgnoreCase))
+                {
+                    isAuthorized = true;
+                }
+                else
+                {
+                    matchedQuote ??= await FindQuoteForFileNameAsync(cleanFileName);
+                    if (matchedQuote == null)
+                    {
+                        return NotFound(new { message = "المستند غير موجود." });
+                    }
+
+                    // Strict employee ownership check: Employee A cannot read Employee B's files (F03)
+                    if (matchedQuote.UserId == user.Id || matchedQuote.CreatedByUserId == user.Id)
+                    {
+                        isAuthorized = true;
+                    }
+                    else
+                    {
+                        return StatusCode(403, new { message = "غير مصرح لك بالوصول إلى مستندات موظف آخر." });
+                    }
+                }
+            }
+            else
+            {
+                return Unauthorized();
+            }
+        }
+
+        // 3. Resolve physical file path on disk (F03 + F15)
+        matchedQuote ??= await FindQuoteForFileNameAsync(cleanFileName);
+        var filePath = ResolvePhysicalFilePath(cleanFileName, matchedQuote);
+
+        if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+        {
+            return NotFound(new { message = $"الملف {cleanFileName} غير موجود على الخادم." });
+        }
+
+        // 4. Preserve readable Arabic download filename where supported (F15)
+        string displayFileName = cleanFileName;
+        if (matchedQuote != null)
+        {
+            var safeBase = _wordGenerator.SanitizeFileName(matchedQuote.ClientName, matchedQuote.ProjectName, matchedQuote.QuoteNumber);
+            displayFileName = $"{safeBase}{ext}";
+        }
+
+        var asciiFallback = $"EG-BLOCK-{Path.GetFileNameWithoutExtension(cleanFileName)}{ext}";
+
         if (ext == ".pdf")
         {
+            // Inline disposition with UTF-8 filename* preserves browser preview and Arabic download names
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"{asciiFallback}\"; filename*=UTF-8''{Uri.EscapeDataString(displayFileName)}";
             return PhysicalFile(filePath, "application/pdf");
         }
 
@@ -538,7 +686,70 @@ public class QuotesController : ControllerBase
             _ => "application/octet-stream"
         };
 
-        return PhysicalFile(filePath, contentType, fileName);
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{asciiFallback}\"; filename*=UTF-8''{Uri.EscapeDataString(displayFileName)}";
+        return PhysicalFile(filePath, contentType);
+    }
+
+    private async Task<Quote?> FindQuoteForFileNameAsync(string fileName)
+    {
+        return await _db.Quotes.AsNoTracking().FirstOrDefaultAsync(q =>
+            q.StorageFileName == fileName ||
+            q.DocxStorageFileName == fileName ||
+            (q.PdfUrl != null && q.PdfUrl.Contains(fileName)) ||
+            (q.DocxUrl != null && q.DocxUrl.Contains(fileName)) ||
+            fileName.Contains(q.QuoteNumber));
+    }
+
+    private string? ResolvePhysicalFilePath(string fileName, Quote? quote)
+    {
+        var appDataQuotes = Path.Combine(_env.ContentRootPath, "App_Data", "quotes");
+        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+        var wwwrootQuotes = Path.Combine(webRoot, "quotes");
+
+        // 1. Direct App_Data/quotes lookup
+        var p1 = Path.Combine(appDataQuotes, fileName);
+        if (System.IO.File.Exists(p1)) return p1;
+
+        // 2. Direct wwwroot/quotes legacy lookup
+        var p2 = Path.Combine(wwwrootQuotes, fileName);
+        if (System.IO.File.Exists(p2)) return p2;
+
+        if (quote != null)
+        {
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            var targetStorageName = ext == ".docx" ? quote.DocxStorageFileName : quote.StorageFileName;
+            if (!string.IsNullOrEmpty(targetStorageName))
+            {
+                var p3 = Path.Combine(appDataQuotes, targetStorageName);
+                if (System.IO.File.Exists(p3)) return p3;
+
+                var p4 = Path.Combine(wwwrootQuotes, targetStorageName);
+                if (System.IO.File.Exists(p4)) return p4;
+            }
+
+            // Search by quote number in App_Data/quotes
+            if (Directory.Exists(appDataQuotes))
+            {
+                var match = Directory.GetFiles(appDataQuotes, $"*{quote.QuoteNumber}*{ext}").FirstOrDefault();
+                if (!string.IsNullOrEmpty(match)) return match;
+            }
+
+            // Search by quote number in legacy wwwroot/quotes
+            if (Directory.Exists(wwwrootQuotes))
+            {
+                var match = Directory.GetFiles(wwwrootQuotes, $"*{quote.QuoteNumber}*{ext}").FirstOrDefault();
+                if (!string.IsNullOrEmpty(match)) return match;
+            }
+        }
+
+        return null;
+    }
+
+    private static string AppendOrUpdateToken(string? url, string token)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+        var clean = url.Split('?')[0];
+        return $"{clean}?token={Uri.EscapeDataString(token)}";
     }
 
     private static string? GetRowValue(Dictionary<string, string> row, params string[] keys)
@@ -572,4 +783,3 @@ public class QuotesController : ControllerBase
         return null;
     }
 }
-

@@ -34,6 +34,7 @@ internal sealed class SyntheticHost
     {
         Directory.CreateDirectory(Path.Combine(_root, "Templates"));
         Directory.CreateDirectory(Path.Combine(_root, "wwwroot"));
+        Directory.CreateDirectory(Path.Combine(_root, "App_Data", "quotes"));
         using (var doc = WordprocessingDocument.Create(Path.Combine(_root, "Templates", "عرض سعر شركة اتريم.docx"), DocumentFormat.OpenXml.WordprocessingDocumentType.Document))
             doc.AddMainDocumentPart().Document = new Document(new Body(new Paragraph(new Run(new Text("{{QuoteNumber}}")))));
         await _connection.OpenAsync();
@@ -115,13 +116,39 @@ internal sealed class SyntheticTelegramTransport : HttpMessageHandler
 {
     internal int Sends { get; private set; }
     internal string LastBody { get; private set; } = string.Empty;
+    internal bool DeleteWebhookCalled { get; private set; }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.RequestUri?.Host != "api.telegram.org" || !request.RequestUri.AbsolutePath.EndsWith("/sendDocument"))
+        if (request.RequestUri?.Host != "api.telegram.org")
             throw new InvalidOperationException("Unexpected outbound request in synthetic test.");
-        Sends++;
-        LastBody = await request.Content!.ReadAsStringAsync(cancellationToken);
-        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"message_id\":123,\"document\":{\"file_id\":\"synthetic-file\"}}}") };
+
+        var path = request.RequestUri.AbsolutePath;
+        if (path.EndsWith("/deleteWebhook"))
+        {
+            DeleteWebhookCalled = true;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":true}") };
+        }
+        if (path.EndsWith("/getMe"))
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"id\":123456,\"first_name\":\"SyntheticBot\",\"username\":\"synthetic_bot\"}}") };
+        }
+        if (path.EndsWith("/getWebhookInfo"))
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"url\":\"https://example.com/webhook\"}}") };
+        }
+        if (path.EndsWith("/getUpdates"))
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":[]}") };
+        }
+        if (path.EndsWith("/sendDocument"))
+        {
+            Sends++;
+            LastBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"message_id\":123,\"document\":{\"file_id\":\"synthetic-file\"}}}") };
+        }
+
+        throw new InvalidOperationException($"Unexpected outbound request in synthetic test: {path}");
     }
 }
 

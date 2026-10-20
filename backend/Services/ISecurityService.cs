@@ -16,4 +16,6 @@ public interface ISecurityService
     Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string targetRole, string newPassword);
     Task<(bool Success, string? ErrorMessage)> ProvisionInitialOwnerAsync(string bootstrapToken, string ownerPassword);
     Task<(bool Success, string? ErrorMessage)> RecoverOwnerCredentialAsync(string recoveryKey, string newOwnerPassword);
+    string GenerateDocumentToken(string identifier, string fileType, int? userId, TimeSpan expiry);
+    (bool IsValid, int? UserId) ValidateDocumentToken(string? token, string identifier, string fileType);
 }

@@ -599,6 +599,108 @@ public class SecurityService : ISecurityService
         return (true, null);
     }
 
+    public string GenerateDocumentToken(string identifier, string fileType, int? userId, TimeSpan expiry)
+    {
+        long expiryUnix = DateTimeOffset.UtcNow.Add(expiry).ToUnixTimeSeconds();
+        string cleanId = identifier.Trim();
+        string cleanType = fileType.Trim().ToLowerInvariant();
+        string payload = $"doc|{cleanId}|{cleanType}|{userId?.ToString() ?? "0"}|{expiryUnix}";
+        byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+        string payloadB64 = Base64UrlEncode(payloadBytes);
+
+        using var hmac = new HMACSHA256(_signingKey);
+        byte[] sigBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(payloadB64));
+        string sigB64 = Base64UrlEncode(sigBytes);
+
+        return $"{payloadB64}.{sigB64}";
+    }
+
+    public (bool IsValid, int? UserId) ValidateDocumentToken(string? token, string identifier, string fileType)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return (false, null);
+
+        var parts = token.Trim().Split('.');
+        if (parts.Length != 2)
+            return (false, null);
+
+        string payloadB64 = parts[0];
+        string sigB64 = parts[1];
+
+        byte[] actualSig;
+        try
+        {
+            actualSig = Base64UrlDecode(sigB64);
+        }
+        catch
+        {
+            return (false, null);
+        }
+
+        byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadB64);
+        bool signatureValid = false;
+
+        using (var hmac = new HMACSHA256(_signingKey))
+        {
+            byte[] expectedSig = hmac.ComputeHash(payloadBytes);
+            if (CryptographicOperations.FixedTimeEquals(actualSig, expectedSig))
+            {
+                signatureValid = true;
+            }
+        }
+
+        if (!signatureValid && _previousSigningKeys.Count > 0)
+        {
+            foreach (var prevKey in _previousSigningKeys)
+            {
+                using var hmacPrev = new HMACSHA256(prevKey);
+                byte[] expectedSigPrev = hmacPrev.ComputeHash(payloadBytes);
+                if (CryptographicOperations.FixedTimeEquals(actualSig, expectedSigPrev))
+                {
+                    signatureValid = true;
+                    break;
+                }
+            }
+        }
+
+        if (!signatureValid)
+            return (false, null);
+
+        string payload;
+        try
+        {
+            payload = Encoding.UTF8.GetString(Base64UrlDecode(payloadB64));
+        }
+        catch
+        {
+            return (false, null);
+        }
+
+        var segments = payload.Split('|');
+        if (segments.Length != 5)
+            return (false, null);
+
+        if (segments[0] != "doc")
+            return (false, null);
+
+        string tokenIdent = segments[1];
+        string tokenFileType = segments[2];
+        int.TryParse(segments[3], out int uid);
+        if (!long.TryParse(segments[4], out long expiryUnix))
+            return (false, null);
+
+        if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiryUnix)
+            return (false, null);
+
+        if (!string.Equals(tokenIdent, identifier.Trim(), StringComparison.OrdinalIgnoreCase))
+            return (false, null);
+
+        if (!string.Equals(tokenFileType, fileType.Trim(), StringComparison.OrdinalIgnoreCase))
+            return (false, null);
+
+        return (true, uid > 0 ? uid : null);
+    }
+
     private static string Base64UrlEncode(byte[] input)
     {
         return Convert.ToBase64String(input)
