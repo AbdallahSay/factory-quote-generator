@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FactoryQuoteApi.Data;
@@ -11,6 +12,17 @@ namespace FactoryQuoteApi.Controllers;
 [Route("api/[controller]")]
 public class AdminController : ControllerBase
 {
+    private static readonly HashSet<string> AllowedClientAuditActions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "QuoteDownloaded",
+        "QuoteSharedWhatsApp",
+        "TermAdded",
+        "TermEdited",
+        "TermDeleted",
+        "ClientTelemetryTest",
+        "SecurityBatch02TestAction"
+    };
+
     private readonly ApplicationDbContext _db;
     private readonly ISecurityService _securityService;
     private readonly ITelegramDeliveryService _telegramService;
@@ -257,11 +269,13 @@ public class AdminController : ControllerBase
         [FromRoute] string? routeChatId = null,
         [FromQuery] bool allowNewRecipient = false)
     {
-        if (!await IsAuthorizedAdminAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("admin", "owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
 
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
         var targetChatId = !string.IsNullOrWhiteSpace(routeChatId) ? routeChatId : chatId;
 
         var quote = await _db.Quotes
@@ -295,10 +309,10 @@ public class AdminController : ControllerBase
                     return BadRequest(new { success = false, message = "لا يمكن إعادة الإرسال لمستلم لم يكن ضمن المستلمين المعتمدين الأصليين لعرض السعر بدون إذن صريح." });
                 }
 
-                // Log audited action for historical delivery to a new recipient (F09)
+                // Log authoritative audited action for historical delivery to a new recipient (F08, F09)
                 var auditLog = new AuditLog
                 {
-                    UserId = 1,
+                    UserId = actorId,
                     Action = "HistoricalQuoteDispatchedToNewRecipient",
                     EntityId = $"QuoteId={quote.Id}, QuoteNumber={quote.QuoteNumber}, ChatId={trimmed}",
                     Timestamp = DateTime.UtcNow
@@ -311,6 +325,17 @@ public class AdminController : ControllerBase
         try
         {
             var results = await _telegramService.RetryQuoteDeliveryAsync(id, targetChatId, allowNewRecipient);
+
+            // Log authoritative delivery retry audit event (F08)
+            var retryAudit = new AuditLog
+            {
+                UserId = actorId,
+                Action = "TelegramDeliveryRetried",
+                EntityId = $"QuoteId={quote.Id}, QuoteNumber={quote.QuoteNumber}, ChatId={targetChatId ?? "ALL"}",
+                Timestamp = DateTime.UtcNow
+            };
+            _db.AuditLogs.Add(retryAudit);
+            await _db.SaveChangesAsync();
 
             return Ok(new
             {
@@ -380,10 +405,13 @@ public class AdminController : ControllerBase
     [HttpPost("telegram/recipients")]
     public async Task<IActionResult> AddTelegramRecipient([FromBody] CreateTelegramRecipientRequestDto dto)
     {
-        if (!await IsAuthorizedAdminAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("admin", "owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         if (string.IsNullOrWhiteSpace(dto.ChatId))
         {
@@ -406,6 +434,16 @@ public class AdminController : ControllerBase
         };
 
         _db.TelegramRecipients.Add(recipient);
+
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "TelegramRecipientAdded",
+            EntityId = $"ChatId={trimmedChatId}, Name={recipient.DisplayName}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new { success = true, recipient, message = "تمت إضافة مستلم التيليجرام بنجاح." });
@@ -414,10 +452,13 @@ public class AdminController : ControllerBase
     [HttpPut("telegram/recipients/{id:int}")]
     public async Task<IActionResult> UpdateTelegramRecipient(int id, [FromBody] UpdateTelegramRecipientRequestDto dto)
     {
-        if (!await IsAuthorizedAdminAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("admin", "owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var recipient = await _db.TelegramRecipients.FindAsync(id);
         if (recipient == null)
@@ -434,6 +475,15 @@ public class AdminController : ControllerBase
             recipient.IsActive = dto.IsActive.Value;
         }
 
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "TelegramRecipientUpdated",
+            EntityId = $"RecipientId={id}, ChatId={recipient.ChatId}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new { success = true, recipient, message = "تم تحديث بيانات المستلم بنجاح." });
@@ -442,10 +492,13 @@ public class AdminController : ControllerBase
     [HttpPost("telegram/recipients/{id:int}/toggle-active")]
     public async Task<IActionResult> ToggleTelegramRecipientActive(int id, [FromBody] ToggleActiveRequestDto? dto = null)
     {
-        if (!await IsAuthorizedAdminAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("admin", "owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var recipient = await _db.TelegramRecipients.FindAsync(id);
         if (recipient == null)
@@ -462,6 +515,15 @@ public class AdminController : ControllerBase
             recipient.IsActive = !recipient.IsActive;
         }
 
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = recipient.IsActive ? "TelegramRecipientActivated" : "TelegramRecipientDeactivated",
+            EntityId = $"RecipientId={id}, ChatId={recipient.ChatId}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -475,10 +537,13 @@ public class AdminController : ControllerBase
     [HttpDelete("telegram/recipients/{id:int}")]
     public async Task<IActionResult> DeleteTelegramRecipient(int id)
     {
-        if (!await IsAuthorizedAdminAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("admin", "owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var recipient = await _db.TelegramRecipients.FindAsync(id);
         if (recipient == null)
@@ -490,6 +555,15 @@ public class AdminController : ControllerBase
         if (hasDeliveries)
         {
             recipient.IsActive = false;
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                UserId = actorId,
+                Action = "TelegramRecipientDeactivated",
+                EntityId = $"RecipientId={id}, ChatId={recipient.ChatId}",
+                Timestamp = DateTime.UtcNow
+            });
+
             await _db.SaveChangesAsync();
             return Ok(new
             {
@@ -500,6 +574,15 @@ public class AdminController : ControllerBase
         }
 
         _db.TelegramRecipients.Remove(recipient);
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "TelegramRecipientDeleted",
+            EntityId = $"RecipientId={id}, ChatId={recipient.ChatId}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -517,8 +600,40 @@ public class AdminController : ControllerBase
             return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
         }
 
+        // Strictly read-only bot status inspection (F11)
         var info = await _telegramService.GetBotInfoAsync();
         return Ok(info);
+    }
+
+    [HttpPost("telegram/discover-updates")]
+    public async Task<IActionResult> DiscoverTelegramUpdates()
+    {
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
+        {
+            return Unauthorized(new { success = false, message = "غير مصرح. وظيفة فحص المحادثات مقتصرة على مالك النظام فقط." });
+        }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
+        var chats = await _telegramService.DiscoverRecentChatsAsync();
+
+        // Authoritative server audit log for explicit updates discovery (F08, F11)
+        var audit = new AuditLog
+        {
+            UserId = actorId,
+            Action = "TelegramUpdatesDiscovered",
+            EntityId = $"DiscoveredCount={chats.Count}",
+            Timestamp = DateTime.UtcNow
+        };
+        _db.AuditLogs.Add(audit);
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            success = true,
+            count = chats.Count,
+            recentChats = chats
+        });
     }
 
     [HttpGet("quotes/{id:int}/verify-telegram-pdf")]
@@ -555,11 +670,53 @@ public class AdminController : ControllerBase
             return Unauthorized(new { message = "غير مصرح بتسجيل التدقيق." });
         }
 
+        // 1. Validate Action is present and within allowable bounds (F08)
+        if (string.IsNullOrWhiteSpace(dto.Action))
+        {
+            return BadRequest(new { success = false, message = "نوع حدث التدقيق مطلوب." });
+        }
+
+        var trimmedAction = dto.Action.Trim();
+        if (trimmedAction.Length > 50)
+        {
+            return BadRequest(new { success = false, message = "حجم نوع الحدث يتجاوز الحد المسموح (50 حرفاً)." });
+        }
+
+        // 2. Client-submitted action allowlist enforcement (F08 item 3)
+        if (!AllowedClientAuditActions.Contains(trimmedAction))
+        {
+            return BadRequest(new { success = false, message = "نوع حدث التدقيق غير مصرح به من واجهة العميل." });
+        }
+
+        // 3. EntityId length validation (F08 item 4)
+        if (dto.EntityId != null && dto.EntityId.Length > 100)
+        {
+            return BadRequest(new { success = false, message = "حجم معرّف الكيان يتجاوز الحد المسموح (100 حرفاً)." });
+        }
+
+        // 4. Object ownership validation for quotation telemetry (F08 item 4)
+        if (role == "employee" && (trimmedAction.Equals("QuoteDownloaded", StringComparison.OrdinalIgnoreCase) ||
+                                   trimmedAction.Equals("QuoteSharedWhatsApp", StringComparison.OrdinalIgnoreCase)))
+        {
+            var entity = dto.EntityId ?? "";
+            var colonIdx = entity.IndexOf(':');
+            var rawCandidate = (colonIdx >= 0 ? entity.Substring(colonIdx + 1) : entity).Trim();
+            if (!string.IsNullOrEmpty(rawCandidate))
+            {
+                var quote = await _db.Quotes.AsNoTracking().FirstOrDefaultAsync(q => q.QuoteNumber == rawCandidate);
+                if (quote != null && quote.UserId != user.Id && quote.CreatedByUserId != user.Id)
+                {
+                    return StatusCode(403, new { success = false, message = "غير مصرح بتسجيل التدقيق لعرض سعر خاص بموظف آخر." });
+                }
+            }
+        }
+
+        // 5. Derive audit actor exclusively from authenticated server identity (F08 items 1 & 2)
         var audit = new AuditLog
         {
             UserId = user.Id,
-            Action = dto.Action,
-            EntityId = dto.EntityId,
+            Action = trimmedAction,
+            EntityId = dto.EntityId?.Trim(),
             Timestamp = DateTime.UtcNow
         };
         _db.AuditLogs.Add(audit);
@@ -617,10 +774,13 @@ public class AdminController : ControllerBase
     [HttpPost("employees")]
     public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequestDto request)
     {
-        if (!await IsAuthorizedOwnerAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         if (string.IsNullOrWhiteSpace(request.FullName))
         {
@@ -661,6 +821,17 @@ public class AdminController : ControllerBase
         _db.Users.Add(newEmployee);
         await _db.SaveChangesAsync();
 
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "EmployeeCreated",
+            EntityId = $"EmployeeId={newEmployee.Id}, Email={newEmployee.Email}",
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
         return StatusCode(201, new
         {
             success = true,
@@ -681,10 +852,13 @@ public class AdminController : ControllerBase
     [HttpPut("employees/{id}")]
     public async Task<IActionResult> UpdateEmployee(int id, [FromBody] UpdateEmployeeRequestDto request)
     {
-        if (!await IsAuthorizedOwnerAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var employee = await _db.Users.FindAsync(id);
         if (employee == null)
@@ -711,6 +885,15 @@ public class AdminController : ControllerBase
         employee.FullName = request.FullName.Trim();
         employee.Email = normalizedEmail;
 
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "EmployeeUpdated",
+            EntityId = $"EmployeeId={employee.Id}, Email={employee.Email}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -733,10 +916,13 @@ public class AdminController : ControllerBase
     [HttpPost("employees/{id}/reset-password")]
     public async Task<IActionResult> ResetEmployeePassword(int id, [FromBody] ResetEmployeePasswordRequestDto request)
     {
-        if (!await IsAuthorizedOwnerAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var employee = await _db.Users.FindAsync(id);
         if (employee == null)
@@ -755,6 +941,16 @@ public class AdminController : ControllerBase
         }
 
         employee.PasswordHash = _securityService.HashPassword(request.NewPassword);
+
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "EmployeePasswordReset",
+            EntityId = $"EmployeeId={employee.Id}, Email={employee.Email}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -767,10 +963,13 @@ public class AdminController : ControllerBase
     [HttpPost("employees/{id}/toggle-status")]
     public async Task<IActionResult> ToggleEmployeeStatus(int id, [FromBody] ToggleActiveRequestDto? request = null)
     {
-        if (!await IsAuthorizedOwnerAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var employee = await _db.Users.FindAsync(id);
         if (employee == null)
@@ -787,6 +986,15 @@ public class AdminController : ControllerBase
             employee.IsActive = !employee.IsActive;
         }
 
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = employee.IsActive ? "EmployeeActivated" : "EmployeeDeactivated",
+            EntityId = $"EmployeeId={employee.Id}, Email={employee.Email}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -800,10 +1008,13 @@ public class AdminController : ControllerBase
     [HttpDelete("employees/{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)
     {
-        if (!await IsAuthorizedOwnerAsync())
+        var (isAuthorized, actorUser, _) = await GetAuthenticatedActorAsync("owner");
+        if (!isAuthorized)
         {
             return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
+
+        var actorId = actorUser?.Id ?? (await GetFallbackAdminUserIdAsync());
 
         var employee = await _db.Users.FindAsync(id);
         if (employee == null)
@@ -822,6 +1033,16 @@ public class AdminController : ControllerBase
         }
 
         _db.Users.Remove(employee);
+
+        // Authoritative server audit log (F08)
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId,
+            Action = "EmployeeDeleted",
+            EntityId = $"EmployeeId={employee.Id}, Email={employee.Email}",
+            Timestamp = DateTime.UtcNow
+        });
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -829,6 +1050,22 @@ public class AdminController : ControllerBase
             success = true,
             message = "تم حذف الحساب بنجاح."
         });
+    }
+
+    private async Task<(bool isAuthorized, User? user, string? role)> GetAuthenticatedActorAsync(params string[] allowedRoles)
+    {
+        var token = ExtractBearerToken();
+        var (isValid, user, role) = await _securityService.ValidateUserTokenAsync(token);
+        if (!isValid || string.IsNullOrEmpty(role)) return (false, null, null);
+        if (allowedRoles.Length > 0 && !allowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
+            return (false, user, role);
+        return (true, user, role);
+    }
+
+    private async Task<int> GetFallbackAdminUserIdAsync()
+    {
+        var admin = await _db.Users.FirstOrDefaultAsync(u => u.Role == "Admin") ?? await _db.Users.FirstOrDefaultAsync();
+        return admin?.Id ?? 1;
     }
 
     private async Task<bool> IsAuthorizedOwnerAsync()
@@ -858,6 +1095,7 @@ public class AdminController : ControllerBase
 
         return null;
     }
+
     private static string AppendOrUpdateToken(string? url, string token)
     {
         if (string.IsNullOrWhiteSpace(url)) return string.Empty;
