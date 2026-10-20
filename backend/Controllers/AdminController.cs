@@ -14,15 +14,18 @@ public class AdminController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly ISecurityService _securityService;
     private readonly ITelegramDeliveryService _telegramService;
+    private readonly IWebHostEnvironment _env;
 
     public AdminController(
         ApplicationDbContext db, 
         ISecurityService securityService,
-        ITelegramDeliveryService telegramService)
+        ITelegramDeliveryService telegramService,
+        IWebHostEnvironment env)
     {
         _db = db;
         _securityService = securityService;
         _telegramService = telegramService;
+        _env = env;
     }
 
     [HttpGet("logs")]
@@ -92,6 +95,8 @@ public class AdminController : ControllerBase
                 q.TotalAmount,
                 q.PdfUrl,
                 q.DocxUrl,
+                q.StorageFileName,
+                q.DocxStorageFileName,
                 q.CreatedAt,
                 ItemCount = q.Items.Count,
                 TelegramDeliveries = q.TelegramDeliveries.Select(td => new
@@ -107,12 +112,150 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(quotes);
+        // Attach fresh document capability tokens so admin links open directly without auth headers (F03)
+        var enrichedQuotes = quotes.Select(q =>
+        {
+            var pdfIdent = q.StorageFileName ?? q.QuoteNumber;
+            var docxIdent = q.DocxStorageFileName ?? q.QuoteNumber;
+            var pdfToken = _securityService.GenerateDocumentToken(pdfIdent, "pdf", q.CreatedByUserId, TimeSpan.FromDays(7));
+            var docxToken = _securityService.GenerateDocumentToken(docxIdent, "docx", q.CreatedByUserId, TimeSpan.FromDays(7));
+
+            return new
+            {
+                q.Id,
+                q.QuoteNumber,
+                q.CreatedByUserId,
+                q.CreatedBy,
+                q.CreatedByFullName,
+                q.ClientName,
+                q.ClientPhone,
+                q.ContactPerson,
+                q.ContactTitle,
+                q.ProjectName,
+                q.Location,
+                q.IssuerName,
+                q.IssuerJobTitle,
+                q.IssuerPrefix,
+                q.TotalAmount,
+                PdfUrl = AppendOrUpdateToken(q.PdfUrl, pdfToken),
+                DocxUrl = AppendOrUpdateToken(q.DocxUrl, docxToken),
+                q.CreatedAt,
+                q.ItemCount,
+                q.TelegramDeliveries
+            };
+        });
+
+        return Ok(enrichedQuotes);
+    }
+
+    [HttpGet("quotes/legacy-document-audit")]
+    public async Task<IActionResult> LegacyDocumentAudit()
+    {
+        if (!await IsAuthorizedAdminAsync())
+        {
+            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+        }
+
+        var appDataQuotes = Path.Combine(_env.ContentRootPath, "App_Data", "quotes");
+        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+        var wwwrootQuotes = Path.Combine(webRoot, "quotes");
+
+        var quotes = await _db.Quotes
+            .AsNoTracking()
+            .OrderByDescending(q => q.CreatedAt)
+            .ToListAsync();
+
+        var auditEntries = new List<object>();
+        var filenameUsage = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        int existingPhysicalCount = 0;
+        int missingPhysicalCount = 0;
+
+        foreach (var q in quotes)
+        {
+            var effectiveFileName = q.StorageFileName;
+            if (string.IsNullOrEmpty(effectiveFileName) && !string.IsNullOrEmpty(q.PdfUrl))
+            {
+                var raw = q.PdfUrl.Split('?')[0];
+                effectiveFileName = Path.GetFileName(Uri.UnescapeDataString(raw));
+            }
+
+            bool fileExists = false;
+            long? fileSize = null;
+            string? fileSha256 = null;
+
+            if (!string.IsNullOrEmpty(effectiveFileName))
+            {
+                if (!filenameUsage.ContainsKey(effectiveFileName))
+                {
+                    filenameUsage[effectiveFileName] = new List<string>();
+                }
+                filenameUsage[effectiveFileName].Add(q.QuoteNumber);
+
+                var p1 = Path.Combine(appDataQuotes, effectiveFileName);
+                var p2 = Path.Combine(wwwrootQuotes, effectiveFileName);
+                var matchedPath = System.IO.File.Exists(p1) ? p1 : (System.IO.File.Exists(p2) ? p2 : null);
+
+                if (matchedPath != null)
+                {
+                    fileExists = true;
+                    existingPhysicalCount++;
+                    var bytes = await System.IO.File.ReadAllBytesAsync(matchedPath);
+                    fileSize = bytes.Length;
+                    fileSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+                }
+                else
+                {
+                    missingPhysicalCount++;
+                }
+            }
+            else
+            {
+                missingPhysicalCount++;
+            }
+
+            auditEntries.Add(new
+            {
+                quoteId = q.Id,
+                quoteNumber = q.QuoteNumber,
+                clientName = q.ClientName,
+                projectName = q.ProjectName,
+                storageFileName = q.StorageFileName,
+                pdfSha256 = q.PdfSha256 ?? fileSha256,
+                pdfSizeBytes = q.PdfSizeBytes ?? fileSize,
+                physicalFileExists = fileExists,
+                createdAt = q.CreatedAt
+            });
+        }
+
+        var collisions = filenameUsage
+            .Where(kv => kv.Value.Count > 1)
+            .Select(kv => new
+            {
+                fileName = kv.Key,
+                sharedQuoteNumbers = kv.Value,
+                collisionCount = kv.Value.Count
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            totalQuotes = quotes.Count,
+            existingPhysicalCount,
+            missingPhysicalCount,
+            collisionCount = collisions.Count,
+            collisions,
+            auditEntries
+        });
     }
 
     [HttpPost("quotes/{id:int}/retry-telegram")]
     [HttpPost("quotes/{id:int}/telegram-deliveries/{routeChatId}/retry")]
-    public async Task<IActionResult> RetryTelegramDelivery(int id, [FromQuery] string? chatId = null, [FromRoute] string? routeChatId = null)
+    public async Task<IActionResult> RetryTelegramDelivery(
+        int id, 
+        [FromQuery] string? chatId = null, 
+        [FromRoute] string? routeChatId = null,
+        [FromQuery] bool allowNewRecipient = false)
     {
         if (!await IsAuthorizedAdminAsync())
         {
@@ -121,22 +264,71 @@ public class AdminController : ControllerBase
 
         var targetChatId = !string.IsNullOrWhiteSpace(routeChatId) ? routeChatId : chatId;
 
-        var quote = await _db.Quotes.FindAsync(id);
+        var quote = await _db.Quotes
+            .Include(q => q.TelegramDeliveries)
+            .FirstOrDefaultAsync(q => q.Id == id);
         if (quote == null)
         {
             return NotFound(new { success = false, message = "عرض السعر غير موجود." });
         }
 
-        var results = await _telegramService.RetryQuoteDeliveryAsync(id, targetChatId);
-
-        return Ok(new
+        // Validate recipient registration and active status strictly (F09)
+        if (!string.IsNullOrWhiteSpace(targetChatId))
         {
-            success = true,
-            quoteId = id,
-            quoteNumber = quote.QuoteNumber,
-            chatId = targetChatId,
-            results = results
-        });
+            var trimmed = targetChatId.Trim();
+            var recipient = await _db.TelegramRecipients.FirstOrDefaultAsync(r => r.ChatId == trimmed);
+            if (recipient == null)
+            {
+                return BadRequest(new { success = false, message = "معرّف المحادثة غير مسجل في قائمة المستلمين المعتمدين." });
+            }
+
+            if (!recipient.IsActive)
+            {
+                return BadRequest(new { success = false, message = "مستلم المحادثة غير مفعّل حالياً في النظام." });
+            }
+
+            bool wasOriginal = quote.TelegramDeliveries.Any(d => d.ChatId == trimmed);
+            if (!wasOriginal)
+            {
+                if (!allowNewRecipient)
+                {
+                    return BadRequest(new { success = false, message = "لا يمكن إعادة الإرسال لمستلم لم يكن ضمن المستلمين المعتمدين الأصليين لعرض السعر بدون إذن صريح." });
+                }
+
+                // Log audited action for historical delivery to a new recipient (F09)
+                var auditLog = new AuditLog
+                {
+                    UserId = 1,
+                    Action = "HistoricalQuoteDispatchedToNewRecipient",
+                    EntityId = $"QuoteId={quote.Id}, QuoteNumber={quote.QuoteNumber}, ChatId={trimmed}",
+                    Timestamp = DateTime.UtcNow
+                };
+                _db.AuditLogs.Add(auditLog);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        try
+        {
+            var results = await _telegramService.RetryQuoteDeliveryAsync(id, targetChatId, allowNewRecipient);
+
+            return Ok(new
+            {
+                success = true,
+                quoteId = id,
+                quoteNumber = quote.QuoteNumber,
+                chatId = targetChatId,
+                results = results
+            });
+        }
+        catch (ArgumentException aex)
+        {
+            return BadRequest(new { success = false, message = aex.Message });
+        }
+        catch (InvalidOperationException ioex)
+        {
+            return BadRequest(new { success = false, message = ioex.Message });
+        }
     }
 
     [HttpGet("telegram/recipients")]
@@ -665,5 +857,11 @@ public class AdminController : ControllerBase
         }
 
         return null;
+    }
+    private static string AppendOrUpdateToken(string? url, string token)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+        var clean = url.Split('?')[0];
+        return $"{clean}?token={Uri.EscapeDataString(token)}";
     }
 }

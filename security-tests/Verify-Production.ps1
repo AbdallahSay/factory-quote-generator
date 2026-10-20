@@ -151,7 +151,42 @@ try {
             $read = Request GET "/api/quotes/$id" $privileged.Token
             Check "$($privileged.Role) reads synthetic quote $index safely" ($read.Status -eq 200 -and (AssertSafeJson $read.Json))
         }
+
+        # Batch 03: Document Security & Capability Token Checks (F03)
+        $ownQuote = $own.Json
+        $pdfUrl = $ownQuote.pdfUrl
+        Check "synthetic quote $index pdfUrl contains capability token" ([string]::IsNullOrEmpty($pdfUrl) -eq $false -and $pdfUrl.Contains('?token='))
+
+        $cleanPdfPath = ($pdfUrl -split '\?')[0]
+        $uriObj = [System.Uri]::new($cleanPdfPath)
+        $anonDocResp = Request GET $uriObj.AbsolutePath
+        Check "synthetic quote $index anonymous document access denied" ($anonDocResp.Status -eq 401)
+
+        $tokenQuery = ($pdfUrl -split '\?')[1]
+        $authDocResp = Request GET "$($uriObj.AbsolutePath)?$tokenQuery"
+        Check "synthetic quote $index capability token download succeeds" ($authDocResp.Status -eq 200)
+
+        $otherDocResp = Request GET $uriObj.AbsolutePath $testUsers[1 - $index].Token
+        Check "synthetic quote $index cross-employee document access denied" ($otherDocResp.Status -eq 403 -or $otherDocResp.Status -eq 404)
+
+        $adminDocResp = Request GET $uriObj.AbsolutePath $adminToken
+        Check "synthetic quote $index admin document access succeeds" ($adminDocResp.Status -eq 200)
     }
+
+    # Batch 03: Distinct immutable filenames (F15)
+    $q0 = (Request GET "/api/quotes/$($quoteIds[0])" $testUsers[0].Token).Json
+    $q1 = (Request GET "/api/quotes/$($quoteIds[1])" $testUsers[1].Token).Json
+    $file0 = [System.IO.Path]::GetFileName(($q0.pdfUrl -split '\?')[0])
+    $file1 = [System.IO.Path]::GetFileName(($q1.pdfUrl -split '\?')[0])
+    Check "quotes have distinct immutable storage filenames" ($file0 -ne $file1 -and [string]::IsNullOrEmpty($file0) -eq $false)
+
+    # Batch 03: Legacy document audit (F15)
+    $docAudit = Request GET '/api/admin/quotes/legacy-document-audit' $adminToken
+    Check "legacy document audit accessible by admin" ($docAudit.Status -eq 200 -and $docAudit.Json.totalQuotes -gt 0)
+
+    # Batch 03: Telegram recipient security checks (F09)
+    $badRetry = Request POST "/api/admin/quotes/$($quoteIds[0])/retry-telegram?chatId=999999999_nonexistent" $adminToken
+    Check "retry with unregistered chat ID rejected" ($badRetry.Status -eq 400)
 
     # 8. Telegram delivery verification
     $recent = Request GET '/api/admin/quotes' $adminToken
