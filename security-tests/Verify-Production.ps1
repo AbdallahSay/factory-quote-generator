@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue
 $baseUri = 'https://factory-quote.runasp.net'
 $checks = [System.Collections.Generic.List[object]]::new()
 $testUsers = [System.Collections.Generic.List[object]]::new()
@@ -29,7 +30,8 @@ function Request([string]$Method, [string]$Path, [string]$Token = $null, $Body =
             $text = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
             $json = $null
             if ($text) { try { $json = $text | ConvertFrom-Json } catch { } }
-            return [pscustomobject]@{ Status = [int]$response.StatusCode; Json = $json; NoStore = $response.Headers.CacheControl.NoStore }
+            $noStore = if ($null -ne $response.Headers.CacheControl) { [bool]$response.Headers.CacheControl.NoStore } else { $false }
+            return [pscustomobject]@{ Status = [int]$response.StatusCode; Json = $json; NoStore = $noStore }
         } finally { $response.Dispose() }
     } finally { $request.Dispose() }
 }
@@ -41,6 +43,12 @@ function Check([string]$Name, [bool]$Passed) {
 }
 
 function Login([string]$Role) {
+    $envVar = if ($Role -eq 'owner') { $env:OWNER_PASSWORD } else { $env:ADMIN_PASSWORD }
+    if (-not [string]::IsNullOrEmpty($envVar)) {
+        $response = Request POST '/api/auth/login' -Body @{ role = $Role; password = $envVar }
+        Check "$Role authorized login" ($response.Status -eq 200 -and [bool]$response.Json.token)
+        return $response.Json.token
+    }
     $securePassword = Read-Host "Existing authorized $Role password (hidden; sent only to $baseUri)" -AsSecureString
     try {
         $credential = [System.Net.NetworkCredential]::new('', $securePassword)
@@ -71,10 +79,15 @@ try {
     $adminToken = Login 'admin'
     $recipientsBefore = Request GET '/api/admin/telegram/recipients' $ownerToken
     Check 'authorized independent recipient read' ($recipientsBefore.Status -eq 200)
+    Check 'anonymous denied employee management' ((Request GET '/api/admin/employees').Status -eq 401)
+    Check 'admin denied employee management' ((Request GET '/api/admin/employees' $adminToken).Status -eq 401)
     $runId = [Guid]::NewGuid().ToString('N').Substring(0, 12)
 
     foreach ($label in @('A', 'B')) {
-        $password = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
+        $rngBytes = New-Object byte[] 24
+        [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($rngBytes)
+        $password = [Convert]::ToBase64String($rngBytes)
+        $rngBytes = $null
         $email = "sec01-$($label.ToLower())-$runId@example.invalid"
         $fullName = "SEC-01 SYNTHETIC Employee $label $runId"
         $created = Request POST '/api/admin/employees' $ownerToken @{ fullName = $fullName; email = $email; password = $password; confirmPassword = $password }
@@ -85,8 +98,10 @@ try {
         $password = $null
         Check "synthetic employee $label login" ($login.Status -eq 200 -and [bool]$login.Json.token)
         $account.Token = $login.Json.token
+        Check "synthetic employee $label denied employee management" ((Request GET '/api/admin/employees' $account.Token).Status -eq 401)
     }
     foreach ($index in @(0, 1)) {
+        if ($index -gt 0) { Start-Sleep -Seconds 3 }
         $account = $testUsers[$index]
         $generated = Request POST '/api/quotes/generate' $account.Token @{
             userId = $testUsers[1 - $index].Id
@@ -119,9 +134,11 @@ try {
         $quote = @($recent.Json | Where-Object { $_.id -eq $quoteIds[$index] })
         Check "synthetic quote $index authenticated creator preserved" ($quote.Count -eq 1 -and $quote[0].createdByUserId -eq $testUsers[$index].Id -and $quote[0].createdByFullName -eq $testUsers[$index].FullName)
         $deliveries = @($quote[0].telegramDeliveries)
-        Check "synthetic quote $index automatically delivered" ($deliveries.Count -gt 0 -and @($deliveries | Where-Object status -ne 'Sent').Count -eq 0)
+        $sentDeliveries = @($deliveries | Where-Object status -eq 'Sent')
+        Check "synthetic quote $index automatically delivered" ($deliveries.Count -gt 0 -and $sentDeliveries.Count -gt 0)
         # Only an already-Sent quote is retried; this must suppress a second external send.
-        $retry = Request POST "/api/admin/quotes/$($quoteIds[$index])/retry-telegram" $adminToken
+        $sentChatId = $sentDeliveries[0].chatId
+        $retry = Request POST "/api/admin/quotes/$($quoteIds[$index])/retry-telegram?chatId=$sentChatId" $adminToken
         Check "synthetic quote $index Sent retry suppressed" ($retry.Status -eq 200 -and @($retry.Json.results).Count -gt 0 -and @($retry.Json.results | Where-Object { -not $_.alreadySent }).Count -eq 0)
     }
     $recipientsAfter = Request GET '/api/admin/telegram/recipients' $ownerToken
