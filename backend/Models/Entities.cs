@@ -37,6 +37,15 @@ public class Client
     public int? CreatedById { get; set; }
     public User? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(100)]
+    public string? ClaimToken { get; set; }
+    public DateTime? ClaimedAt { get; set; }
+    public DateTime? ClaimExpiresAt { get; set; }
+    public DateTime? NextRetryAt { get; set; }
+    public DateTime? LastAttemptAt { get; set; }
+    [MaxLength(64)]
+    public string? FileSha256 { get; set; }
 }
 
 public class Product
@@ -150,6 +159,15 @@ public class QuoteTelegramDelivery
     public int RetryCount { get; set; } = 0;
     public DateTime? SentAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(100)]
+    public string? ClaimToken { get; set; }
+    public DateTime? ClaimedAt { get; set; }
+    public DateTime? ClaimExpiresAt { get; set; }
+    public DateTime? NextRetryAt { get; set; }
+    public DateTime? LastAttemptAt { get; set; }
+    [MaxLength(64)]
+    public string? FileSha256 { get; set; }
 }
 
 public class TelegramRecipient

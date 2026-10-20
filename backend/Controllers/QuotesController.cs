@@ -213,9 +213,29 @@ public class QuotesController : ControllerBase
                 Items = quoteItems
             };
 
+            // Transactional Outbox: record intended approved recipients when quotation is created (F10)
+            var activeRecipients = await _db.TelegramRecipients
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.Id)
+                .ToListAsync();
+
+            foreach (var r in activeRecipients)
+            {
+                quote.TelegramDeliveries.Add(new QuoteTelegramDelivery
+                {
+                    QuoteNumber = quoteNumber,
+                    ChatId = r.ChatId,
+                    Status = "Pending",
+                    RetryCount = 0,
+                    NextRetryAt = DateTime.UtcNow,
+                    FileSha256 = pdfSha256,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
             _db.Quotes.Add(quote);
 
-            // Insert AuditLog
+            // Authoritative server-side audit event with real user.Id (F08)
             var auditLog = new AuditLog
             {
                 UserId = user.Id,
@@ -239,14 +259,14 @@ public class QuotesController : ControllerBase
                 Timestamp = DateTime.UtcNow
             };
 
-            // 8. Automatic Telegram Quotation PDF Delivery (strictly server-side, after DB save)
+            // 8. Automatic Telegram Quotation PDF Delivery (durable transactional outbox, F10)
             try
             {
-                await _telegramService.SendQuoteDocumentAsync(quote.Id, pdfPath);
+                await _telegramService.ProcessPendingOutboxAsync(quote.Id, pdfPath);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send automatic Telegram quotation document for quote {QuoteNumber}.", quoteNumber);
+                _logger.LogError(ex, "Failed to immediately process Telegram outbox for quote {QuoteNumber}; queued for background retry.", quoteNumber);
             }
 
             // 9. Optional WhatsApp Webhook notification

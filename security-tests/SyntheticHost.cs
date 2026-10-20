@@ -29,6 +29,7 @@ internal sealed class SyntheticHost
     internal WebApplication App { get; private set; } = null!;
     internal HttpClient Client { get; private set; } = null!;
     internal SyntheticTelegramTransport Transport { get; } = new();
+    internal string RootPath => _root;
 
     internal async Task StartAsync()
     {
@@ -117,6 +118,9 @@ internal sealed class SyntheticTelegramTransport : HttpMessageHandler
     internal int Sends { get; private set; }
     internal string LastBody { get; private set; } = string.Empty;
     internal bool DeleteWebhookCalled { get; private set; }
+    internal bool GetUpdatesCalled { get; private set; }
+    internal string WebhookUrl { get; set; } = "https://example.com/webhook";
+    internal Func<HttpRequestMessage, HttpResponseMessage?>? CustomSendDocumentHandler { get; set; }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -135,16 +139,22 @@ internal sealed class SyntheticTelegramTransport : HttpMessageHandler
         }
         if (path.EndsWith("/getWebhookInfo"))
         {
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"url\":\"https://example.com/webhook\"}}") };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"{{\"ok\":true,\"result\":{{\"url\":\"{WebhookUrl}\"}}}}") };
         }
         if (path.EndsWith("/getUpdates"))
         {
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":[]}") };
+            GetUpdatesCalled = true;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":[{\"update_id\":1,\"message\":{\"chat\":{\"id\":998877,\"first_name\":\"TestChat\",\"type\":\"private\"}}}]}") };
         }
         if (path.EndsWith("/sendDocument"))
         {
             Sends++;
             LastBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+            if (CustomSendDocumentHandler != null)
+            {
+                var custom = CustomSendDocumentHandler(request);
+                if (custom != null) return custom;
+            }
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":{\"message_id\":123,\"document\":{\"file_id\":\"synthetic-file\"}}}") };
         }
 

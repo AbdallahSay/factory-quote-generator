@@ -33,6 +33,7 @@ builder.Services.AddScoped<ITelegramDeliveryService, TelegramDeliveryService>();
 // Register Background Queue
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>(sp => new BackgroundTaskQueue(100));
 builder.Services.AddHostedService<QueuedHostedService>();
+builder.Services.AddHostedService<TelegramOutboxBackgroundService>();
 
 // Configure CORS for Vercel Frontend
 builder.Services.AddCors(options =>
@@ -90,6 +91,21 @@ using (var scope = app.Services.CreateScope())
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Quotes') AND name = 'DocxStorageFileName')
                     BEGIN
                         ALTER TABLE Quotes ADD DocxStorageFileName NVARCHAR(260) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QuoteTelegramDeliveries') AND name = 'ClaimToken')
+                    BEGIN
+                        ALTER TABLE QuoteTelegramDeliveries ADD ClaimToken NVARCHAR(100) NULL;
+                        ALTER TABLE QuoteTelegramDeliveries ADD ClaimedAt DATETIME2 NULL;
+                        ALTER TABLE QuoteTelegramDeliveries ADD ClaimExpiresAt DATETIME2 NULL;
+                        ALTER TABLE QuoteTelegramDeliveries ADD NextRetryAt DATETIME2 NULL;
+                        ALTER TABLE QuoteTelegramDeliveries ADD LastAttemptAt DATETIME2 NULL;
+                        ALTER TABLE QuoteTelegramDeliveries ADD FileSha256 NVARCHAR(64) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('QuoteTelegramDeliveries') AND name = 'IX_QuoteTelegramDeliveries_Status_NextRetryAt')
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX IX_QuoteTelegramDeliveries_Status_NextRetryAt 
+                        ON QuoteTelegramDeliveries (Status, NextRetryAt);
                     END
                 ");
                 logger.LogInformation("Database additive schema upgrades checked.");

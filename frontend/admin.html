@@ -231,6 +231,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="btnDiscoverChats" onclick="discoverTelegramChats()" class="px-3 py-2 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg border border-indigo-200 transition flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            فحص المحادثات
+                        </button>
                         <button onclick="openAddRecipientModal()" class="px-3.5 py-2 text-xs bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             إضافة مستلم جديد
@@ -992,6 +996,75 @@
                 }
             } catch (err) {
                 console.error('Bot info load error:', err);
+            }
+        }
+
+        async function discoverTelegramChats() {
+            const btn = document.getElementById('btnDiscoverChats');
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50');
+                }
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram/discover-updates`, {
+                    method: 'POST',
+                    headers: { ...Auth.getAuthHeader('owner') }
+                });
+                if (res.status === 401 || res.status === 403) {
+                    Swal.fire({
+                        titleText: 'غير مصرح',
+                        text: 'وظيفة فحص المحادثات الجديدة مقتصرة على مالك النظام فقط.',
+                        icon: 'warning'
+                    });
+                    return;
+                }
+                if (!res.ok) {
+                    Swal.fire({
+                        titleText: 'خطأ في الاتصال',
+                        text: 'تعذر جلب التحديثات من بوت تيليجرام.',
+                        icon: 'error'
+                    });
+                    return;
+                }
+                const data = await res.json();
+                const detectedContainer = document.getElementById('detectedChatsContainer');
+                const detectedList = document.getElementById('detectedChatsList');
+                detectedList.innerHTML = '';
+                if (data.recentChats && data.recentChats.length > 0) {
+                    detectedContainer.classList.remove('hidden');
+                    data.recentChats.forEach(c => {
+                        const title = `${c.firstName || c.username || ''} (${c.chatId})`.trim();
+                        const b = document.createElement('button');
+                        b.className = "inline-flex items-center gap-1 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg transition font-medium text-xs";
+                        b.innerHTML = '<svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>';
+                        b.appendChild(document.createTextNode(` إضافة: ${title}`));
+                        b.addEventListener('click', () => openAddRecipientModal(String(c.chatId), title));
+                        detectedList.appendChild(b);
+                    });
+                    Swal.fire({
+                        titleText: 'تم رصد المحادثات',
+                        text: `تم العثور على ${data.count} محادثات جديدة مع البوت.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    detectedContainer.classList.add('hidden');
+                    Swal.fire({
+                        titleText: 'لا توجد محادثات جديدة',
+                        text: 'لم يتم العثور على أي تحديثات أو محادثات جديدة مؤخراً.',
+                        icon: 'info',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (err) {
+                console.error('Discover chats error:', err);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }
             }
         }
 

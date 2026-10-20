@@ -116,9 +116,12 @@ try {
         $empPreview = Request POST '/api/quotes/preview' $account.Token @{ clientName = "SEC-02 Preview $runId $label"; items = @(@{ productName = 'PREVIEW ITEM'; quantity = 1; unitPrice = 50 }) }
         Check "synthetic employee $label preview quote succeeds" ($empPreview.Status -eq 200 -and [bool]$empPreview.Json.quoteNumber)
 
-        # Batch 02: Employee audit log recording
-        $empAudit = Request POST '/api/admin/audit' $account.Token @{ userId = 9999; action = "SEC02_AUDIT_$runId"; entityId = "PROD-AUDIT" }
-        Check "synthetic employee $label record audit succeeds" ($empAudit.Status -eq 200)
+        # Batch 04: Employee audit log recording & allowlist enforcement (F08)
+        $badAudit = Request POST '/api/admin/audit' $account.Token @{ userId = 9999; action = "DisallowedAction_$runId"; entityId = "BAD" }
+        Check "synthetic employee $label unapproved audit rejected" ($badAudit.Status -eq 400)
+
+        $empAudit = Request POST '/api/admin/audit' $account.Token @{ userId = 9999; action = "TermAdded"; entityId = "PROD-AUDIT-$runId" }
+        Check "synthetic employee $label record approved audit succeeds" ($empAudit.Status -eq 200)
     }
 
     # 6. Quotation generation by official employees
@@ -171,6 +174,10 @@ try {
 
         $adminDocResp = Request GET $uriObj.AbsolutePath $adminToken
         Check "synthetic quote $index admin document access succeeds" ($adminDocResp.Status -eq 200)
+
+        # Batch 04: Cross-employee quotation telemetry forbidden (F08 item 4)
+        $crossEmpAudit = Request POST '/api/admin/audit' $testUsers[1 - $index].Token @{ action = "QuoteDownloaded"; entityId = "PDF: $($ownQuote.quoteNumber)" }
+        Check "synthetic quote $index cross-employee quotation audit denied (403)" ($crossEmpAudit.Status -eq 403)
     }
 
     # Batch 03: Distinct immutable filenames (F15)
@@ -203,7 +210,20 @@ try {
         Check "synthetic quote $index Sent retry suppressed" ($retry.Status -eq 200 -and @($retry.Json.results).Count -gt 0 -and @($retry.Json.results | Where-Object { -not $_.alreadySent }).Count -eq 0)
     }
 
-    # 9. Recipient state preservation
+    # 9. Batch 04: Read-only telegram diagnostics & redacted webhook (F11)
+    $botInfo = Request GET '/api/admin/telegram-info' $adminToken
+    Check "read-only telegram diagnostics succeeds" ($botInfo.Status -eq 200 -and $botInfo.Json.isConfigured -eq $true)
+    Check "webhook URL sensitive secrets redacted" ($null -eq $botInfo.Json.webhookUrl -or $botInfo.Json.webhookUrl -notmatch '(?i)[?&](token|secret)=[^&]+')
+
+    # 10. Batch 04: Update discovery Owner-only (F11)
+    $empDisc = Request POST '/api/admin/telegram/discover-updates' $testUsers[0].Token
+    Check "employee denied telegram update discovery" ($empDisc.Status -eq 401 -or $empDisc.Status -eq 403)
+    $adminDisc = Request POST '/api/admin/telegram/discover-updates' $adminToken
+    Check "admin denied telegram update discovery" ($adminDisc.Status -eq 401 -or $adminDisc.Status -eq 403)
+    $ownerDisc = Request POST '/api/admin/telegram/discover-updates' $ownerToken
+    Check "owner can discover telegram updates" ($ownerDisc.Status -eq 200 -and $null -ne $ownerDisc.Json.count)
+
+    # 11. Recipient state preservation
     $recipientsAfter = Request GET '/api/admin/telegram/recipients' $ownerToken
     $beforeState = @($recipientsBefore.Json | Sort-Object id | Select-Object id, chatId, displayName, isActive) | ConvertTo-Json -Depth 5 -Compress
     $afterState = @($recipientsAfter.Json | Sort-Object id | Select-Object id, chatId, displayName, isActive) | ConvertTo-Json -Depth 5 -Compress
