@@ -14,4 +14,6 @@ public interface ISecurityService
     Task<(bool Success, string? Token, User? User, string? ErrorMessage)> AuthenticateEmployeeAsync(string email, string password);
     Task<(bool Success, string? Token, string? ErrorMessage)> AuthenticateAsync(string role, string password);
     Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string targetRole, string newPassword);
+    Task<(bool Success, string? ErrorMessage)> ProvisionInitialOwnerAsync(string bootstrapToken, string ownerPassword);
+    Task<(bool Success, string? ErrorMessage)> RecoverOwnerCredentialAsync(string recoveryKey, string newOwnerPassword);
 }

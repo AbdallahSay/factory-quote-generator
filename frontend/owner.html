@@ -119,38 +119,23 @@
 
                 <!-- Password Cards Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- 1. Quotation Password Card -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <!-- 1. Quotation Access Information Card (F07) -->
+                    <div class="bg-blue-50/60 rounded-2xl border border-blue-200 shadow-sm overflow-hidden flex flex-col justify-between p-6">
                         <div>
-                            <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center gap-2">
                                     <span class="w-3 h-3 rounded-full bg-blue-600"></span>
-                                    <h2 class="font-bold text-slate-800 text-sm">كلمة مرور شاشة عروض الأسعار</h2>
+                                    <h2 class="font-bold text-slate-800 text-sm">وصول شاشة عروض الأسعار</h2>
                                 </div>
-                                <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Quotation Area</span>
+                                <span class="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">حسابات موظفين فردية</span>
                             </div>
-
-                            <form id="quotePwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'quote')">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
-                                    <input type="password" id="quoteNewPwd" required minlength="6"
-                                        placeholder="أدخل كلمة المرور الجديدة"
-                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
-                                    <input type="password" id="quoteConfirmPwd" required minlength="6"
-                                        placeholder="أعد إدخال كلمة المرور"
-                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
-                                </div>
-
-                                <button type="submit" id="quotePwdSubmitBtn"
-                                    class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>تحديث كلمة مرور عروض الأسعار</span>
-                                </button>
-                            </form>
+                            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                                تم إلغاء كلمة المرور المشتركة لعروض الأسعار وفق معايير الأمان (F07). تسجيل الدخول وإصدار عروض الأسعار متاح حصرياً عبر حسابات الموظفين المعتمدة (البريد الإلكتروني وكلمة المرور).
+                            </p>
+                            <div class="p-3 bg-white rounded-xl border border-blue-200 text-xs text-slate-700 flex items-start gap-2">
+                                <svg class="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>يمكنك إضافة وتعديل حسابات الموظفين وإعادة تعيين كلمات مرورهم أو تفعيلها/تعطيلها من قسم <strong>"إدارة حسابات الموظفين"</strong> أدناه.</span>
+                            </div>
                         </div>
                     </div>
 
@@ -301,9 +286,12 @@
 
         async function handleUpdatePassword(event, targetRole) {
             event.preventDefault();
-            const newPwd = document.getElementById(targetRole === 'quote' ? 'quoteNewPwd' : 'adminNewPwd').value;
-            const confirmPwd = document.getElementById(targetRole === 'quote' ? 'quoteConfirmPwd' : 'adminConfirmPwd').value;
-            const btn = document.getElementById(targetRole === 'quote' ? 'quotePwdSubmitBtn' : 'adminPwdSubmitBtn');
+            if (targetRole !== 'admin') {
+                return;
+            }
+            const newPwd = document.getElementById('adminNewPwd').value;
+            const confirmPwd = document.getElementById('adminConfirmPwd').value;
+            const btn = document.getElementById('adminPwdSubmitBtn');
 
             if (!newPwd || newPwd.length < 6) {
                 Swal.fire({
@@ -337,11 +325,7 @@
                     icon: 'success',
                     confirmButtonText: 'حسناً'
                 });
-                if (targetRole === 'quote') {
-                    document.getElementById('quotePwdForm').reset();
-                } else {
-                    document.getElementById('adminPwdForm').reset();
-                }
+                document.getElementById('adminPwdForm').reset();
             } catch (err) {
                 Swal.fire({
                     titleText: 'خطأ',

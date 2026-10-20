@@ -357,15 +357,15 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> RecordAudit([FromBody] AuditLogRequestDto dto)
     {
         var token = ExtractBearerToken();
-        var (isAuthorized, _) = await _securityService.ValidateTokenAsync(token, "quote", "admin", "owner");
-        if (!isAuthorized)
+        var (isValid, user, role) = await _securityService.ValidateUserTokenAsync(token);
+        if (!isValid || user == null)
         {
-            return Unauthorized(new { message = "غير مصرح بتسجيل التدقيق" });
+            return Unauthorized(new { message = "غير مصرح بتسجيل التدقيق." });
         }
 
         var audit = new AuditLog
         {
-            UserId = dto.UserId ?? 1,
+            UserId = user.Id,
             Action = dto.Action,
             EntityId = dto.EntityId,
             Timestamp = DateTime.UtcNow
