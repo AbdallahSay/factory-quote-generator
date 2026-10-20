@@ -1,13 +1,13 @@
 /**
  * Authentication Client Helper for Factory Quote Generation System
  * Handles tokens and sessions for:
- * - 'employee' / 'quote' (Quotation screen - employee login)
+ * - 'employee' (Quotation screen - individual employee login)
  * - 'admin' (Admin dashboard)
- * - 'owner' (Owner password management)
+ * - 'owner' (Owner administration & password management)
  */
 const Auth = {
     getKey(role) {
-        if (role === 'employee') return 'fq_token_quote';
+        if (role === 'employee' || role === 'quote') return 'fq_token_employee';
         return `fq_token_${role}`;
     },
 
@@ -59,7 +59,7 @@ const Auth = {
         sessionStorage.removeItem('fq_user');
     },
 
-    getAuthHeader(role) {
+    getAuthHeader(role = 'employee') {
         const token = this.getToken(role);
         return token ? { 'Authorization': `Bearer ${token}` } : {};
     },
@@ -86,7 +86,9 @@ const Auth = {
             throw new Error(data.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
         }
 
-        this.setToken('quote', data.token, remember);
+        this.setToken('employee', data.token, remember);
+        localStorage.removeItem('fq_token_quote');
+        sessionStorage.removeItem('fq_token_quote');
         if (data.user) {
             this.setUser(data.user, remember);
         }
@@ -94,6 +96,10 @@ const Auth = {
     },
 
     async login(role, password, remember = true) {
+        if (role === 'quote') {
+            throw new Error('تم إلغاء تسجيل الدخول بكلمة المرور المشتركة. يرجى تسجيل الدخول بحساب الموظف المعتمد (البريد الإلكتروني وكلمة المرور).');
+        }
+
         if (!password || !password.trim()) {
             throw new Error('يرجى إدخال كلمة المرور');
         }
@@ -117,20 +123,22 @@ const Auth = {
     },
 
     async verify(role) {
-        const token = this.getToken(role);
+        const verifyRole = (role === 'quote') ? 'employee' : role;
+        const token = this.getToken(verifyRole);
         if (!token) return false;
 
         const baseUrl = typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL ? CONFIG.API_BASE_URL : '';
         try {
-            const response = await fetch(`${baseUrl}/api/auth/verify?role=${encodeURIComponent(role)}`, {
+            const response = await fetch(`${baseUrl}/api/auth/verify?role=${encodeURIComponent(verifyRole)}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
-                this.clearToken(role);
-                if (role === 'quote' || role === 'employee') this.clearUser();
+                this.clearToken(verifyRole);
+                this.clearToken('quote');
+                if (verifyRole === 'employee') this.clearUser();
                 return false;
             }
 
@@ -141,8 +149,9 @@ const Auth = {
                 }
                 return true;
             } else {
-                this.clearToken(role);
-                if (role === 'quote' || role === 'employee') this.clearUser();
+                this.clearToken(verifyRole);
+                this.clearToken('quote');
+                if (verifyRole === 'employee') this.clearUser();
                 return false;
             }
         } catch (e) {
@@ -152,6 +161,10 @@ const Auth = {
     },
 
     async changePassword(targetRole, newPassword, confirmPassword) {
+        if (targetRole === 'quote') {
+            throw new Error('تم إلغاء كلمة المرور المشتركة لعروض الأسعار. يتم إدارة وصول الموظفين عبر قسم إدارة حسابات الموظفين.');
+        }
+
         const token = this.getToken('owner');
         if (!token) {
             throw new Error('يرجى تسجيل الدخول كمالك للنظام أولاً');
@@ -176,8 +189,10 @@ const Auth = {
     },
 
     logout(role) {
-        this.clearToken(role);
-        if (role === 'quote' || role === 'employee') {
+        const targetRole = (role === 'quote') ? 'employee' : role;
+        this.clearToken(targetRole);
+        this.clearToken('quote');
+        if (targetRole === 'employee') {
             this.clearUser();
         }
         window.location.reload();

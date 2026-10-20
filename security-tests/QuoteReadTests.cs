@@ -130,7 +130,7 @@ public sealed class QuoteReadTests : IAsyncLifetime
     public async Task Valid_unmapped_shared_role_has_no_personal_or_global_read_rights(string role)
     {
         using var response = await Read(15, _host.RoleToken(role));
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.True(response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.NotFound);
     }
 
     [Theory]

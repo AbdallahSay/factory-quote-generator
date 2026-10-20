@@ -25,8 +25,22 @@ public class AuthController : ControllerBase
 
     public class ChangePasswordRequestDto
     {
-        public string TargetRole { get; set; } = string.Empty; // "quote", "admin"
+        public string TargetRole { get; set; } = string.Empty; // "admin"
         public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class ProvisionOwnerRequestDto
+    {
+        public string BootstrapToken { get; set; } = string.Empty;
+        public string OwnerPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class RecoverOwnerRequestDto
+    {
+        public string RecoveryKey { get; set; } = string.Empty;
+        public string NewOwnerPassword { get; set; } = string.Empty;
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
@@ -38,7 +52,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "كلمة المرور مطلوبة" });
         }
 
-        // 1. Employee login via Email + Password
+        // 1. Employee login via Email + Password (F07 Official Accounts)
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
             var (empSuccess, empToken, empUser, empError) = await _securityService.AuthenticateEmployeeAsync(request.Email, request.Password);
@@ -61,9 +75,24 @@ public class AuthController : ControllerBase
             });
         }
 
-        // 2. Role login (admin, owner, quote)
-        var role = request.Role?.Trim().ToLowerInvariant() ?? "quote";
-        var (success, token, error) = await _securityService.AuthenticateAsync(role, request.Password);
+        // 2. Reject legacy shared 'quote' password login (F07)
+        var requestedRole = request.Role?.Trim().ToLowerInvariant();
+        if (requestedRole == "quote")
+        {
+            return Unauthorized(new 
+            { 
+                success = false, 
+                message = "تم إلغاء كلمة المرور المشتركة لعروض الأسعار نهائياً. يرجى تسجيل الدخول باستخدام البريد الإلكتروني وكلمة المرور الخاصة بحساب الموظف المعتمد." 
+            });
+        }
+
+        if (string.IsNullOrWhiteSpace(requestedRole))
+        {
+            return Unauthorized(new { success = false, message = "يرجى إدخال البريد الإلكتروني للموظف أو تحديد الصلاحية الإدارية المطلوبة." });
+        }
+
+        // 3. System role login (admin, owner ONLY)
+        var (success, token, error) = await _securityService.AuthenticateAsync(requestedRole, request.Password);
         if (!success || string.IsNullOrEmpty(token))
         {
             return Unauthorized(new { success = false, message = error ?? "كلمة المرور غير صحيحة" });
@@ -73,7 +102,7 @@ public class AuthController : ControllerBase
         {
             success = true,
             token,
-            role
+            role = requestedRole
         });
     }
 
@@ -87,17 +116,21 @@ public class AuthController : ControllerBase
         }
 
         var (isValid, user, verifiedRole) = await _securityService.ValidateUserTokenAsync(token);
-        if (!isValid || verifiedRole == null)
+        if (!isValid || verifiedRole == null || verifiedRole == "quote")
         {
             return Unauthorized(new { valid = false, message = "الجلسة منتهية أو غير صالحة" });
         }
 
         if (!string.IsNullOrWhiteSpace(role))
         {
-            bool allowed = string.Equals(role, verifiedRole, StringComparison.OrdinalIgnoreCase);
-            if (!allowed && string.Equals(role, "quote", StringComparison.OrdinalIgnoreCase) && verifiedRole == "employee")
-                allowed = true;
+            var requestedRole = role.Trim().ToLowerInvariant();
+            // Reject verifying as legacy quote
+            if (requestedRole == "quote")
+            {
+                return Unauthorized(new { valid = false, message = "تم إلغاء جلسات عروض الأسعار المشتركة." });
+            }
 
+            bool allowed = string.Equals(requestedRole, verifiedRole, StringComparison.OrdinalIgnoreCase);
             if (!allowed)
             {
                 return Unauthorized(new { valid = false, message = "نوع الصلاحية غير متطابق" });
@@ -130,9 +163,14 @@ public class AuthController : ControllerBase
 
         // 2. Validate request
         var targetRole = request.TargetRole?.Trim().ToLowerInvariant();
-        if (targetRole != "quote" && targetRole != "admin")
+        if (targetRole == "quote")
         {
-            return BadRequest(new { success = false, message = "الجهة المحددة غير صحيحة. اختر عروض الأسعار أو لوحة الإدارة." });
+            return BadRequest(new { success = false, message = "تم إلغاء كلمة المرور المشتركة لعروض الأسعار. يتم إدارة حسابات الموظفين المعتمدة من تبويب حسابات الموظفين." });
+        }
+
+        if (targetRole != "admin")
+        {
+            return BadRequest(new { success = false, message = "يمكن تغيير كلمة مرور لوحة الإدارة فقط." });
         }
 
         if (string.IsNullOrWhiteSpace(request.NewPassword))
@@ -160,10 +198,46 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             success = true,
-            message = targetRole == "quote" 
-                ? "تم تحديث كلمة مرور شاشة عروض الأسعار بنجاح وإلغاء الجلسات السابقة." 
-                : "تم تحديث كلمة مرور لوحة الإدارة بنجاح وإلغاء الجلسات السابقة."
+            message = "تم تحديث كلمة مرور لوحة الإدارة بنجاح وإلغاء الجلسات السابقة."
         });
+    }
+
+    [HttpPost("provision-owner")]
+    public async Task<IActionResult> ProvisionOwner([FromBody] ProvisionOwnerRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.BootstrapToken))
+            return BadRequest(new { success = false, message = "رمز التهيئة مطلوب." });
+
+        if (string.IsNullOrWhiteSpace(request.OwnerPassword) || request.OwnerPassword.Length < 8)
+            return BadRequest(new { success = false, message = "يجب أن تكون كلمة المرور 8 أحرف على الأقل." });
+
+        if (request.OwnerPassword != request.ConfirmPassword)
+            return BadRequest(new { success = false, message = "كلمة المرور وتأكيد كلمة المرور غير متطابقين." });
+
+        var (success, error) = await _securityService.ProvisionInitialOwnerAsync(request.BootstrapToken, request.OwnerPassword);
+        if (!success)
+            return BadRequest(new { success = false, message = error ?? "فشلت عملية تهيئة المالك." });
+
+        return Ok(new { success = true, message = "تمت تهيئة حساب المالك بنجاح لأول مرة." });
+    }
+
+    [HttpPost("recover-owner")]
+    public async Task<IActionResult> RecoverOwner([FromBody] RecoverOwnerRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RecoveryKey))
+            return BadRequest(new { success = false, message = "مفتاح الاستعادة مطلوب." });
+
+        if (string.IsNullOrWhiteSpace(request.NewOwnerPassword) || request.NewOwnerPassword.Length < 8)
+            return BadRequest(new { success = false, message = "يجب أن تكون كلمة المرور 8 أحرف على الأقل." });
+
+        if (request.NewOwnerPassword != request.ConfirmPassword)
+            return BadRequest(new { success = false, message = "كلمة المرور وتأكيد كلمة المرور غير متطابقين." });
+
+        var (success, error) = await _securityService.RecoverOwnerCredentialAsync(request.RecoveryKey, request.NewOwnerPassword);
+        if (!success)
+            return BadRequest(new { success = false, message = error ?? "فشلت عملية استعادة حساب المالك." });
+
+        return Ok(new { success = true, message = "تم استعادة حساب المالك وتحديث كلمة المرور وإلغاء الجلسات السابقة بنجاح." });
     }
 
     [HttpPost("logout")]

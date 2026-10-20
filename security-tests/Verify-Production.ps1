@@ -1,8 +1,8 @@
-# Run interactively after the SEC-01 deployment. Never pass passwords on the command line.
+# Run interactively after the SEC-01 & SEC-02 deployment. Never pass passwords on the command line.
 # Creates exactly two clearly-labelled synthetic quotations, preserving automatic delivery.
 # Test accounts are deactivated in finally; quotations/delivery history are retained.
 param(
-    [string]$ReportPath = (Join-Path $PSScriptRoot '../scratch/security-audit/sec01-production.json')
+    [string]$ReportPath = (Join-Path $PSScriptRoot '../scratch/security-audit/sec02-production.json')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,7 +39,7 @@ function Request([string]$Method, [string]$Path, [string]$Token = $null, $Body =
 function Check([string]$Name, [bool]$Passed) {
     $checks.Add([pscustomobject]@{ Name = $Name; Passed = $Passed })
     Write-Host "$(if ($Passed) { 'PASS' } else { 'FAIL' }) $Name"
-    if (-not $Passed) { throw 'A production verification check failed; see the redacted report.' }
+    if (-not $Passed) { throw "A production verification check failed: $Name. See the redacted report." }
 }
 
 function Login([string]$Role) {
@@ -72,9 +72,21 @@ function AssertSafeJson($Value) {
 }
 
 try {
-    # Use an invalid/nonexistent ID first: do not probe historical quotation records.
+    # 1. Anonymous & invalid token checks
     Check 'anonymous read rejected' ((Request GET '/api/quotes/2147483647').Status -eq 401)
     Check 'invalid bearer rejected' ((Request GET '/api/quotes/2147483647' 'synthetic-invalid-token').Status -eq 401)
+
+    # 2. Batch 02 check: Shared quote password login rejected (F07)
+    $sharedLogin = Request POST '/api/auth/login' -Body @{ role = 'quote'; password = 'AnyQuotePassword2026' }
+    Check 'shared quote password login rejected' ($sharedLogin.Status -eq 401)
+
+    # 3. Batch 02 check: Anonymous quotation endpoints rejected (F07)
+    $anonPreview = Request POST '/api/quotes/preview' -Body @{ clientName = 'Anon Test'; items = @(@{ productName = 'Anon Item'; quantity = 1; unitPrice = 10 }) }
+    Check 'anonymous preview rejected' ($anonPreview.Status -eq 401)
+    $anonGen = Request POST '/api/quotes/generate' -Body @{ clientName = 'Anon Test'; items = @(@{ productName = 'Anon Item'; quantity = 1; unitPrice = 10 }) }
+    Check 'anonymous generate rejected' ($anonGen.Status -eq 401)
+
+    # 4. Privileged login
     $ownerToken = Login 'owner'
     $adminToken = Login 'admin'
     $recipientsBefore = Request GET '/api/admin/telegram/recipients' $ownerToken
@@ -83,36 +95,48 @@ try {
     Check 'admin denied employee management' ((Request GET '/api/admin/employees' $adminToken).Status -eq 401)
     $runId = [Guid]::NewGuid().ToString('N').Substring(0, 12)
 
+    # 5. Synthetic official employee accounts
     foreach ($label in @('A', 'B')) {
         $rngBytes = New-Object byte[] 24
         [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($rngBytes)
         $password = [Convert]::ToBase64String($rngBytes)
         $rngBytes = $null
-        $email = "sec01-$($label.ToLower())-$runId@example.invalid"
-        $fullName = "SEC-01 SYNTHETIC Employee $label $runId"
+        $email = "sec02-$($label.ToLower())-$runId@example.invalid"
+        $fullName = "SEC-02 SYNTHETIC Employee $label $runId"
         $created = Request POST '/api/admin/employees' $ownerToken @{ fullName = $fullName; email = $email; password = $password; confirmPassword = $password }
         Check "Owner creates synthetic employee $label" ($created.Status -eq 201 -and $created.Json.user.id -gt 0)
-        $account = [pscustomobject]@{ Id = [int]$created.Json.user.id; FullName = $fullName; Email = $email; Token = $null }
+        $account = [pscustomobject]@{ Id = [int]$created.Json.user.id; FullName = $fullName; Email = $email; Password = $password; Token = $null }
         $testUsers.Add($account)
         $login = Request POST '/api/auth/login' -Body @{ email = $email; password = $password }
-        $password = $null
         Check "synthetic employee $label login" ($login.Status -eq 200 -and [bool]$login.Json.token)
         $account.Token = $login.Json.token
         Check "synthetic employee $label denied employee management" ((Request GET '/api/admin/employees' $account.Token).Status -eq 401)
+
+        # Batch 02: Employee quote preview
+        $empPreview = Request POST '/api/quotes/preview' $account.Token @{ clientName = "SEC-02 Preview $runId $label"; items = @(@{ productName = 'PREVIEW ITEM'; quantity = 1; unitPrice = 50 }) }
+        Check "synthetic employee $label preview quote succeeds" ($empPreview.Status -eq 200 -and [bool]$empPreview.Json.quoteNumber)
+
+        # Batch 02: Employee audit log recording
+        $empAudit = Request POST '/api/admin/audit' $account.Token @{ userId = 9999; action = "SEC02_AUDIT_$runId"; entityId = "PROD-AUDIT" }
+        Check "synthetic employee $label record audit succeeds" ($empAudit.Status -eq 200)
     }
+
+    # 6. Quotation generation by official employees
     foreach ($index in @(0, 1)) {
         if ($index -gt 0) { Start-Sleep -Seconds 3 }
         $account = $testUsers[$index]
         $generated = Request POST '/api/quotes/generate' $account.Token @{
             userId = $testUsers[1 - $index].Id
-            clientName = "SEC-01 SYNTHETIC TEST $runId $index"
-            projectName = 'Security regression verification - not a commercial offer'
+            clientName = "SEC-02 SYNTHETIC TEST $runId $index"
+            projectName = 'Security Batch 02 regression verification'
             issuerName = $account.FullName
             items = @(@{ productName = 'SYNTHETIC TEST ITEM'; quantity = 1; unitPrice = 0 })
         }
         Check "synthetic quote $index generation" ($generated.Status -eq 200 -and $generated.Json.quoteId -gt 0)
         $quoteIds.Add([int]$generated.Json.quoteId)
     }
+
+    # 7. Verification of access control & creator attribution
     foreach ($index in @(0, 1)) {
         $id = $quoteIds[$index]
         Check "anonymous denied synthetic quote $index" ((Request GET "/api/quotes/$id").Status -eq 401)
@@ -128,6 +152,8 @@ try {
             Check "$($privileged.Role) reads synthetic quote $index safely" ($read.Status -eq 200 -and (AssertSafeJson $read.Json))
         }
     }
+
+    # 8. Telegram delivery verification
     $recent = Request GET '/api/admin/quotes' $adminToken
     Check 'synthetic delivery history available' ($recent.Status -eq 200)
     foreach ($index in @(0, 1)) {
@@ -141,6 +167,8 @@ try {
         $retry = Request POST "/api/admin/quotes/$($quoteIds[$index])/retry-telegram?chatId=$sentChatId" $adminToken
         Check "synthetic quote $index Sent retry suppressed" ($retry.Status -eq 200 -and @($retry.Json.results).Count -gt 0 -and @($retry.Json.results | Where-Object { -not $_.alreadySent }).Count -eq 0)
     }
+
+    # 9. Recipient state preservation
     $recipientsAfter = Request GET '/api/admin/telegram/recipients' $ownerToken
     $beforeState = @($recipientsBefore.Json | Sort-Object id | Select-Object id, chatId, displayName, isActive) | ConvertTo-Json -Depth 5 -Compress
     $afterState = @($recipientsAfter.Json | Sort-Object id | Select-Object id, chatId, displayName, isActive) | ConvertTo-Json -Depth 5 -Compress
@@ -157,10 +185,17 @@ try {
         try {
             $disabled = Request POST "/api/admin/employees/$($account.Id)/toggle-status" $ownerToken @{ isActive = $false }
             $checks.Add([pscustomobject]@{ Name = "synthetic employee $($account.Id) deactivated"; Passed = ($disabled.Status -eq 200 -and $disabled.Json.isActive -eq $false) })
+
+            # Batch 02: Verify deactivated employee cannot log in
+            if ($account.Password) {
+                $deactivatedLogin = Request POST '/api/auth/login' -Body @{ email = $account.Email; password = $account.Password }
+                $checks.Add([pscustomobject]@{ Name = "deactivated synthetic employee $($account.Id) login rejected"; Passed = ($deactivatedLogin.Status -eq 401) })
+            }
         } catch {
             $checks.Add([pscustomobject]@{ Name = "synthetic employee $($account.Id) requires deactivation"; Passed = $false })
         }
         $account.Token = $null
+        $account.Password = $null
     }
     $report = [pscustomobject]@{
         StartedUtc = $startedAt; CompletedUtc = [DateTime]::UtcNow.ToString('o'); Backend = $baseUri
@@ -172,7 +207,7 @@ try {
     $reportDirectory = Split-Path ([IO.Path]::GetFullPath($ReportPath)) -Parent
     New-Item -ItemType Directory -Force -Path $reportDirectory | Out-Null
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ReportPath -Encoding utf8
-    $ownerToken = $null; $adminToken = $null; $password = $null; $http.Dispose()
+    $ownerToken = $null; $adminToken = $null; $http.Dispose()
     Write-Host "Redacted report: $([IO.Path]::GetFullPath($ReportPath))"
 }
 if (-not $report.AllPassed) { exit 1 }

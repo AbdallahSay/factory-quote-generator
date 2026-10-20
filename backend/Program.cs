@@ -69,30 +69,10 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Ensuring SQL Server database is created...");
         db.Database.EnsureCreated();
 
-        // Seed Users
+        // Initial users are provisioned exclusively by the Owner; no hardcoded bootstrap accounts
         if (!db.Users.Any())
         {
-            logger.LogInformation("Seeding initial Users...");
-            var adminUser = new User
-            {
-                FullName = "مدير النظام",
-                Email = "admin@factory-eg.com",
-                PasswordHash = "admin_hash_123",
-                Role = "Admin",
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            var salesUser = new User
-            {
-                FullName = "مسؤول المبيعات",
-                Email = "sales@factory-eg.com",
-                PasswordHash = "sales_hash_123",
-                Role = "Sales",
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            db.Users.AddRange(adminUser, salesUser);
-            db.SaveChanges();
+            logger.LogInformation("No initial users present. Users must be provisioned by the Owner.");
         }
 
         // Seed Products

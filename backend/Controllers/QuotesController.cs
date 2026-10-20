@@ -310,9 +310,11 @@ public class QuotesController : ControllerBase
     [HttpPost("preview")]
     public async Task<IActionResult> PreviewQuote([FromBody] QuoteRequestDto request)
     {
-        if (!await IsAuthorizedQuoteAsync())
+        string? token = ExtractBearerToken();
+        var (isValid, authenticatedUser, authRole) = await _securityService.ValidateUserTokenAsync(token);
+        if (!isValid || authenticatedUser == null)
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور عروض الأسعار." });
+            return Unauthorized(new { message = "غير مصرح. يرجى تسجيل الدخول بحساب موظف معتمد لمعاينة عروض الأسعار." });
         }
 
         bool hasDynamicRows = request.Rows != null && request.Rows.Count > 0;
@@ -554,13 +556,6 @@ public class QuotesController : ControllerBase
         if (string.IsNullOrWhiteSpace(text)) return fallback;
         var clean = System.Text.RegularExpressions.Regex.Replace(text, @"[^\d\.\,\-]", "").Replace(",", "");
         return decimal.TryParse(clean, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : fallback;
-    }
-
-    private async Task<bool> IsAuthorizedQuoteAsync()
-    {
-        var token = ExtractBearerToken();
-        var (isValid, _) = await _securityService.ValidateTokenAsync(token, "quote", "admin", "owner");
-        return isValid;
     }
 
     private string? ExtractBearerToken()
