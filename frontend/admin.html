@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة والمتابعة | مصنع المنتجات الإسمنتية</title>
+    <title>لوحة التحكم والإدارة | مصنع المنتجات الإسمنتية</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- SweetAlert2 CDN for Modern Dialogs -->
+    <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
@@ -17,20 +17,20 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
-    <!-- Admin Authentication Modal (Shown when unauthenticated) -->
+    <!-- Authentication Modal (Shown if unauthenticated) -->
     <div id="adminAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-center">
             <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-purple-200 shadow-inner">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
             </div>
             <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول لوحة الإدارة</h2>
-            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور الإدارة للوصول إلى بيانات التدقيق والإحصائيات وإدارة الحسابات</p>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور الإدارة لعرض التقارير وسجلات النظام</p>
 
             <form id="adminLoginForm" class="space-y-4" onsubmit="handleAdminLogin(event)">
                 <div class="text-right">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة مرور لوحة الإدارة</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
                     <input type="password" id="adminPasswordInput" autofocus required
                         placeholder="••••••••••••"
                         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
@@ -46,35 +46,37 @@
 
             <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-500">
                 <a href="index.html" class="hover:text-blue-600 transition">← العودة إلى شاشة عروض الأسعار</a>
-                <a href="owner.html" class="hover:text-amber-600 transition">إدارة كلمات المرور (المالك) ←</a>
+                <a href="owner.html" class="hover:text-blue-600 transition">إدارة النظام (المالك) ←</a>
             </div>
         </div>
     </div>
 
-    <!-- Admin Main Dashboard Wrapper -->
+    <!-- Main Dashboard Content -->
     <div id="adminDashboardContent" class="hidden">
-        <!-- Navbar -->
+        <!-- Header -->
         <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
                 <div class="flex items-center space-x-3 space-x-reverse">
-                    <div class="bg-purple-600 p-2 rounded-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="bg-purple-600 p-2 rounded-lg text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold">لوحة المراقبة والتدقيق الإداري</h1>
-                        <p class="text-xs text-slate-400">متابعة سجلات التدقيق (Audit Logs) وإدارة حسابات الموظفين وعروض الأسعار الصادرة</p>
+                        <h1 class="text-lg font-bold">لوحة التحكم والإدارة المركزية</h1>
+                        <p class="text-xs text-slate-400">نظام عروض الأسعار | مصنع المنتجات الإسمنتية</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2.5 space-x-reverse">
-                    <button id="refreshBtn" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium flex items-center gap-1.5 border border-slate-700">
-                        <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        تحديث فوري
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <button id="refreshBtn" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium border border-slate-700 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        تحديث البيانات
                     </button>
-                    <a href="index.html" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        عرض سعر جديد
+                    <a href="index.html" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium border border-slate-700 flex items-center gap-1">
+                        شاشة عروض الأسعار
+                    </a>
+                    <a href="owner.html" class="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition font-semibold flex items-center gap-1">
+                        إدارة النظام (المالك)
                     </a>
                     <button onclick="Auth.logout('admin')" class="px-3 py-1.5 text-xs bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition font-semibold flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -90,10 +92,6 @@
                 <button id="tabQuotesBtn" onclick="switchAdminTab('quotes')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     لوحة المراقبة وعروض الأسعار
-                </button>
-                <button id="tabEmployeesBtn" onclick="switchAdminTab('employees')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    إدارة الحسابات
                 </button>
                 <button id="tabTelegramBtn" onclick="switchAdminTab('telegram')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
@@ -113,7 +111,7 @@
                             <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي عروض الأسعار</span>
                             <span id="kpiTotalQuotes" class="text-3xl font-black text-slate-900">--</span>
                         </div>
-                        <div class="bg-blue-50 text-blue-600 p-3 rounded-xl">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                     </div>
@@ -121,43 +119,44 @@
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
                             <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي المبيعات التقديرية</span>
-                            <span id="kpiTotalRevenue" class="text-2xl font-black text-emerald-700">--</span>
-                            <span class="text-xs text-slate-500 mr-1">ج.م</span>
+                            <span id="kpiTotalRevenue" class="text-2xl font-black text-emerald-600">--</span>
                         </div>
-                        <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                     </div>
 
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <span class="text-xs font-semibold text-slate-500 block mb-1">العملاء النشطون</span>
-                            <span id="kpiTotalClients" class="text-3xl font-black text-purple-900">--</span>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">عروض أسعار اليوم</span>
+                            <span id="kpiTodayQuotes" class="text-3xl font-black text-purple-600">--</span>
                         </div>
-                        <div class="bg-purple-50 text-purple-600 p-3 rounded-xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         </div>
                     </div>
 
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <span class="text-xs font-semibold text-slate-500 block mb-1">عمليات التدقيق المسجلة</span>
-                            <span id="kpiTotalLogs" class="text-3xl font-black text-amber-900">--</span>
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي العملاء المسجلين</span>
+                            <span id="kpiTotalClients" class="text-3xl font-black text-amber-600">--</span>
                         </div>
-                        <div class="bg-amber-50 text-amber-600 p-3 rounded-xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 1: Recent Quotes Table -->
+                <!-- Quotes Table Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                            <h2 class="font-bold text-slate-800 text-base">أحدث عروض الأسعار الصادرة والموظف المنشئ</h2>
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                                أحدث عروض الأسعار الصادرة
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">متابعة العروض الصادرة، القائمين بإنشائها، وتنزيل نسخ PDF و Word</p>
                         </div>
-                        <span class="text-xs text-slate-500">منسوبة بدقة إلى الموظف المنشئ ومحفوظة في قاعدة البيانات</span>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -165,10 +164,10 @@
                             <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
                                     <th class="py-3 px-4 border-b">رقم العرض</th>
-                                    <th class="py-3 px-4 border-b">اسم العميل</th>
-                                    <th class="py-3 px-4 border-b">أنشأه (الموظف)</th>
-                                    <th class="py-3 px-4 border-b">المشروع / الموقع</th>
-                                    <th class="py-3 px-4 border-b">جهة الإصدار</th>
+                                    <th class="py-3 px-4 border-b">العميل</th>
+                                    <th class="py-3 px-4 border-b">منشئ العرض (الموظف)</th>
+                                    <th class="py-3 px-4 border-b">المشروع والموقع</th>
+                                    <th class="py-3 px-4 border-b">المصدر / الصفة</th>
                                     <th class="py-3 px-4 border-b">عدد الأصناف</th>
                                     <th class="py-3 px-4 border-b">إجمالي القيمة</th>
                                     <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
@@ -177,77 +176,37 @@
                             </thead>
                             <tbody id="quotesTableBody" class="divide-y divide-slate-100 text-xs">
                                 <tr>
-                                    <td colspan="9" class="py-8 text-center text-slate-400">جاري تحميل عروض الأسعار...</td>
+                                    <td colspan="9" class="py-8 text-center text-slate-400">جاري تحميل البيانات...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Section 2: Audit Logs Table -->
+                <!-- Audit Logs Table Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                            <h2 class="font-bold text-slate-800 text-base">سجل تدقيق الأنشطة والعمليات (Audit Logs)</h2>
-                        </div>
-                        <span class="text-xs text-slate-500">سجل غير قابل للتعديل للحركات الإدارية وإنشاء المستندات</span>
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/70">
+                        <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                            سجل الحركات وتدقيق الأمان (Audit Trail)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">تتبع عمليات إصدار وتحميل عروض الأسعار وعمليات النظام</p>
                     </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-sm">
                             <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
-                                    <th class="py-3 px-4 border-b"># المعرف</th>
-                                    <th class="py-3 px-4 border-b">التوقيت (UTC)</th>
-                                    <th class="py-3 px-4 border-b">المستخدم</th>
-                                    <th class="py-3 px-4 border-b">نوع الإجراء (Action)</th>
-                                    <th class="py-3 px-4 border-b">معرف الكيان / التفاصيل</th>
+                                    <th class="py-2.5 px-4 border-b">#</th>
+                                    <th class="py-2.5 px-4 border-b">التوقيت</th>
+                                    <th class="py-2.5 px-4 border-b">المستخدم</th>
+                                    <th class="py-2.5 px-4 border-b">نوع الحركة</th>
+                                    <th class="py-2.5 px-4 border-b">البيان / المعرف</th>
                                 </tr>
                             </thead>
                             <tbody id="logsTableBody" class="divide-y divide-slate-100 text-xs">
                                 <tr>
-                                    <td colspan="5" class="py-8 text-center text-slate-400">جاري تحميل سجل التدقيق...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section: Employees Management -->
-            <div id="employeesSection" class="hidden space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50/70">
-                        <div>
-                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                                حسابات الموظفين المصرح لهم
-                            </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">إدارة حسابات الموظفين، تغيير كلمات المرور، وتفعيل أو تعطيل الحسابات</p>
-                        </div>
-                        <button onclick="openCreateEmployeeModal()" class="px-3.5 py-2 text-xs bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                            إضافة حساب موظف جديد
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                                <tr>
-                                    <th class="py-3 px-4 border-b"># المعرف</th>
-                                    <th class="py-3 px-4 border-b">الاسم الكامل</th>
-                                    <th class="py-3 px-4 border-b">البريد الإلكتروني</th>
-                                    <th class="py-3 px-4 border-b">عروض الأسعار</th>
-                                    <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
-                                    <th class="py-3 px-4 border-b">الحالة</th>
-                                    <th class="py-3 px-4 border-b text-center">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employeesTableBody" class="divide-y divide-slate-100 text-xs">
-                                <tr>
-                                    <td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل بيانات الموظفين...</td>
+                                    <td colspan="5" class="py-6 text-center text-slate-400">جاري تحميل السجلات...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -277,21 +236,33 @@
                             إضافة مستلم جديد
                         </button>
                         <button onclick="loadTelegramRecipients(true); loadTelegramBotInfo();" class="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg border border-slate-200 transition flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            تحديث
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            تحديث المستلمين
                         </button>
                     </div>
                 </div>
 
-                <!-- Recipients Table -->
+                <!-- Detected Chats Suggestion Banner -->
+                <div id="detectedChatsContainer" class="hidden bg-sky-50/70 border border-sky-200 rounded-xl p-4 text-xs">
+                    <div class="flex items-start gap-2.5">
+                        <span class="text-sky-600 font-bold text-sm mt-0.5">💡</span>
+                        <div class="flex-1">
+                            <div class="font-bold text-sky-950 text-xs mb-1">محادثات تم رصدها مؤخراً مع البوت:</div>
+                            <div id="detectedChatsList" class="flex flex-wrap gap-2 mt-2"></div>
+                            <div class="text-[11px] text-slate-500 mt-2">انقر على أي محادثة لإضافتها مباشرة بالاسم والمعرف إلى قائمة المستلمين.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Recipients Table -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50/70">
                         <div>
                             <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-sky-600"></span>
-                                قائمة مستلمي إشعارات عروض الأسعار (Telegram Recipients)
+                                مستلمو عروض الأسعار المباشرة (Telegram Channels & Chats)
                             </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">يمكن تفعيل أو تعطيل أي مستلم دون التأثير على المستلمين الآخرين ودون فقدان السجلات السابقة</p>
+                            <p class="text-xs text-slate-500 mt-0.5">إدارة مستقلة لحسابات وقنوات تيليجرام التي تتلقى ملفات PDF تلقائياً فور توليدها، مع الحفاظ على السجلات التاريخية</p>
                         </div>
                     </div>
 
@@ -300,9 +271,9 @@
                             <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
                                     <th class="py-3 px-4 border-b"># المعرف</th>
-                                    <th class="py-3 px-4 border-b">الاسم التعريفي</th>
+                                    <th class="py-3 px-4 border-b">الاسم التعريفي (الوصف)</th>
                                     <th class="py-3 px-4 border-b">معرف المحادثة (Chat ID)</th>
-                                    <th class="py-3 px-4 border-b">الحالة</th>
+                                    <th class="py-3 px-4 border-b">حالة الاستلام التلقائي</th>
                                     <th class="py-3 px-4 border-b">إحصائيات التسليم</th>
                                     <th class="py-3 px-4 border-b">تاريخ الإضافة</th>
                                     <th class="py-3 px-4 border-b text-center">الإجراءات</th>
@@ -316,21 +287,27 @@
                         </table>
                     </div>
                 </div>
-
-                <!-- Section for Detected Chats from Bot Updates (Auto-Discovery Helper) -->
-                <div id="detectedChatsContainer" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hidden">
-                    <h3 class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-1.5 text-sky-700">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        محادثات بدأت التواصل مؤخراً مع البوت (اضغط لإضافتها بضغطة واحدة):
-                    </h3>
-                    <div id="detectedChatsList" class="flex flex-wrap gap-2 text-xs"></div>
-                </div>
             </div>
         </main>
     </div>
 
-    <!-- Dashboard JavaScript Logic -->
     <script>
+        function sanitizeUrl(url) {
+            if (!url || typeof url !== 'string') return '#';
+            const trimmed = url.trim();
+            if (trimmed === '' || trimmed === '#') return '#';
+            if (/^\s*(javascript|data|vbscript):/i.test(trimmed)) return '#';
+            if (trimmed.startsWith('/')) return trimmed;
+            try {
+                const parsed = new URL(trimmed, window.location.origin);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return trimmed;
+                }
+            } catch { }
+            return '#';
+        }
+
+        // Initialize Authentication on load
         document.addEventListener('DOMContentLoaded', async () => {
             const isAuth = await Auth.verify('admin');
             if (isAuth) {
@@ -342,11 +319,9 @@
         });
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
-            const isEmployeesActive = !document.getElementById('employeesSection').classList.contains('hidden');
-            const isTelegramActive = !document.getElementById('telegramSection').classList.contains('hidden');
-            if (isEmployeesActive) {
-                loadEmployees(true);
-            } else if (isTelegramActive) {
+            const tgSec = document.getElementById('telegramSection');
+            const isTelegramActive = tgSec && !tgSec.classList.contains('hidden');
+            if (isTelegramActive) {
                 loadTelegramRecipients(true);
                 loadTelegramBotInfo();
             } else {
@@ -391,25 +366,17 @@
 
         function switchAdminTab(tab) {
             const quotesSec = document.getElementById('quotesSection');
-            const empSec = document.getElementById('employeesSection');
             const tgSec = document.getElementById('telegramSection');
             const qBtn = document.getElementById('tabQuotesBtn');
-            const eBtn = document.getElementById('tabEmployeesBtn');
             const tBtn = document.getElementById('tabTelegramBtn');
 
             quotesSec.classList.add('hidden');
-            empSec.classList.add('hidden');
-            tgSec.classList.add('hidden');
+            if (tgSec) tgSec.classList.add('hidden');
 
             qBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
-            eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
-            tBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+            if (tBtn) tBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
 
-            if (tab === 'employees') {
-                empSec.classList.remove('hidden');
-                eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2";
-                loadEmployees();
-            } else if (tab === 'telegram') {
+            if (tab === 'telegram' && tgSec && tBtn) {
                 tgSec.classList.remove('hidden');
                 tBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-sky-600 text-sky-700 transition flex items-center gap-2";
                 loadTelegramRecipients();
@@ -426,7 +393,7 @@
                 await Promise.all([loadStats(), loadQuotes(), loadLogs()]);
                 if (isManual) {
                     Swal.fire({
-                        title: 'تم بنجاح!',
+                        titleText: 'تم التحديث!',
                         text: 'تم تحديث بيانات لوحة الإدارة بنجاح.',
                         icon: 'success',
                         confirmButtonText: 'حسناً',
@@ -435,7 +402,7 @@
                     });
                 }
             } catch (err) {
-                console.error('Fetch error:', err);
+                console.error('Data load error:', err);
             }
         }
 
@@ -450,10 +417,11 @@
                 }
                 if (!res.ok) return;
                 const stats = await res.json();
-                document.getElementById('kpiTotalQuotes').textContent = stats.totalQuotes || '0';
-                document.getElementById('kpiTotalRevenue').textContent = (stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-                document.getElementById('kpiTotalClients').textContent = stats.totalClients || '0';
-                document.getElementById('kpiTotalLogs').textContent = stats.totalAuditLogs || '0';
+
+                document.getElementById('kpiTotalQuotes').textContent = (stats.totalQuotes || 0).toLocaleString();
+                document.getElementById('kpiTotalRevenue').textContent = `${parseFloat(stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0 })} ج.م`;
+                document.getElementById('kpiTodayQuotes').textContent = (stats.todayQuotes || 0).toLocaleString();
+                document.getElementById('kpiTotalClients').textContent = (stats.totalClients || 0).toLocaleString();
             } catch (err) {
                 console.error('Stats error:', err);
             }
@@ -471,93 +439,194 @@
                 if (!res.ok) return;
                 const quotes = await res.json();
                 const tbody = document.getElementById('quotesTableBody');
+                tbody.innerHTML = '';
                 
-                if (quotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" class="py-6 text-center text-slate-400">لا توجد عروض أسعار مسجلة بعد.</td></tr>';
+                if (!quotes || quotes.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 9;
+                    td.className = "py-6 text-center text-slate-400";
+                    td.textContent = "لا توجد عروض أسعار مسجلة بعد.";
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
                     return;
                 }
 
-                tbody.innerHTML = quotes.map(q => {
-                    const pdfUrl = q.pdfUrl ? (q.pdfUrl.startsWith('http') ? q.pdfUrl : `${CONFIG.API_BASE_URL}${q.pdfUrl}`) : '#';
-                    const docxUrl = q.docxUrl ? (q.docxUrl.startsWith('http') ? q.docxUrl : `${CONFIG.API_BASE_URL}${q.docxUrl}`) : '#';
-                    
-                    const clientAttention = q.contactPerson 
-                        ? `<span class="block text-xs text-slate-500">${q.contactTitle || 'عناية'} : ${q.contactPerson}</span>` 
-                        : '';
-                    const projectLoc = q.location 
-                        ? `<span class="block text-xs text-slate-500">${q.location}</span>` 
-                        : '';
-                    const issuer = (q.issuerName || q.issuerJobTitle)
-                        ? `<div><span class="font-bold text-slate-800 text-xs">${q.issuerPrefix || ''}${q.issuerName || ''}</span><span class="block text-[11px] text-slate-500">${q.issuerJobTitle || ''}</span></div>`
-                        : '<span class="text-xs text-slate-400">-</span>';
+                quotes.forEach(q => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+
+                    // 1. Quote Number
+                    const tdNum = document.createElement('td');
+                    tdNum.className = "py-3 px-4 font-mono font-bold text-blue-900";
+                    const divNum = document.createElement('div');
+                    divNum.textContent = q.quoteNumber || '';
+                    tdNum.appendChild(divNum);
+                    tr.appendChild(tdNum);
+
+                    // 2. Client & Contact
+                    const tdClient = document.createElement('td');
+                    tdClient.className = "py-3 px-4";
+                    const clientSpan = document.createElement('span');
+                    clientSpan.className = "font-semibold text-slate-800";
+                    clientSpan.textContent = q.clientName || '';
+                    tdClient.appendChild(clientSpan);
 
                     const creatorName = q.createdByFullName || q.createdBy || 'غير محدد';
+                    const creatorBlock = document.createElement('span');
+                    creatorBlock.className = "block text-[11px] font-bold text-purple-700 mt-0.5";
+                    creatorBlock.textContent = `أنشأه: ${creatorName}`;
+                    tdClient.appendChild(creatorBlock);
 
-                    return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-mono font-bold text-blue-900">
-                            <div>${q.quoteNumber}</div>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="font-semibold text-slate-800">${q.clientName}</span>
-                            <span class="block text-[11px] font-bold text-purple-700 mt-0.5">أنشأه: ${creatorName}</span>
-                            ${clientAttention}
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                أنشأه: ${creatorName}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="text-slate-700 font-medium">${q.projectName || '-'}</span>
-                            ${projectLoc}
-                        </td>
-                        <td class="py-3 px-4">${issuer}</td>
-                        <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-700 font-bold">${q.itemCount} صنف</span></td>
-                        <td class="py-3 px-4 font-bold text-emerald-700">${parseFloat(q.totalAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} ج.م</td>
-                        <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(q.createdAt).toLocaleString('ar-EG')}</td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                                ${(() => {
-                                    const deliveries = q.telegramDeliveries || [];
-                                    if (deliveries.length === 0) {
-                                        return `<button onclick="retryTelegram(${q.id}, '${q.quoteNumber}')" class="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded flex items-center gap-1 transition" title="إرسال إلى المستلمين النشطين">
-                                            <svg class="w-3.5 h-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.18 3.35-1.38 3.73-1.39.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
-                                            إرسال تيليجرام
-                                        </button>`;
-                                    }
+                    if (q.contactPerson) {
+                        const contactSpan = document.createElement('span');
+                        contactSpan.className = "block text-xs text-slate-500";
+                        contactSpan.textContent = `${q.contactTitle || 'عناية'} : ${q.contactPerson}`;
+                        tdClient.appendChild(contactSpan);
+                    }
+                    tr.appendChild(tdClient);
 
-                                    return deliveries.map(d => {
-                                        const name = d.displayName || d.chatId;
-                                        const safeName = (name || '').replace(/'/g, "\\'");
-                                        if (d.status === 'Sent') {
-                                            return `<span class="px-2 py-0.5 text-[11px] bg-sky-100 text-sky-800 font-bold rounded flex items-center gap-1 border border-sky-200" title="${name} (${d.chatId}): تم التسليم بنجاح (معرف: ${d.telegramMessageId || '-'})">
-                                                <svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                                                ${name}
-                                            </span>`;
-                                        } else if (d.status === 'Failed') {
-                                            return `<button onclick="retryTelegramSingle(${q.id}, '${q.quoteNumber}', '${d.chatId}', '${safeName}')" class="px-2 py-0.5 text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded flex items-center gap-1 transition shadow-sm border border-amber-300" title="${d.errorMessage || 'فشل الإرسال'} - اضغط لإعادة المحاولة لهذا المستلم فقط">
-                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                                إعادة: ${name}
-                                            </button>`;
-                                        } else {
-                                            return `<span class="px-2 py-0.5 text-[11px] bg-slate-100 text-slate-600 font-medium rounded flex items-center gap-1 border border-slate-200">${name}: معلق</span>`;
-                                        }
-                                    }).join('');
-                                })()}
-                                <a href="${pdfUrl}" target="_blank" onclick="trackDownload('PDF', '${q.quoteNumber}')" class="px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition">
-                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
-                                    PDF
-                                </a>
-                                <a href="${docxUrl}" target="_blank" onclick="trackDownload('DOCX', '${q.quoteNumber}')" class="px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition">
-                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
-                                    Word
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                `}).join('');
+                    // 3. Creator Badge
+                    const tdCreator = document.createElement('td');
+                    tdCreator.className = "py-3 px-4";
+                    const creatorBadge = document.createElement('span');
+                    creatorBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200";
+                    creatorBadge.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+                    creatorBadge.appendChild(document.createTextNode(` أنشأه: ${creatorName}`));
+                    tdCreator.appendChild(creatorBadge);
+                    tr.appendChild(tdCreator);
+
+                    // 4. Project & Location
+                    const tdProj = document.createElement('td');
+                    tdProj.className = "py-3 px-4";
+                    const projSpan = document.createElement('span');
+                    projSpan.className = "text-slate-700 font-medium";
+                    projSpan.textContent = q.projectName || '-';
+                    tdProj.appendChild(projSpan);
+
+                    if (q.location) {
+                        const locSpan = document.createElement('span');
+                        locSpan.className = "block text-xs text-slate-500";
+                        locSpan.textContent = q.location;
+                        tdProj.appendChild(locSpan);
+                    }
+                    tr.appendChild(tdProj);
+
+                    // 5. Issuer
+                    const tdIssuer = document.createElement('td');
+                    tdIssuer.className = "py-3 px-4";
+                    if (q.issuerName || q.issuerJobTitle) {
+                        const issuerDiv = document.createElement('div');
+                        const issuerNameSpan = document.createElement('span');
+                        issuerNameSpan.className = "font-bold text-slate-800 text-xs";
+                        issuerNameSpan.textContent = `${q.issuerPrefix || ''}${q.issuerName || ''}`;
+                        issuerDiv.appendChild(issuerNameSpan);
+                        if (q.issuerJobTitle) {
+                            const issuerJobSpan = document.createElement('span');
+                            issuerJobSpan.className = "block text-[11px] text-slate-500";
+                            issuerJobSpan.textContent = q.issuerJobTitle;
+                            issuerDiv.appendChild(issuerJobSpan);
+                        }
+                        tdIssuer.appendChild(issuerDiv);
+                    } else {
+                        const noIssuer = document.createElement('span');
+                        noIssuer.className = "text-xs text-slate-400";
+                        noIssuer.textContent = '-';
+                        tdIssuer.appendChild(noIssuer);
+                    }
+                    tr.appendChild(tdIssuer);
+
+                    // 6. Item count
+                    const tdItems = document.createElement('td');
+                    tdItems.className = "py-3 px-4";
+                    const itemsSpan = document.createElement('span');
+                    itemsSpan.className = "px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-700 font-bold";
+                    itemsSpan.textContent = `${q.itemCount || 0} صنف`;
+                    tdItems.appendChild(itemsSpan);
+                    tr.appendChild(tdItems);
+
+                    // 7. Total Amount
+                    const tdTotal = document.createElement('td');
+                    tdTotal.className = "py-3 px-4 font-bold text-emerald-700";
+                    tdTotal.textContent = `${parseFloat(q.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ج.م`;
+                    tr.appendChild(tdTotal);
+
+                    // 8. Date
+                    const tdDate = document.createElement('td');
+                    tdDate.className = "py-3 px-4 text-xs text-slate-500 font-mono";
+                    tdDate.textContent = q.createdAt ? new Date(q.createdAt).toLocaleString('ar-EG') : '-';
+                    tr.appendChild(tdDate);
+
+                    // 9. Telegram & Downloads
+                    const tdActions = document.createElement('td');
+                    tdActions.className = "py-3 px-4 text-center";
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = "flex items-center justify-center gap-1.5 flex-wrap";
+
+                    const deliveries = q.telegramDeliveries || [];
+                    if (deliveries.length === 0) {
+                        const tgBtn = document.createElement('button');
+                        tgBtn.className = "px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded flex items-center gap-1 transition";
+                        tgBtn.title = "إرسال إلى المستلمين النشطين";
+                        tgBtn.innerHTML = '<svg class="w-3.5 h-3.5 text-sky-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.18 3.35-1.38 3.73-1.39.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg> إرسال تيليجرام';
+                        tgBtn.addEventListener('click', () => retryTelegram(q.id, q.quoteNumber));
+                        actionsDiv.appendChild(tgBtn);
+                    } else {
+                        deliveries.forEach(d => {
+                            const name = d.displayName || d.chatId;
+                            if (d.status === 'Sent') {
+                                const badge = document.createElement('span');
+                                badge.className = "px-2 py-0.5 text-[11px] bg-sky-100 text-sky-800 font-bold rounded flex items-center gap-1 border border-sky-200";
+                                badge.title = `${name} (${d.chatId}): تم التسليم بنجاح (معرف: ${d.telegramMessageId || '-'})`;
+                                badge.innerHTML = '<svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+                                badge.appendChild(document.createTextNode(` ${name}`));
+                                actionsDiv.appendChild(badge);
+                            } else if (d.status === 'Failed') {
+                                const retryBtn = document.createElement('button');
+                                retryBtn.className = "px-2 py-0.5 text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded flex items-center gap-1 transition shadow-sm border border-amber-300";
+                                retryBtn.title = `${d.errorMessage || 'فشل الإرسال'} - اضغط لإعادة المحاولة لهذا المستلم فقط`;
+                                retryBtn.innerHTML = '<svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+                                retryBtn.appendChild(document.createTextNode(` إعادة: ${name}`));
+                                retryBtn.addEventListener('click', () => retryTelegramSingle(q.id, q.quoteNumber, d.chatId, name));
+                                actionsDiv.appendChild(retryBtn);
+                            } else {
+                                const pendingSpan = document.createElement('span');
+                                pendingSpan.className = "px-2 py-0.5 text-[11px] bg-slate-100 text-slate-600 font-medium rounded flex items-center gap-1 border border-slate-200";
+                                pendingSpan.textContent = `${name}: معلق`;
+                                actionsDiv.appendChild(pendingSpan);
+                            }
+                        });
+                    }
+
+                    // PDF link
+                    const rawPdf = q.pdfUrl ? (q.pdfUrl.startsWith('http') ? q.pdfUrl : `${CONFIG.API_BASE_URL}${q.pdfUrl}`) : '#';
+                    const safePdf = sanitizeUrl(rawPdf);
+                    const pdfLink = document.createElement('a');
+                    pdfLink.href = safePdf;
+                    pdfLink.target = "_blank";
+                    pdfLink.rel = "noopener noreferrer";
+                    pdfLink.className = "px-2.5 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded flex items-center gap-1 transition";
+                    pdfLink.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg> PDF';
+                    pdfLink.addEventListener('click', () => trackDownload('PDF', q.quoteNumber));
+                    actionsDiv.appendChild(pdfLink);
+
+                    // Word link
+                    const rawDocx = q.docxUrl ? (q.docxUrl.startsWith('http') ? q.docxUrl : `${CONFIG.API_BASE_URL}${q.docxUrl}`) : '#';
+                    const safeDocx = sanitizeUrl(rawDocx);
+                    const docxLink = document.createElement('a');
+                    docxLink.href = safeDocx;
+                    docxLink.target = "_blank";
+                    docxLink.rel = "noopener noreferrer";
+                    docxLink.className = "px-2.5 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded flex items-center gap-1 transition";
+                    docxLink.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg> Word';
+                    docxLink.addEventListener('click', () => trackDownload('DOCX', q.quoteNumber));
+                    actionsDiv.appendChild(docxLink);
+
+                    tdActions.appendChild(actionsDiv);
+                    tr.appendChild(tdActions);
+
+                    tbody.appendChild(tr);
+                });
             } catch (err) {
                 console.error('Quotes error:', err);
             }
@@ -566,7 +635,7 @@
         window.retryTelegram = async function(quoteId, quoteNum) {
             try {
                 Swal.fire({
-                    title: 'جاري إعادة الإرسال...',
+                    titleText: 'جاري إعادة الإرسال...',
                     text: `إعادة إرسال عرض السعر ${quoteNum} عبر التيليجرام`,
                     allowOutsideClick: false,
                     didOpen: () => Swal.showLoading()
@@ -580,14 +649,14 @@
                     const anySuccess = data.results && data.results.some(r => r.success);
                     if (anySuccess) {
                         Swal.fire({
-                            title: 'تم الإرسال بنجاح!',
+                            titleText: 'تم الإرسال بنجاح!',
                             text: 'تم إرسال ملف العرض إلى تيليجرام بنجاح.',
                             icon: 'success'
                         });
                     } else {
                         const firstError = data.results && data.results.find(r => r.errorMessage)?.errorMessage;
                         Swal.fire({
-                            title: 'لم يكتمل الإرسال',
+                            titleText: 'لم يكتمل الإرسال',
                             text: firstError || 'فشل إرسال ملف العرض عبر تيليجرام. يرجى التأكد من تهيئة التوكن.',
                             icon: 'warning'
                         });
@@ -595,14 +664,14 @@
                     loadQuotes();
                 } else {
                     Swal.fire({
-                        title: 'تنبيه',
+                        titleText: 'تنبيه',
                         text: data.message || 'تعذر استكمال العملية.',
                         icon: 'warning'
                     });
                 }
             } catch (err) {
                 Swal.fire({
-                    title: 'خطأ في الاتصال',
+                    titleText: 'خطأ في الاتصال',
                     text: err.message,
                     icon: 'error'
                 });
@@ -612,7 +681,7 @@
         window.retryTelegramSingle = async function(quoteId, quoteNum, chatId, displayName) {
             try {
                 Swal.fire({
-                    title: 'جاري إعادة الإرسال...',
+                    titleText: 'جاري إعادة الإرسال...',
                     text: `إعادة إرسال عرض السعر ${quoteNum} إلى ${displayName} (${chatId})`,
                     allowOutsideClick: false,
                     didOpen: () => Swal.showLoading()
@@ -626,13 +695,13 @@
                     const firstRes = data.results && data.results.find(r => r.chatId === chatId);
                     if (firstRes && firstRes.success) {
                         Swal.fire({
-                            title: 'تم الإرسال بنجاح!',
+                            titleText: 'تم الإرسال بنجاح!',
                             text: `تم إرسال ملف العرض إلى ${displayName} بنجاح.`,
                             icon: 'success'
                         });
                     } else {
                         Swal.fire({
-                            title: 'لم يكتمل الإرسال',
+                            titleText: 'لم يكتمل الإرسال',
                             text: (firstRes && firstRes.errorMessage) || 'تعذر إرسال المستند لهذا المستلم.',
                             icon: 'warning'
                         });
@@ -640,314 +709,19 @@
                     loadQuotes();
                 } else {
                     Swal.fire({
-                        title: 'تنبيه',
+                        titleText: 'تنبيه',
                         text: data.message || 'تعذر استكمال العملية.',
                         icon: 'warning'
                     });
                 }
             } catch (err) {
                 Swal.fire({
-                    title: 'خطأ في الاتصال',
+                    titleText: 'خطأ في الاتصال',
                     text: err.message,
                     icon: 'error'
                 });
             }
         };
-
-        async function loadEmployees(isManual = false) {
-            try {
-                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
-                    headers: { ...Auth.getAuthHeader('admin') }
-                });
-                if (res.status === 401) {
-                    showAdminModal();
-                    return;
-                }
-                if (!res.ok) return;
-                const employees = await res.json();
-                const tbody = document.getElementById('employeesTableBody');
-
-                if (employees.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">لا يوجد موظفون مسجلون بعد.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = employees.map(emp => {
-                    const statusBadge = emp.isActive
-                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط</span>'
-                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل</span>';
-
-                    const toggleBtnText = emp.isActive ? 'تعطيل' : 'تفعيل';
-                    const toggleBtnClass = emp.isActive 
-                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' 
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200';
-
-                    const safeName = (emp.fullName || '').replace(/'/g, "\\'");
-                    const safeEmail = (emp.email || '').replace(/'/g, "\\'");
-
-                    return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${emp.id}</td>
-                        <td class="py-3 px-4 font-bold text-slate-900">${emp.fullName}</td>
-                        <td class="py-3 px-4 font-mono text-slate-600">${emp.email}</td>
-                        <td class="py-3 px-4 font-bold text-purple-700">${emp.quotesCount} عرض سعر</td>
-                        <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(emp.createdAt).toLocaleDateString('ar-EG')}</td>
-                        <td class="py-3 px-4">${statusBadge}</td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="openEditEmployeeModal(${emp.id}, '${safeName}', '${safeEmail}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition">
-                                    تعديل
-                                </button>
-                                <button onclick="openResetPasswordModal(${emp.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded border border-blue-200 transition">
-                                    تغيير كلمة المرور
-                                </button>
-                                <button onclick="toggleEmployeeStatus(${emp.id}, ${emp.isActive}, '${safeName}')" class="px-2.5 py-1 text-xs font-semibold rounded border transition ${toggleBtnClass}">
-                                    ${toggleBtnText}
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `}).join('');
-
-                if (isManual) {
-                    Swal.fire({
-                        title: 'تم بنجاح!',
-                        text: 'تم تحديث قائمة حسابات الموظفين بنجاح.',
-                        icon: 'success',
-                        confirmButtonText: 'حسناً',
-                        timer: 1800,
-                        timerProgressBar: true
-                    });
-                }
-            } catch (err) {
-                console.error('Employees load error:', err);
-            }
-        }
-
-        async function openCreateEmployeeModal() {
-            const { value: formValues } = await Swal.fire({
-                title: 'إضافة حساب موظف جديد',
-                html: `
-                    <div class="space-y-3 text-right text-sm" dir="rtl">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
-                            <input id="swalFullName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: عبدالله سيد">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني *</label>
-                            <input id="swalEmail" type="email" class="swal2-input !m-0 !w-full !text-sm" placeholder="employee@factory-eg.com">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور (6 أحرف على الأقل) *</label>
-                            <input id="swalPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
-                            <input id="swalConfirmPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'إنشاء الحساب',
-                cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#7e22ce',
-                preConfirm: () => {
-                    const fullName = document.getElementById('swalFullName').value.trim();
-                    const email = document.getElementById('swalEmail').value.trim();
-                    const password = document.getElementById('swalPassword').value;
-                    const confirmPassword = document.getElementById('swalConfirmPassword').value;
-
-                    if (!fullName) {
-                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل للموظف');
-                        return false;
-                    }
-                    if (!email) {
-                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
-                        return false;
-                    }
-                    if (!password || password.length < 6) {
-                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
-                        return false;
-                    }
-                    if (password !== confirmPassword) {
-                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
-                        return false;
-                    }
-                    return { fullName, email, password, confirmPassword };
-                }
-            });
-
-            if (formValues) {
-                try {
-                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...Auth.getAuthHeader('admin')
-                        },
-                        body: JSON.stringify(formValues)
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) {
-                        throw new Error(data.message || 'فشل إنشاء الحساب');
-                    }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
-                    loadEmployees();
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
-                }
-            }
-        }
-
-        async function openEditEmployeeModal(id, currentName, currentEmail) {
-            const { value: formValues } = await Swal.fire({
-                title: 'تعديل بيانات الموظف',
-                html: `
-                    <div class="space-y-3 text-right text-sm" dir="rtl">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
-                            <input id="swalEditName" class="swal2-input !m-0 !w-full !text-sm" value="${currentName}">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني *</label>
-                            <input id="swalEditEmail" type="email" class="swal2-input !m-0 !w-full !text-sm" value="${currentEmail}">
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'حفظ التعديلات',
-                cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#7e22ce',
-                preConfirm: () => {
-                    const fullName = document.getElementById('swalEditName').value.trim();
-                    const email = document.getElementById('swalEditEmail').value.trim();
-                    if (!fullName) {
-                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل');
-                        return false;
-                    }
-                    if (!email) {
-                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
-                        return false;
-                    }
-                    return { fullName, email };
-                }
-            });
-
-            if (formValues) {
-                try {
-                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...Auth.getAuthHeader('admin')
-                        },
-                        body: JSON.stringify(formValues)
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) {
-                        throw new Error(data.message || 'فشل تحديث البيانات');
-                    }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
-                    loadEmployees();
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
-                }
-            }
-        }
-
-        async function openResetPasswordModal(id, employeeName) {
-            const { value: formValues } = await Swal.fire({
-                title: `تغيير كلمة المرور: ${employeeName}`,
-                html: `
-                    <div class="space-y-3 text-right text-sm" dir="rtl">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة (6 أحرف على الأقل) *</label>
-                            <input id="swalNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
-                            <input id="swalConfirmNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'تحديث كلمة المرور',
-                cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#2563eb',
-                preConfirm: () => {
-                    const newPassword = document.getElementById('swalNewPassword').value;
-                    const confirmPassword = document.getElementById('swalConfirmNewPassword').value;
-                    if (!newPassword || newPassword.length < 6) {
-                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
-                        return false;
-                    }
-                    if (newPassword !== confirmPassword) {
-                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
-                        return false;
-                    }
-                    return { newPassword, confirmPassword };
-                }
-            });
-
-            if (formValues) {
-                try {
-                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/reset-password`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...Auth.getAuthHeader('admin')
-                        },
-                        body: JSON.stringify(formValues)
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) {
-                        throw new Error(data.message || 'فشل تغيير كلمة المرور');
-                    }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
-                }
-            }
-        }
-
-        async function toggleEmployeeStatus(id, currentActive, employeeName) {
-            const actionText = currentActive ? 'إلغاء تفعيل وتعطيل' : 'تفعيل';
-            const result = await Swal.fire({
-                title: `${actionText} الحساب؟`,
-                text: currentActive 
-                    ? `هل أنت متأكد من تعطيل حساب (${employeeName})؟ لن يتمكن من تسجيل الدخول بعد الآن، ولكن ستبقى جميع عروض أسعاره السابقة منسوبة إليه بدقة.`
-                    : `هل أنت متأكد من تفعيل حساب (${employeeName})؟`,
-                icon: currentActive ? 'warning' : 'question',
-                showCancelButton: true,
-                confirmButtonText: `نعم، ${actionText}`,
-                cancelButtonText: 'تراجع',
-                confirmButtonColor: currentActive ? '#dc2626' : '#16a34a'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/toggle-status`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...Auth.getAuthHeader('admin')
-                        },
-                        body: JSON.stringify({ isActive: !currentActive })
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) {
-                        throw new Error(data.message || 'فشل تغيير حالة الحساب');
-                    }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
-                    loadEmployees();
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
-                }
-            }
-        }
 
         async function trackDownload(fileType, quoteNo) {
             try {
@@ -974,28 +748,65 @@
                 if (!res.ok) return;
                 const logs = await res.json();
                 const tbody = document.getElementById('logsTableBody');
+                tbody.innerHTML = '';
 
-                if (logs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 font-sans">لا توجد حركات مسجلة.</td></tr>';
+                if (!logs || logs.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 5;
+                    td.className = "py-6 text-center text-slate-400 font-sans";
+                    td.textContent = "لا توجد حركات مسجلة.";
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
                     return;
                 }
 
-                tbody.innerHTML = logs.map((log) => {
-                    let actionBadge = 'bg-slate-100 text-slate-800';
-                    if (log.action.includes('Generated')) actionBadge = 'bg-emerald-100 text-emerald-800';
-                    else if (log.action.includes('Downloaded')) actionBadge = 'bg-blue-100 text-blue-800';
-                    else if (log.action.includes('Previewed')) actionBadge = 'bg-purple-100 text-purple-800';
-                    else if (log.action.includes('Term')) actionBadge = 'bg-amber-100 text-amber-800';
+                logs.forEach((log) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
 
-                    return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2 px-4 text-slate-400">${log.id}</td>
-                        <td class="py-2 px-4 text-slate-500">${new Date(log.timestamp).toISOString()}</td>
-                        <td class="py-2 px-4 font-sans font-semibold text-slate-800">${log.user ? log.user.fullName : 'System'} <span class="text-xs text-slate-400">(${log.user ? log.user.role : '-'})</span></td>
-                        <td class="py-2 px-4"><span class="px-2 py-0.5 ${actionBadge} rounded font-semibold">${log.action}</span></td>
-                        <td class="py-2 px-4 text-blue-800 font-bold font-sans">${log.entityId || '-'}</td>
-                    </tr>
-                `}).join('');
+                    const tdId = document.createElement('td');
+                    tdId.className = "py-2 px-4 text-slate-400";
+                    tdId.textContent = log.id;
+                    tr.appendChild(tdId);
+
+                    const tdTime = document.createElement('td');
+                    tdTime.className = "py-2 px-4 text-slate-500";
+                    tdTime.textContent = log.timestamp ? new Date(log.timestamp).toISOString() : '-';
+                    tr.appendChild(tdTime);
+
+                    const tdUser = document.createElement('td');
+                    tdUser.className = "py-2 px-4 font-sans font-semibold text-slate-800";
+                    const userName = log.user ? log.user.fullName : 'System';
+                    const userRole = log.user ? log.user.role : '-';
+                    tdUser.textContent = `${userName} `;
+                    const roleSpan = document.createElement('span');
+                    roleSpan.className = "text-xs text-slate-400";
+                    roleSpan.textContent = `(${userRole})`;
+                    tdUser.appendChild(roleSpan);
+                    tr.appendChild(tdUser);
+
+                    const tdAction = document.createElement('td');
+                    tdAction.className = "py-2 px-4";
+                    const actionSpan = document.createElement('span');
+                    let actionBadge = 'bg-slate-100 text-slate-800';
+                    const act = log.action || '';
+                    if (act.includes('Generated')) actionBadge = 'bg-emerald-100 text-emerald-800';
+                    else if (act.includes('Downloaded')) actionBadge = 'bg-blue-100 text-blue-800';
+                    else if (act.includes('Previewed')) actionBadge = 'bg-purple-100 text-purple-800';
+                    else if (act.includes('Term')) actionBadge = 'bg-amber-100 text-amber-800';
+                    actionSpan.className = `px-2 py-0.5 ${actionBadge} rounded font-semibold`;
+                    actionSpan.textContent = act;
+                    tdAction.appendChild(actionSpan);
+                    tr.appendChild(tdAction);
+
+                    const tdEntity = document.createElement('td');
+                    tdEntity.className = "py-2 px-4 text-blue-800 font-bold font-sans";
+                    tdEntity.textContent = log.entityId || '-';
+                    tr.appendChild(tdEntity);
+
+                    tbody.appendChild(tr);
+                });
             } catch (err) {
                 console.error('Logs error:', err);
             }
@@ -1013,65 +824,116 @@
                 if (!res.ok) return;
                 const recipients = await res.json();
                 const tbody = document.getElementById('telegramRecipientsTableBody');
+                tbody.innerHTML = '';
 
-                if (recipients.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">لا يوجد مستلمون مسجلون بعد. اضغط على "إضافة مستلم جديد".</td></tr>';
+                if (!recipients || recipients.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 7;
+                    td.className = "py-6 text-center text-slate-400";
+                    td.textContent = 'لا يوجد مستلمون مسجلون بعد. اضغط على "إضافة مستلم جديد".';
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
                     return;
                 }
 
-                tbody.innerHTML = recipients.map(rec => {
-                    const statusBadge = rec.isActive
-                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط (يستلم تلقائياً)</span>'
-                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل</span>';
+                recipients.forEach(rec => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
 
-                    const toggleBtnText = rec.isActive ? 'تعطيل' : 'تفعيل';
-                    const toggleBtnClass = rec.isActive 
-                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' 
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200';
+                    const tdId = document.createElement('td');
+                    tdId.className = "py-3 px-4 font-mono font-bold text-slate-500";
+                    tdId.textContent = rec.id;
+                    tr.appendChild(tdId);
 
-                    const safeName = (rec.displayName || '').replace(/'/g, "\\'");
+                    const tdName = document.createElement('td');
+                    tdName.className = "py-3 px-4 font-bold text-slate-900";
+                    tdName.textContent = rec.displayName || '';
+                    tr.appendChild(tdName);
 
-                    const statsText = `
-                        <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center gap-1 text-emerald-700 font-bold" title="تم التسليم بنجاح">
-                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                                ${rec.totalSent} ناجح
-                            </span>
-                            <span class="text-slate-300">|</span>
-                            <span class="inline-flex items-center gap-1 text-rose-600 font-bold" title="فشل التسليم">
-                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                                ${rec.totalFailed} فاشل
-                            </span>
-                        </div>
-                    `;
+                    const tdChat = document.createElement('td');
+                    tdChat.className = "py-3 px-4 font-mono text-sky-800 font-bold";
+                    tdChat.textContent = rec.chatId || '';
+                    tr.appendChild(tdChat);
 
-                    return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${rec.id}</td>
-                        <td class="py-3 px-4 font-bold text-slate-900">${rec.displayName}</td>
-                        <td class="py-3 px-4 font-mono text-sky-800 font-bold">${rec.chatId}</td>
-                        <td class="py-3 px-4">${statusBadge}</td>
-                        <td class="py-3 px-4">${statsText}</td>
-                        <td class="py-3 px-4 text-xs text-slate-500 font-mono">${new Date(rec.createdAt).toLocaleDateString('ar-EG')}</td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="openEditRecipientModal(${rec.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition">
-                                    تعديل الاسم
-                                </button>
-                                <button onclick="toggleRecipientStatus(${rec.id}, ${rec.isActive}, '${safeName}')" class="px-2.5 py-1 text-xs font-semibold rounded border transition ${toggleBtnClass}">
-                                    ${toggleBtnText}
-                                </button>
-                                <button onclick="deleteRecipient(${rec.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded border border-rose-200 transition" title="حذف أو تعطيل">
-                                    حذف
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `}).join('');
+                    const tdStatus = document.createElement('td');
+                    tdStatus.className = "py-3 px-4";
+                    const statusBadge = document.createElement('span');
+                    if (rec.isActive) {
+                        statusBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200";
+                        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط (يستلم تلقائياً)';
+                    } else {
+                        statusBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200";
+                        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل';
+                    }
+                    tdStatus.appendChild(statusBadge);
+                    tr.appendChild(tdStatus);
+
+                    const tdStats = document.createElement('td');
+                    tdStats.className = "py-3 px-4";
+                    const statsDiv = document.createElement('div');
+                    statsDiv.className = "flex items-center gap-2";
+
+                    const sentSpan = document.createElement('span');
+                    sentSpan.className = "inline-flex items-center gap-1 text-emerald-700 font-bold";
+                    sentSpan.title = "تم التسليم بنجاح";
+                    sentSpan.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+                    sentSpan.appendChild(document.createTextNode(` ${rec.totalSent || 0} ناجح`));
+                    statsDiv.appendChild(sentSpan);
+
+                    const sep = document.createElement('span');
+                    sep.className = "text-slate-300";
+                    sep.textContent = "|";
+                    statsDiv.appendChild(sep);
+
+                    const failedSpan = document.createElement('span');
+                    failedSpan.className = "inline-flex items-center gap-1 text-rose-600 font-bold";
+                    failedSpan.title = "فشل التسليم";
+                    failedSpan.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>';
+                    failedSpan.appendChild(document.createTextNode(` ${rec.totalFailed || 0} فاشل`));
+                    statsDiv.appendChild(failedSpan);
+
+                    tdStats.appendChild(statsDiv);
+                    tr.appendChild(tdStats);
+
+                    const tdDate = document.createElement('td');
+                    tdDate.className = "py-3 px-4 text-xs text-slate-500 font-mono";
+                    tdDate.textContent = rec.createdAt ? new Date(rec.createdAt).toLocaleDateString('ar-EG') : '-';
+                    tr.appendChild(tdDate);
+
+                    const tdActions = document.createElement('td');
+                    tdActions.className = "py-3 px-4 text-center";
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = "flex items-center justify-center gap-1.5";
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = "px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition";
+                    editBtn.textContent = "تعديل الاسم";
+                    editBtn.addEventListener('click', () => openEditRecipientModal(rec.id, rec.displayName));
+                    actionsDiv.appendChild(editBtn);
+
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = `px-2.5 py-1 text-xs font-semibold rounded border transition ${rec.isActive ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'}`;
+                    toggleBtn.textContent = rec.isActive ? 'تعطيل' : 'تفعيل';
+                    toggleBtn.addEventListener('click', () => toggleRecipientStatus(rec.id, rec.isActive, rec.displayName));
+                    actionsDiv.appendChild(toggleBtn);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = "px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded border border-rose-200 transition";
+                    delBtn.title = "حذف أو تعطيل";
+                    delBtn.textContent = "حذف";
+                    delBtn.addEventListener('click', () => deleteRecipient(rec.id, rec.displayName));
+                    actionsDiv.appendChild(delBtn);
+
+                    tdActions.appendChild(actionsDiv);
+                    tr.appendChild(tdActions);
+
+                    tbody.appendChild(tr);
+                });
 
                 if (isManual) {
                     Swal.fire({
-                        title: 'تم بنجاح!',
+                        titleText: 'تم بنجاح!',
                         text: 'تم تحديث قائمة مستلمي التيليجرام بنجاح.',
                         icon: 'success',
                         confirmButtonText: 'حسناً',
@@ -1080,7 +942,7 @@
                     });
                 }
             } catch (err) {
-                console.error('Telegram recipients load error:', err);
+                console.error('Telegram recipients error:', err);
             }
         }
 
@@ -1089,35 +951,42 @@
                 const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/telegram-info`, {
                     headers: { ...Auth.getAuthHeader('admin') }
                 });
+                if (res.status === 401) {
+                    showAdminModal();
+                    return;
+                }
                 if (!res.ok) return;
                 const info = await res.json();
-                const badge = document.getElementById('tgBotStatusBadge');
-                const nameElem = document.getElementById('tgBotName');
 
-                if (info.isConfigured && info.botUsername) {
-                    nameElem.textContent = `${info.botFirstName || 'بوت تيليجرام'} (@${info.botUsername})`;
+                const nameEl = document.getElementById('tgBotName');
+                const badge = document.getElementById('tgBotStatusBadge');
+
+                if (info.botUsername) {
+                    nameEl.textContent = `بوت تيليجرام (@${info.botUsername})`;
+                }
+                if (info.isConfigured) {
                     badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
                     badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>متصل ويعمل';
                 } else {
-                    nameElem.textContent = 'بوت تيليجرام EG BLOCK';
                     badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200";
                     badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>غير مهيأ أو التوكن غير صالح';
                 }
 
                 const detectedContainer = document.getElementById('detectedChatsContainer');
                 const detectedList = document.getElementById('detectedChatsList');
+                detectedList.innerHTML = '';
+
                 if (info.recentChats && info.recentChats.length > 0) {
                     detectedContainer.classList.remove('hidden');
-                    detectedList.innerHTML = info.recentChats.map(c => {
+                    info.recentChats.forEach(c => {
                         const title = `${c.firstName || c.username || ''} (${c.chatId})`.trim();
-                        const safeTitle = title.replace(/'/g, "\\'");
-                        return `
-                            <button onclick="openAddRecipientModal('${c.chatId}', '${safeTitle}')" class="inline-flex items-center gap-1 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg transition font-medium">
-                                <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                إضافة: ${title}
-                            </button>
-                        `;
-                    }).join('');
+                        const btn = document.createElement('button');
+                        btn.className = "inline-flex items-center gap-1 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg transition font-medium text-xs";
+                        btn.innerHTML = '<svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>';
+                        btn.appendChild(document.createTextNode(` إضافة: ${title}`));
+                        btn.addEventListener('click', () => openAddRecipientModal(String(c.chatId), title));
+                        detectedList.appendChild(btn);
+                    });
                 } else {
                     detectedContainer.classList.add('hidden');
                 }
@@ -1128,20 +997,24 @@
 
         async function openAddRecipientModal(prefillChatId = '', prefillName = '') {
             const { value: formValues } = await Swal.fire({
-                title: 'إضافة مستلم تيليجرام جديد',
+                titleText: 'إضافة مستلم تيليجرام جديد',
                 html: `
                     <div class="space-y-3 text-right text-sm" dir="rtl">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">معرف المحادثة (Chat ID) *</label>
-                            <input id="swalChatId" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: 1284402479 أو -100..." value="${prefillChatId}">
+                            <input id="swalChatId" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: 1284402479 أو -100...">
                             <p class="text-[11px] text-slate-500 mt-1">يمكن للمستلم الحصول على معرف حسابه بإرسال رسالة إلى @userinfobot في تيليجرام</p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي للمستلم *</label>
-                            <input id="swalDisplayName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: م/ عبدالله سيد (إدارة المبيعات)" value="${prefillName}">
+                            <input id="swalDisplayName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: م/ عبدالله سيد (إدارة المبيعات)">
                         </div>
                     </div>
                 `,
+                didOpen: () => {
+                    if (prefillChatId) document.getElementById('swalChatId').value = prefillChatId;
+                    if (prefillName) document.getElementById('swalDisplayName').value = prefillName;
+                },
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'إضافة المستلم',
@@ -1177,25 +1050,28 @@
                     if (!res.ok || !data.success) {
                         throw new Error(data.message || 'فشل إضافة المستلم');
                     }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
                     loadTelegramRecipients();
                 } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
                 }
             }
         }
 
         async function openEditRecipientModal(id, currentName) {
             const { value: formValues } = await Swal.fire({
-                title: 'تعديل الاسم التعريفي للمستلم',
+                titleText: 'تعديل الاسم التعريفي للمستلم',
                 html: `
                     <div class="space-y-3 text-right text-sm" dir="rtl">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي *</label>
-                            <input id="swalEditDisplayName" class="swal2-input !m-0 !w-full !text-sm" value="${currentName}">
+                            <input id="swalEditDisplayName" class="swal2-input !m-0 !w-full !text-sm">
                         </div>
                     </div>
                 `,
+                didOpen: () => {
+                    if (currentName) document.getElementById('swalEditDisplayName').value = currentName;
+                },
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'حفظ التعديل',
@@ -1225,11 +1101,11 @@
                     if (!res.ok || !data.success) {
                         throw new Error(data.message || 'فشل تحديث البيانات');
                     }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
                     loadTelegramRecipients();
                     loadQuotes();
                 } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
                 }
             }
         }
@@ -1237,7 +1113,7 @@
         async function toggleRecipientStatus(id, currentActive, name) {
             const actionText = currentActive ? 'تعطيل' : 'تفعيل';
             const result = await Swal.fire({
-                title: `${actionText} المستلم؟`,
+                titleText: `${actionText} المستلم؟`,
                 text: currentActive 
                     ? `هل أنت متأكد من تعطيل (${name})؟ لن يستلم عروض الأسعار الجديدة بعد الآن، وستبقى سجلات التسليم السابقة محفوظة دون تغيير.`
                     : `هل أنت متأكد من تفعيل (${name})؟ سيستلم جميع عروض الأسعار الجديدة الصادرة فور حفظها.`,
@@ -1262,17 +1138,17 @@
                     if (!res.ok || !data.success) {
                         throw new Error(data.message || 'فشل تغيير حالة المستلم');
                     }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
                     loadTelegramRecipients();
                 } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
                 }
             }
         }
 
         async function deleteRecipient(id, name) {
             const result = await Swal.fire({
-                title: `حذف المستلم (${name})؟`,
+                titleText: `حذف المستلم (${name})؟`,
                 text: 'في حال وجود عروض أسعار سابقة مسجلة لهذا المستلم، سيتم تعطيله تلقائياً بدلاً من الحذف للحفاظ على السجلات التاريخية.',
                 icon: 'warning',
                 showCancelButton: true,
@@ -1291,10 +1167,10 @@
                     if (!res.ok || !data.success) {
                         throw new Error(data.message || 'فشل حذف المستلم');
                     }
-                    Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
                     loadTelegramRecipients();
                 } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: err.message });
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
                 }
             }
         }

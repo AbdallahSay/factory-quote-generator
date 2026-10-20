@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة كلمات مرور النظام | مصنع المنتجات الإسمنتية</title>
+    <title>إدارة النظام والتحكم (المالك) | مصنع المنتجات الإسمنتية</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,7 +26,7 @@
                 </svg>
             </div>
             <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول مالك النظام</h2>
-            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور المالك للوصول إلى إدارة كلمات المرور</p>
+            <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور المالك للوصول إلى إدارة كلمات المرور وحسابات الموظفين</p>
 
             <form id="ownerLoginForm" class="space-y-4" onsubmit="handleOwnerLogin(event)">
                 <div class="text-right">
@@ -63,8 +63,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold">إدارة كلمات مرور النظام (المالك)</h1>
-                        <p class="text-xs text-slate-400">تحديث كلمات مرور شاشة عروض الأسعار ولوحة الإدارة بصورة مستقلة</p>
+                        <h1 class="text-lg font-bold">إدارة النظام والتحكم (المالك)</h1>
+                        <p class="text-xs text-slate-400">إدارة كلمات المرور المشتركة وحسابات الموظفين المصرح لهم</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3 space-x-reverse">
@@ -82,94 +82,151 @@
             </div>
         </header>
 
-        <!-- Main Body -->
-        <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-            <!-- Info Notice -->
-            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3">
-                <div class="text-blue-600 mt-0.5">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="text-xs text-blue-900 leading-relaxed">
-                    <p class="font-bold text-sm mb-1">تعليمات أمان النظام:</p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-700">
-                        <li>تغيير كلمة المرور يقوم فوراً بإلغاء جميع الجلسات القديمة المسجلة مسبقاً وتأمين النظام.</li>
-                        <li>كلمة مرور شاشة عروض الأسعار منفصلة تماماً عن كلمة مرور لوحة الإدارة.</li>
-                        <li>الحد الأدنى لطول كلمة المرور هو 6 خانات، وتخزن كرموز تجزئة مشفرة (Cryptographic Hashes) فقط.</li>
-                    </ul>
-                </div>
+        <!-- Navigation Tabs -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 flex space-x-6 space-x-reverse">
+                <button id="tabOwnerPasswordsBtn" onclick="switchOwnerTab('passwords')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-amber-600 text-amber-700 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                    إدارة كلمات المرور
+                </button>
+                <button id="tabOwnerEmployeesBtn" onclick="switchOwnerTab('employees')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    إدارة حسابات الموظفين
+                </button>
             </div>
+        </div>
 
-            <!-- Password Cards Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- 1. Quotation Password Card -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
-                    <div>
-                        <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-3 h-3 rounded-full bg-blue-600"></span>
-                                <h2 class="font-bold text-slate-800 text-sm">كلمة مرور شاشة عروض الأسعار</h2>
-                            </div>
-                            <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Quotation Area</span>
-                        </div>
-
-                        <form id="quotePwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'quote')">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
-                                <input type="password" id="quoteNewPwd" required minlength="6"
-                                    placeholder="أدخل كلمة المرور الجديدة"
-                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
-                                <input type="password" id="quoteConfirmPwd" required minlength="6"
-                                    placeholder="أعد إدخال كلمة المرور"
-                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
-                            </div>
-
-                            <button type="submit" id="quotePwdSubmitBtn"
-                                class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>تحديث كلمة مرور عروض الأسعار</span>
-                            </button>
-                        </form>
+        <!-- Main Body -->
+        <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+            <!-- 1. Passwords Section -->
+            <div id="passwordsSection" class="space-y-8">
+                <!-- Info Notice -->
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+                    <div class="text-blue-600 mt-0.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-xs text-blue-900 leading-relaxed">
+                        <p class="font-bold text-sm mb-1">تعليمات أمان النظام:</p>
+                        <ul class="list-disc list-inside space-y-1 text-slate-700">
+                            <li>تغيير كلمة المرور يقوم فوراً بإلغاء جميع الجلسات القديمة المسجلة مسبقاً وتأمين النظام.</li>
+                            <li>كلمة مرور شاشة عروض الأسعار منفصلة تماماً عن كلمة مرور لوحة الإدارة.</li>
+                            <li>الحد الأدنى لطول كلمة المرور هو 6 خانات، وتخزن كرموز تجزئة مشفرة (Cryptographic Hashes) فقط.</li>
+                        </ul>
                     </div>
                 </div>
 
-                <!-- 2. Admin Dashboard Password Card -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
-                    <div>
-                        <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-3 h-3 rounded-full bg-purple-600"></span>
-                                <h2 class="font-bold text-slate-800 text-sm">كلمة مرور لوحة الإدارة</h2>
+                <!-- Password Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 1. Quotation Password Card -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+                                    <h2 class="font-bold text-slate-800 text-sm">كلمة مرور شاشة عروض الأسعار</h2>
+                                </div>
+                                <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Quotation Area</span>
                             </div>
-                            <span class="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">Admin Area</span>
+
+                            <form id="quotePwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'quote')">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
+                                    <input type="password" id="quoteNewPwd" required minlength="6"
+                                        placeholder="أدخل كلمة المرور الجديدة"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
+                                    <input type="password" id="quoteConfirmPwd" required minlength="6"
+                                        placeholder="أعد إدخال كلمة المرور"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                                </div>
+
+                                <button type="submit" id="quotePwdSubmitBtn"
+                                    class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>تحديث كلمة مرور عروض الأسعار</span>
+                                </button>
+                            </form>
                         </div>
+                    </div>
 
-                        <form id="adminPwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'admin')">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
-                                <input type="password" id="adminNewPwd" required minlength="6"
-                                    placeholder="أدخل كلمة المرور الجديدة"
-                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
+                    <!-- 2. Admin Dashboard Password Card -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="bg-slate-100/70 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+                                    <h2 class="font-bold text-slate-800 text-sm">كلمة مرور لوحة الإدارة</h2>
+                                </div>
+                                <span class="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">Admin Area</span>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
-                                <input type="password" id="adminConfirmPwd" required minlength="6"
-                                    placeholder="أعد إدخال كلمة المرور"
-                                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
-                            </div>
+                            <form id="adminPwdForm" class="p-6 space-y-4" onsubmit="handleUpdatePassword(event, 'admin')">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة *</label>
+                                    <input type="password" id="adminNewPwd" required minlength="6"
+                                        placeholder="أدخل كلمة المرور الجديدة"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
+                                </div>
 
-                            <button type="submit" id="adminPwdSubmitBtn"
-                                class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>تحديث كلمة مرور لوحة الإدارة</span>
-                            </button>
-                        </form>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور الجديدة *</label>
+                                    <input type="password" id="adminConfirmPwd" required minlength="6"
+                                        placeholder="أعد إدخال كلمة المرور"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition">
+                                </div>
+
+                                <button type="submit" id="adminPwdSubmitBtn"
+                                    class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>تحديث كلمة مرور لوحة الإدارة</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Employees Section -->
+            <div id="employeesSection" class="hidden space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50/70">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                                حسابات الموظفين المصرح لهم
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">إدارة حسابات الموظفين، تغيير كلمات المرور، وتفعيل أو تعطيل الحسابات (صلاحية المالك فقط)</p>
+                        </div>
+                        <button onclick="openCreateEmployeeModal()" class="px-3.5 py-2 text-xs bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                            إضافة حساب موظف جديد
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 border-b"># المعرف</th>
+                                    <th class="py-3 px-4 border-b">الاسم الكامل</th>
+                                    <th class="py-3 px-4 border-b">البريد الإلكتروني</th>
+                                    <th class="py-3 px-4 border-b">عروض الأسعار</th>
+                                    <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
+                                    <th class="py-3 px-4 border-b">الحالة</th>
+                                    <th class="py-3 px-4 border-b text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTableBody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل بيانات الموظفين...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -196,6 +253,27 @@
         function showOwnerContent() {
             document.getElementById('ownerAuthModal').classList.add('hidden');
             document.getElementById('ownerMainContent').classList.remove('hidden');
+        }
+
+        function switchOwnerTab(tab) {
+            const pwSec = document.getElementById('passwordsSection');
+            const empSec = document.getElementById('employeesSection');
+            const pBtn = document.getElementById('tabOwnerPasswordsBtn');
+            const eBtn = document.getElementById('tabOwnerEmployeesBtn');
+
+            pwSec.classList.add('hidden');
+            empSec.classList.add('hidden');
+            pBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+            eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2";
+
+            if (tab === 'employees') {
+                empSec.classList.remove('hidden');
+                eBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-amber-600 text-amber-700 transition flex items-center gap-2";
+                loadEmployees();
+            } else {
+                pwSec.classList.remove('hidden');
+                pBtn.className = "py-3.5 px-3 font-bold text-sm border-b-2 border-amber-600 text-amber-700 transition flex items-center gap-2";
+            }
         }
 
         async function handleOwnerLogin(event) {
@@ -229,7 +307,7 @@
 
             if (!newPwd || newPwd.length < 6) {
                 Swal.fire({
-                    title: 'تنبيه',
+                    titleText: 'تنبيه',
                     text: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
                     icon: 'warning',
                     confirmButtonText: 'حسناً'
@@ -239,7 +317,7 @@
 
             if (newPwd !== confirmPwd) {
                 Swal.fire({
-                    title: 'تنبيه',
+                    titleText: 'تنبيه',
                     text: 'كلمة المرور وتأكيدها غير متطابقين',
                     icon: 'error',
                     confirmButtonText: 'حسناً'
@@ -254,12 +332,11 @@
             try {
                 const res = await Auth.changePassword(targetRole, newPwd, confirmPwd);
                 Swal.fire({
-                    title: 'تم بنجاح!',
+                    titleText: 'تم بنجاح!',
                     text: res.message || 'تم تحديث كلمة المرور وإلغاء الجلسات السابقة بنجاح.',
                     icon: 'success',
                     confirmButtonText: 'حسناً'
                 });
-                // Reset inputs
                 if (targetRole === 'quote') {
                     document.getElementById('quotePwdForm').reset();
                 } else {
@@ -267,7 +344,7 @@
                 }
             } catch (err) {
                 Swal.fire({
-                    title: 'خطأ',
+                    titleText: 'خطأ',
                     text: err.message || 'تعذر تحديث كلمة المرور',
                     icon: 'error',
                     confirmButtonText: 'حسناً'
@@ -275,6 +352,393 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+            }
+        }
+
+        // ==========================================
+        // Employee Management (Owner-only boundary)
+        // ==========================================
+
+        async function loadEmployees(isManual = false) {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
+                    headers: { ...Auth.getAuthHeader('owner') }
+                });
+                if (res.status === 401) {
+                    showOwnerModal();
+                    return;
+                }
+                if (!res.ok) return;
+                const employees = await res.json();
+                const tbody = document.getElementById('employeesTableBody');
+                tbody.innerHTML = '';
+
+                if (!employees || employees.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 7;
+                    td.className = "py-6 text-center text-slate-400";
+                    td.textContent = "لا يوجد موظفون مسجلون بعد.";
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                employees.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+
+                    // ID
+                    const tdId = document.createElement('td');
+                    tdId.className = "py-3 px-4 font-mono font-bold text-slate-500";
+                    tdId.textContent = emp.id;
+                    tr.appendChild(tdId);
+
+                    // Name
+                    const tdName = document.createElement('td');
+                    tdName.className = "py-3 px-4 font-bold text-slate-900";
+                    tdName.textContent = emp.fullName || '';
+                    tr.appendChild(tdName);
+
+                    // Email
+                    const tdEmail = document.createElement('td');
+                    tdEmail.className = "py-3 px-4 font-mono text-slate-600";
+                    tdEmail.textContent = emp.email || '';
+                    tr.appendChild(tdEmail);
+
+                    // Quotes count
+                    const tdQuotes = document.createElement('td');
+                    tdQuotes.className = "py-3 px-4 font-bold text-amber-700";
+                    tdQuotes.textContent = `${emp.quotesCount || 0} عرض سعر`;
+                    tr.appendChild(tdQuotes);
+
+                    // Created At
+                    const tdDate = document.createElement('td');
+                    tdDate.className = "py-3 px-4 text-xs text-slate-500 font-mono";
+                    tdDate.textContent = emp.createdAt ? new Date(emp.createdAt).toLocaleDateString('ar-EG') : '-';
+                    tr.appendChild(tdDate);
+
+                    // Status
+                    const tdStatus = document.createElement('td');
+                    tdStatus.className = "py-3 px-4";
+                    const statusBadge = document.createElement('span');
+                    if (emp.isActive) {
+                        statusBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200";
+                        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>نشط';
+                    } else {
+                        statusBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200";
+                        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>معطل';
+                    }
+                    tdStatus.appendChild(statusBadge);
+                    tr.appendChild(tdStatus);
+
+                    // Actions
+                    const tdActions = document.createElement('td');
+                    tdActions.className = "py-3 px-4 text-center";
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = "flex items-center justify-center gap-1.5";
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = "px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-300 transition";
+                    editBtn.textContent = "تعديل";
+                    editBtn.addEventListener('click', () => openEditEmployeeModal(emp.id, emp.fullName, emp.email));
+                    actionsDiv.appendChild(editBtn);
+
+                    const pwdBtn = document.createElement('button');
+                    pwdBtn.className = "px-2.5 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded border border-blue-200 transition";
+                    pwdBtn.textContent = "تغيير كلمة المرور";
+                    pwdBtn.addEventListener('click', () => openResetPasswordModal(emp.id, emp.fullName));
+                    actionsDiv.appendChild(pwdBtn);
+
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = `px-2.5 py-1 text-xs font-semibold rounded border transition ${emp.isActive ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'}`;
+                    toggleBtn.textContent = emp.isActive ? 'تعطيل' : 'تفعيل';
+                    toggleBtn.addEventListener('click', () => toggleEmployeeStatus(emp.id, emp.isActive, emp.fullName));
+                    actionsDiv.appendChild(toggleBtn);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = "px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded border border-rose-200 transition";
+                    delBtn.title = "حذف الموظف";
+                    delBtn.textContent = "حذف";
+                    delBtn.addEventListener('click', () => deleteEmployee(emp.id, emp.fullName));
+                    actionsDiv.appendChild(delBtn);
+
+                    tdActions.appendChild(actionsDiv);
+                    tr.appendChild(tdActions);
+
+                    tbody.appendChild(tr);
+                });
+
+                if (isManual) {
+                    Swal.fire({
+                        titleText: 'تم بنجاح!',
+                        text: 'تم تحديث قائمة حسابات الموظفين بنجاح.',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (err) {
+                console.error('Employees load error:', err);
+            }
+        }
+
+        async function openCreateEmployeeModal() {
+            const { value: formValues } = await Swal.fire({
+                titleText: 'إضافة حساب موظف جديد',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
+                            <input id="swalFullName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: أحمد محمد علي">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني (لتسجيل الدخول) *</label>
+                            <input id="swalEmail" type="email" class="swal2-input !m-0 !w-full !text-sm" placeholder="ahmed@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور (6 أحرف على الأقل) *</label>
+                            <input id="swalPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
+                            <input id="swalConfirmPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'إنشاء الحساب',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#d97706',
+                preConfirm: () => {
+                    const fullName = document.getElementById('swalFullName').value.trim();
+                    const email = document.getElementById('swalEmail').value.trim();
+                    const password = document.getElementById('swalPassword').value;
+                    const confirmPassword = document.getElementById('swalConfirmPassword').value;
+
+                    if (!fullName) {
+                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل للموظف');
+                        return false;
+                    }
+                    if (!email) {
+                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
+                        return false;
+                    }
+                    if (!password || password.length < 6) {
+                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
+                        return false;
+                    }
+                    if (password !== confirmPassword) {
+                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
+                        return false;
+                    }
+                    return { fullName, email, password, confirmPassword };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('owner')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل إنشاء حساب الموظف');
+                    }
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function openEditEmployeeModal(id, currentName, currentEmail) {
+            const { value: formValues } = await Swal.fire({
+                titleText: 'تعديل بيانات الموظف',
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل *</label>
+                            <input id="swalEditName" class="swal2-input !m-0 !w-full !text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني *</label>
+                            <input id="swalEditEmail" type="email" class="swal2-input !m-0 !w-full !text-sm">
+                        </div>
+                    </div>
+                `,
+                didOpen: () => {
+                    if (currentName) document.getElementById('swalEditName').value = currentName;
+                    if (currentEmail) document.getElementById('swalEditEmail').value = currentEmail;
+                },
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ التعديلات',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#d97706',
+                preConfirm: () => {
+                    const fullName = document.getElementById('swalEditName').value.trim();
+                    const email = document.getElementById('swalEditEmail').value.trim();
+                    if (!fullName) {
+                        Swal.showValidationMessage('يرجى كتابة الاسم الكامل');
+                        return false;
+                    }
+                    if (!email) {
+                        Swal.showValidationMessage('يرجى كتابة البريد الإلكتروني');
+                        return false;
+                    }
+                    return { fullName, email };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('owner')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تحديث البيانات');
+                    }
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function openResetPasswordModal(id, employeeName) {
+            const { value: formValues } = await Swal.fire({
+                titleText: `تغيير كلمة المرور: ${employeeName || ''}`,
+                html: `
+                    <div class="space-y-3 text-right text-sm" dir="rtl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الجديدة (6 أحرف على الأقل) *</label>
+                            <input id="swalNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور *</label>
+                            <input id="swalConfirmNewPassword" type="password" class="swal2-input !m-0 !w-full !text-sm" placeholder="••••••••">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'تحديث كلمة المرور',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#2563eb',
+                preConfirm: () => {
+                    const newPassword = document.getElementById('swalNewPassword').value;
+                    const confirmPassword = document.getElementById('swalConfirmNewPassword').value;
+                    if (!newPassword || newPassword.length < 6) {
+                        Swal.showValidationMessage('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
+                        return false;
+                    }
+                    if (newPassword !== confirmPassword) {
+                        Swal.showValidationMessage('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
+                        return false;
+                    }
+                    return { newPassword, confirmPassword };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/reset-password`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('owner')
+                        },
+                        body: JSON.stringify(formValues)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تحديث كلمة المرور');
+                    }
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
+                } catch (err) {
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function toggleEmployeeStatus(id, currentActive, employeeName) {
+            const actionText = currentActive ? 'تعطيل' : 'تفعيل';
+            const result = await Swal.fire({
+                titleText: `${actionText} حساب الموظف؟`,
+                text: currentActive 
+                    ? `هل أنت متأكد من تعطيل حساب (${employeeName})؟ لن يتمكن من تسجيل الدخول بعد الآن، ولكن ستبقى جميع عروض أسعاره السابقة منسوبة إليه بدقة.`
+                    : `هل أنت متأكد من تفعيل حساب (${employeeName})؟`,
+                icon: currentActive ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: `نعم، ${actionText}`,
+                cancelButtonText: 'تراجع',
+                confirmButtonColor: currentActive ? '#dc2626' : '#16a34a'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}/toggle-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeader('owner')
+                        },
+                        body: JSON.stringify({ isActive: !currentActive })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل تغيير حالة الحساب');
+                    }
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
+                }
+            }
+        }
+
+        async function deleteEmployee(id, employeeName) {
+            const result = await Swal.fire({
+                titleText: `حذف حساب (${employeeName})؟`,
+                text: 'في حال وجود عروض أسعار سابقة صادرة من هذا الحساب، سيرفض النظام الحذف ويطلب منك استخدام "إلغاء التفعيل" للحفاظ على السجلات التاريخية.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، حذف نهائي',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#dc2626'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/employees/${id}`, {
+                        method: 'DELETE',
+                        headers: { ...Auth.getAuthHeader('owner') }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'فشل حذف الحساب');
+                    }
+                    Swal.fire({ icon: 'success', titleText: 'تم بنجاح!', text: data.message, timer: 1800 });
+                    loadEmployees();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', titleText: 'خطأ', text: err.message });
+                }
             }
         }
     </script>

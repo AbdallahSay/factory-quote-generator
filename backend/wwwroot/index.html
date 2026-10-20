@@ -557,13 +557,23 @@
             currentTerms.forEach((term, idx) => {
                 const li = document.createElement('li');
                 li.className = "flex items-start justify-between gap-3 group bg-slate-50 hover:bg-slate-100/80 p-2.5 rounded-lg border border-slate-200 transition";
-                li.innerHTML = `
-                    <span class="font-bold text-slate-500 text-xs mt-0.5 select-none">${idx + 1}.</span>
-                    <div class="flex-1 outline-none text-slate-800 text-xs sm:text-sm font-medium hover:bg-white focus:bg-white focus:ring-2 focus:ring-amber-500 p-1 rounded cursor-text" contenteditable="true" spellcheck="false">${term}</div>
-                    <button type="button" class="del-term-btn opacity-40 group-hover:opacity-100 text-slate-400 hover:text-red-600 font-bold p-1 transition" title="حذف هذا الشرط">&times;</button>
-                `;
 
-                const editDiv = li.querySelector('div');
+                const idxSpan = document.createElement('span');
+                idxSpan.className = "font-bold text-slate-500 text-xs mt-0.5 select-none";
+                idxSpan.textContent = `${idx + 1}.`;
+
+                const editDiv = document.createElement('div');
+                editDiv.className = "flex-1 outline-none text-slate-800 text-xs sm:text-sm font-medium hover:bg-white focus:bg-white focus:ring-2 focus:ring-amber-500 p-1 rounded cursor-text";
+                editDiv.contentEditable = "true";
+                editDiv.spellcheck = false;
+                editDiv.textContent = term;
+
+                const delBtn = document.createElement('button');
+                delBtn.type = "button";
+                delBtn.className = "del-term-btn opacity-40 group-hover:opacity-100 text-slate-400 hover:text-red-600 font-bold p-1 transition";
+                delBtn.title = "حذف هذا الشرط";
+                delBtn.textContent = "×";
+
                 editDiv.addEventListener('blur', () => {
                     const newText = editDiv.textContent.trim();
                     if (newText && newText !== currentTerms[idx]) {
@@ -572,9 +582,13 @@
                     }
                 });
 
-                li.querySelector('.del-term-btn').addEventListener('click', () => {
+                delBtn.addEventListener('click', () => {
                     deleteTerm(idx);
                 });
+
+                li.appendChild(idxSpan);
+                li.appendChild(editDiv);
+                li.appendChild(delBtn);
 
                 container.appendChild(li);
             });
@@ -636,15 +650,28 @@
                 const th = document.createElement('th');
                 th.className = "draggable-col py-2.5 px-3 bg-slate-100 hover:bg-slate-200/90 transition border border-slate-200 cursor-move";
                 th.dataset.colIndex = idx;
-                th.innerHTML = `
-                    <div class="flex items-center justify-between gap-1.5 min-w-[120px]">
-                        <span class="col-drag-handle text-slate-400 hover:text-slate-700 cursor-grab font-bold select-none text-xs" title="اسحب لإعادة ترتيب العمود">⋮⋮</span>
-                        <span class="col-title flex-1 font-bold text-slate-800 outline-none px-1 py-0.5 rounded hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 cursor-text text-xs" contenteditable="true" spellcheck="false" title="انقر لتعديل اسم العمود">${colName}</span>
-                        <button type="button" class="del-col-btn text-slate-400 hover:text-red-600 font-bold px-1 transition text-sm leading-none" title="حذف العمود">&times;</button>
-                    </div>
-                `;
 
-                const titleSpan = th.querySelector('.col-title');
+                const wrapper = document.createElement('div');
+                wrapper.className = "flex items-center justify-between gap-1.5 min-w-[120px]";
+
+                const handleSpan = document.createElement('span');
+                handleSpan.className = "col-drag-handle text-slate-400 hover:text-slate-700 cursor-grab font-bold select-none text-xs";
+                handleSpan.title = "اسحب لإعادة ترتيب العمود";
+                handleSpan.textContent = "⋮⋮";
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = "col-title flex-1 font-bold text-slate-800 outline-none px-1 py-0.5 rounded hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 cursor-text text-xs";
+                titleSpan.contentEditable = "true";
+                titleSpan.spellcheck = false;
+                titleSpan.title = "انقر لتعديل اسم العمود";
+                titleSpan.textContent = colName;
+
+                const delBtn = document.createElement('button');
+                delBtn.type = "button";
+                delBtn.className = "del-col-btn text-slate-400 hover:text-red-600 font-bold px-1 transition text-sm leading-none";
+                delBtn.title = "حذف العمود";
+                delBtn.textContent = "×";
+
                 titleSpan.addEventListener('blur', () => {
                     const newName = titleSpan.textContent.trim() || `عمود ${idx + 1}`;
                     columns[idx] = newName;
@@ -657,10 +684,15 @@
                     }
                 });
 
-                th.querySelector('.del-col-btn').addEventListener('click', (e) => {
+                delBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteColumn(idx);
                 });
+
+                wrapper.appendChild(handleSpan);
+                wrapper.appendChild(titleSpan);
+                wrapper.appendChild(delBtn);
+                th.appendChild(wrapper);
 
                 tr.appendChild(th);
             });
@@ -749,8 +781,13 @@
             document.querySelectorAll('#productRowsContainer tr').forEach(row => {
                 const td = document.createElement('td');
                 td.className = "col-cell py-2 px-2.5";
-                td.innerHTML = `<input type="text" class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" value="" placeholder="${colName.trim()}">`;
-                td.querySelector('.cell-input').addEventListener('input', calcTotals);
+                const input = document.createElement('input');
+                input.type = "text";
+                input.className = "cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none";
+                input.value = "";
+                input.placeholder = colName.trim();
+                input.addEventListener('input', calcTotals);
+                td.appendChild(input);
                 row.insertBefore(td, row.querySelector('.action-cell'));
             });
 
@@ -811,9 +848,15 @@
                     placeholderText = 'مثال: 1450';
                 }
 
-                td.innerHTML = `<input type="text" ${listAttr} class="cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-800 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" value="${val}" placeholder="${placeholderText}">`;
-
-                const input = td.querySelector('.cell-input');
+                const input = document.createElement('input');
+                input.type = "text";
+                if (isProductNameCol) {
+                    input.setAttribute('list', 'productsDatalist');
+                }
+                input.className = "cell-input w-full border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-800 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none";
+                input.value = val !== undefined && val !== null ? String(val) : '';
+                input.placeholder = placeholderText;
+                td.appendChild(input);
 
                 if (isProductNameCol) {
                     input.addEventListener('input', () => {

@@ -400,9 +400,9 @@ public class AdminController : ControllerBase
     [HttpGet("employees")]
     public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees()
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         var employees = await _db.Users
@@ -425,9 +425,9 @@ public class AdminController : ControllerBase
     [HttpPost("employees")]
     public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequestDto request)
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         if (string.IsNullOrWhiteSpace(request.FullName))
@@ -489,9 +489,9 @@ public class AdminController : ControllerBase
     [HttpPut("employees/{id}")]
     public async Task<IActionResult> UpdateEmployee(int id, [FromBody] UpdateEmployeeRequestDto request)
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         var employee = await _db.Users.FindAsync(id);
@@ -541,9 +541,9 @@ public class AdminController : ControllerBase
     [HttpPost("employees/{id}/reset-password")]
     public async Task<IActionResult> ResetEmployeePassword(int id, [FromBody] ResetEmployeePasswordRequestDto request)
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         var employee = await _db.Users.FindAsync(id);
@@ -575,9 +575,9 @@ public class AdminController : ControllerBase
     [HttpPost("employees/{id}/toggle-status")]
     public async Task<IActionResult> ToggleEmployeeStatus(int id, [FromBody] ToggleActiveRequestDto? request = null)
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         var employee = await _db.Users.FindAsync(id);
@@ -608,9 +608,9 @@ public class AdminController : ControllerBase
     [HttpDelete("employees/{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)
     {
-        if (!await IsAuthorizedAdminAsync())
+        if (!await IsAuthorizedOwnerAsync())
         {
-            return Unauthorized(new { message = "غير مصرح. يرجى إدخال كلمة مرور لوحة الإدارة." });
+            return Unauthorized(new { success = false, message = "غير مصرح. وظائف إدارة حسابات الموظفين مقتصرة على مالك النظام فقط." });
         }
 
         var employee = await _db.Users.FindAsync(id);
@@ -637,6 +637,13 @@ public class AdminController : ControllerBase
             success = true,
             message = "تم حذف الحساب بنجاح."
         });
+    }
+
+    private async Task<bool> IsAuthorizedOwnerAsync()
+    {
+        var token = ExtractBearerToken();
+        var (isValid, _) = await _securityService.ValidateTokenAsync(token, "owner");
+        return isValid;
     }
 
     private async Task<bool> IsAuthorizedAdminAsync()

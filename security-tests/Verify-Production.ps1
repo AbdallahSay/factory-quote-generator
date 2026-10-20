@@ -15,6 +15,7 @@ $http.Timeout = [TimeSpan]::FromSeconds(180)
 $startedAt = [DateTime]::UtcNow.ToString('o')
 $ownerToken = $null
 $adminToken = $null
+$failure = $null
 
 function Request([string]$Method, [string]$Path, [string]$Token = $null, $Body = $null) {
     $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::new($Method), "$baseUri$Path")
@@ -130,6 +131,7 @@ try {
 } catch {
     # Never print exception objects or request/response bodies that may contain credentials.
     Write-Host 'Production verification stopped. Inspect the redacted check report; no credentials were saved.'
+    $failure = [pscustomobject]@{ Type = $_.Exception.GetType().FullName; Line = $_.InvocationInfo.ScriptLineNumber; Stack = $_.ScriptStackTrace }
     if (-not @($checks | Where-Object { -not $_.Passed }).Count) {
         $checks.Add([pscustomobject]@{ Name = 'verification interrupted before completion'; Passed = $false })
     }
@@ -148,6 +150,7 @@ try {
         Checks = @($checks.ToArray()); SyntheticQuoteIds = @($quoteIds.ToArray())
         SyntheticUsers = @($testUsers | Select-Object Id, FullName, Email)
         AllPassed = ($checks.Count -gt 0 -and @($checks | Where-Object { -not $_.Passed }).Count -eq 0)
+        Failure = $failure
     }
     $reportDirectory = Split-Path ([IO.Path]::GetFullPath($ReportPath)) -Parent
     New-Item -ItemType Directory -Force -Path $reportDirectory | Out-Null
