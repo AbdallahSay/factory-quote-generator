@@ -25,13 +25,8 @@ jobs:
       - name: Build Release
         run: dotnet build backend/FactoryQuoteApi.csproj -c Release --no-restore
 
-      - name: Run Tests (if exists)
-        run: |
-          if ls tests/*.csproj 1> /dev/null 2>&1; then
-            dotnet test --no-build -c Release
-          else
-            echo "No test projects found, skipping tests."
-          fi
+      - name: Run Quotation Security Regression Tests
+        run: dotnet test security-tests/FactoryQuoteApi.SecurityTests.csproj -c Release
 
       - name: Publish Backend
         run: dotnet publish backend/FactoryQuoteApi.csproj -c Release -o ./backend/publish

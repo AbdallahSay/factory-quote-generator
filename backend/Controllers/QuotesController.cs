@@ -453,12 +453,62 @@ public class QuotesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Quote>> GetQuote(int id)
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<QuoteReadResponseDto>> GetQuote(int id)
     {
-        var quote = await _db.Quotes
-            .Include(q => q.Items)
-            .Include(q => q.User)
-            .FirstOrDefaultAsync(q => q.Id == id);
+        var (isValid, authenticatedUser, role) = await _securityService.ValidateUserTokenAsync(ExtractBearerToken());
+        if (!isValid)
+        {
+            return Unauthorized();
+        }
+
+        var query = _db.Quotes.AsNoTracking().Where(q => q.Id == id);
+        if (role != "owner" && role != "admin")
+        {
+            if (role != "employee" || authenticatedUser == null)
+            {
+                return NotFound();
+            }
+
+            var employeeId = authenticatedUser.Id;
+            // Never infer historical ownership from UserId alone or conflicting creator IDs.
+            // Shared role sessions use an Admin row as a surrogate (or any user if none exists).
+            // Such attribution cannot establish personal employee ownership, even when IDs match.
+            query = query.Where(q => q.UserId == employeeId && q.CreatedByUserId == employeeId
+                && _db.Users.Any(u => u.Role == "Admin")
+                && !_db.Users.Any(u => u.Id == employeeId && u.Role == "Admin"));
+        }
+
+        var quote = await query.Select(q => new QuoteReadResponseDto
+        {
+            Id = q.Id,
+            QuoteNumber = q.QuoteNumber,
+            ClientName = q.ClientName,
+            ClientEmail = q.ClientEmail,
+            ClientPhone = q.ClientPhone,
+            ContactPerson = q.ContactPerson,
+            ContactTitle = q.ContactTitle,
+            ProjectName = q.ProjectName,
+            Location = q.Location,
+            IssuerName = q.IssuerName,
+            IssuerJobTitle = q.IssuerJobTitle,
+            IssuerPrefix = q.IssuerPrefix,
+            TermsJson = q.TermsJson,
+            TotalAmount = q.TotalAmount,
+            PdfUrl = q.PdfUrl,
+            DocxUrl = q.DocxUrl,
+            CreatedAt = q.CreatedAt,
+            Items = q.Items.OrderBy(i => i.Id).Select(i => new QuoteReadItemDto
+            {
+                Id = i.Id,
+                ProductName = i.ProductName,
+                Size = i.Size,
+                Capacity = i.Capacity,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice,
+                LineTotal = i.LineTotal
+            }).ToList()
+        }).FirstOrDefaultAsync(HttpContext.RequestAborted);
 
         if (quote == null) return NotFound();
         return Ok(quote);
