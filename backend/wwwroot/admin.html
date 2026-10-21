@@ -64,7 +64,7 @@
         #adminAuthModal > div > div:last-child { flex-wrap: wrap; gap: .75rem; }
         .swal2-container { height: var(--admin-viewport-height, 100dvh) !important; top: var(--admin-viewport-top, 0px) !important; bottom: auto !important; padding: .75rem !important; }
         .swal2-popup { display: flex !important; flex-direction: column; width: min(32rem, 100%) !important; min-width: 0; max-height: calc(var(--admin-viewport-height, 100dvh) - 1.5rem); padding: 1rem !important; }
-        .swal2-title { flex-shrink: 0; padding: .5rem !important; font-size: clamp(1.1rem, 3vw, 1.65rem) !important; }
+        .swal2-title { flex-shrink: 0; max-height: min(8rem, calc(var(--admin-viewport-height, 100dvh) * .25)); overflow-y: auto; overflow-wrap: anywhere; padding: .5rem !important; font-size: clamp(1.1rem, 3vw, 1.65rem) !important; }
         .swal2-html-container { min-height: 0; overflow: auto !important; margin: .75rem 0 !important; padding: .25rem !important; overflow-wrap: anywhere; }
         .swal2-actions { flex-shrink: 0; gap: .5rem; margin: .5rem 0 0 !important; width: 100%; }
         .swal2-actions button { margin: 0 !important; min-height: 44px; }

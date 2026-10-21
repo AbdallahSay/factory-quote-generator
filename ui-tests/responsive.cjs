@@ -95,7 +95,7 @@ async function run() {
     if (process.env.ZOOM_ONLY) break;
     const browser = await type.launch(engine === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
     try {
-      for (const width of [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
+      for (const width of process.env.FUNCTIONAL_ONLY ? [] : [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
         const f = await fixture(browser, base, { width, height: 900 });
         const { page, context } = f;
         await check(page, `${engine}-${width}-quotes`);
@@ -186,6 +186,13 @@ async function functional(browser, base, engine) {
     await snapshot(page, `${engine}-${viewport.width}x${viewport.height}-dialog`);
     await page.locator('.swal2-cancel').click();
   }
+  await page.setViewportSize({ width: 320, height: 256 });
+  await page.locator('#telegramRecipientsTableBody tr').nth(1).getByRole('button', { name: 'حذف', exact: true }).click();
+  await check(page, `${engine}-long-confirmation-short-viewport`);
+  const longConfirm = await page.locator('.swal2-confirm').boundingBox();
+  await snapshot(page, `${engine}-long-confirmation-short-viewport`);
+  assert(longConfirm.y >= 0 && longConfirm.y + longConfirm.height <= 256, `long confirmation outside viewport: ${JSON.stringify(longConfirm)}`);
+  await page.locator('.swal2-cancel').click();
   for (const mode of ['empty', 'error']) {
     f.setMode(mode);
     await page.evaluate(async () => { await loadQuotes(); await loadLogs(); await loadTelegramRecipients(); });
