@@ -34,7 +34,8 @@ async function fixture(browser, url, viewport) {
     const req = route.request(), u = new URL(req.url());
     calls.push({ path: u.pathname + u.search, method: req.method(), body: req.postData(), auth: req.headers().authorization });
     let data = { success: true, message: 'تم بنجاح', results: [{ chatId: recipients[1].chatId, success: true }] };
-    if (u.pathname.endsWith('/verify')) data = { valid: true };
+    if (u.pathname.endsWith('/discover-updates')) data = { success: true, count: 1, recentChats: [{ chatId: '-100987654321', firstName: long }] };
+    else if (u.pathname.endsWith('/verify')) data = { valid: true };
     else if (req.method() === 'GET') {
       if (mode === 'error') return route.fulfill({ status: 503, json: { message: 'تعذر الاتصال' }, headers: { 'Access-Control-Allow-Origin': '*' } });
       if (u.pathname.endsWith('/stats')) data = { totalQuotes: 123456, totalRevenue: 987654321012, todayQuotes: 1234, totalClients: 56789 };
