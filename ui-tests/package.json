@@ -1,0 +1,6 @@
+{
+  "name": "factory-admin-ui-tests",
+  "private": true,
+  "scripts": { "test": "node responsive.cjs" },
+  "devDependencies": { "playwright": "1.58.2" }
+}
