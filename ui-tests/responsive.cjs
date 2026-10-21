@@ -92,6 +92,7 @@ async function run() {
   const base = process.env.BASE_URL || `http://127.0.0.1:${server.address().port}/frontend/admin.html`;
   const engines = phase === 'before' ? { chromium } : Object.fromEntries(Object.entries({ chromium, firefox, webkit }).filter(([name]) => !process.env.ENGINES || process.env.ENGINES.split(',').includes(name)));
   for (const [engine, type] of Object.entries(engines)) {
+    if (process.env.ZOOM_ONLY) break;
     const browser = await type.launch(engine === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
     try {
       for (const width of [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
@@ -233,14 +234,22 @@ async function nativeZoom(base) {
       await chrome.tabs.setZoom(tab.id, 2);
     });
     await f.page.waitForFunction(() => innerWidth === 640 && devicePixelRatio === 2);
+    const cdp = await context.newCDPSession(f.page);
+    const capture = async name => {
+      const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      fs.writeFileSync(path.join(out, name + '.png'), Buffer.from(data, 'base64'));
+    };
     await check(f.page, 'chromium-native-200-percent-quotes');
-    await snapshot(f.page, 'chromium-native-200-percent-quotes');
+    await capture('chromium-native-200-percent-quotes');
     await f.page.locator('#tabTelegramBtn').click();
     await f.page.waitForSelector('#telegramRecipientsTableBody button');
     await check(f.page, 'chromium-native-200-percent-telegram');
     await f.page.getByRole('button', { name: 'إضافة مستلم جديد', exact: true }).click();
     await check(f.page, 'chromium-native-200-percent-dialog');
-    await snapshot(f.page, 'chromium-native-200-percent-dialog');
+    const popup = await f.page.locator('.swal2-popup').boundingBox();
+    const button = await f.page.locator('.swal2-confirm').boundingBox();
+    assert(popup.x >= 0 && popup.x + popup.width <= 640 && button.y + button.height <= 450, 'native zoom dialog bounds');
+    await capture('chromium-native-200-percent-dialog');
   } finally { await context.close(); }
 }
 run().catch(error => { console.error(error); fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify({ error: error.message, results }, null, 2)); process.exitCode = 1; }).finally(() => server.close());
