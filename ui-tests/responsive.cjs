@@ -33,6 +33,11 @@ async function fixture(browser, url, viewport) {
   await context.route('**/api/**', async route => {
     const req = route.request(), u = new URL(req.url());
     calls.push({ path: u.pathname + u.search, method: req.method(), body: req.postData(), auth: req.headers().authorization });
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+    } });
     let data = { success: true, message: 'تم بنجاح', results: [{ chatId: recipients[1].chatId, success: true }] };
     if (u.pathname.endsWith('/discover-updates')) data = { success: true, count: 1, recentChats: [{ chatId: '-100987654321', firstName: long }] };
     else if (u.pathname.endsWith('/verify')) data = { valid: true };
@@ -44,7 +49,7 @@ async function fixture(browser, url, viewport) {
       else if (u.pathname.endsWith('/recipients')) data = mode === 'empty' ? [] : recipients;
       else data = { isConfigured: true, botUsername: 'EG_BLOCK_TestBot', recentChats: [{ chatId: '-100987654321', firstName: long }] };
     }
-    await route.fulfill({ json: data, headers: { 'Access-Control-Allow-Origin': '*' } });
+    await route.fulfill({ json: data, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' } });
   });
   await context.route('**/synthetic.*', route => route.fulfill({ body: 'Synthetic document only', contentType: 'application/octet-stream' }));
   const page = await context.newPage();
@@ -90,7 +95,13 @@ async function snapshot(page, name) {
 async function closeResult(page, title) {
   // Fetch completion and popup replacement can exceed a fixed sleep in WebKit.
   // Wait for the actual result, then for SweetAlert to restore dashboard accessibility.
-  await page.waitForFunction(expected => Swal.getTitle()?.textContent === expected && !Swal.isLoading(), title);
+  try {
+    await page.waitForFunction(expected => Swal.getTitle()?.textContent === expected && !Swal.isLoading(), title);
+  } catch (error) {
+    console.error('Expected result:', title, 'Actual popup:', await page.locator('.swal2-popup').allTextContents());
+    await snapshot(page, 'failed-result-dialog');
+    throw error;
+  }
   await page.evaluate(() => Swal.close());
   await page.waitForSelector('.swal2-popup', { state: 'detached' });
 }
