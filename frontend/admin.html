@@ -773,7 +773,8 @@
                     titleText: 'جاري إعادة الإرسال...',
                     text: `إعادة إرسال عرض السعر ${quoteNum} عبر التيليجرام`,
                     allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
+                    // A fast response may replace this popup before didOpen runs.
+                    didOpen: popup => { if (Swal.getPopup() === popup) Swal.showLoading(); }
                 });
                 const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/quotes/${quoteId}/retry-telegram`, {
                     method: 'POST',
@@ -819,7 +820,7 @@
                     titleText: 'جاري إعادة الإرسال...',
                     text: `إعادة إرسال عرض السعر ${quoteNum} إلى ${displayName} (${chatId})`,
                     allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
+                    didOpen: popup => { if (Swal.getPopup() === popup) Swal.showLoading(); }
                 });
                 const res = await fetch(`${CONFIG.API_BASE_URL}/api/admin/quotes/${quoteId}/retry-telegram?chatId=${encodeURIComponent(chatId)}`, {
                     method: 'POST',
