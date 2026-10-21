@@ -14,24 +14,117 @@
     <script src="auth.js"></script>
     <style>
         body, .swal2-popup { font-family: 'Cairo', sans-serif; }
+        /* Mobile first; keep all values and the original action nodes in one DOM. */
+        *, *::before, *::after { box-sizing: border-box; }
+        body { overflow-wrap: anywhere; }
+        button, a, input { -webkit-tap-highlight-color: transparent; }
+        button, a { touch-action: manipulation; }
+        button, input, a { max-width: 100%; }
+        button, a { min-height: 44px; }
+        button { white-space: normal; }
+        button:focus-visible, a:focus-visible, input:focus-visible {
+            outline: 3px solid #7c3aed; outline-offset: 3px;
+        }
+        svg { flex-shrink: 0; }
+        .admin-header { position: static; }
+        .admin-header > div { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .admin-brand { min-width: 0; flex: 1 1 18rem; }
+        .admin-brand > div:last-child { min-width: 0; }
+        .admin-brand h1 { font-size: clamp(1rem, 2vw, 1.125rem); }
+        .admin-header .admin-header-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; width: 100%; }
+        .admin-header-actions > * { margin: 0 !important; justify-content: center; text-align: center; padding: .625rem; }
+        .admin-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+        .admin-nav button { margin: 0 !important; justify-content: center; padding: .75rem .25rem; font-size: .75rem; min-width: 0; }
+        .admin-nav svg { display: none; }
+        main { min-width: 0; }
+        .admin-stats { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+        .admin-stats > div { min-width: 0; gap: .75rem; }
+        .admin-stats > div > div:first-child { min-width: 0; flex: 1; }
+        .admin-stats > div > div:last-child { flex-shrink: 0; width: 2.5rem; height: 2.5rem; }
+        .admin-stats [id] { font-size: clamp(1.25rem, 2vw, 1.75rem); display: block; }
+        .admin-stats #kpiTotalRevenue { font-size: clamp(.875rem, 1.35vw, 1.125rem); }
+        .admin-table-wrap { min-width: 0; }
+        .admin-table { table-layout: fixed; width: 100%; }
+        .admin-table td, .admin-table th { overflow-wrap: anywhere; white-space: normal; }
+        .admin-table td > *, .admin-table td div, .admin-table td span { min-width: 0; max-width: 100%; }
+        .admin-table td > div.flex { flex-wrap: wrap; }
+        .admin-table td button, .admin-table td a { justify-content: center; }
+        .admin-table caption { text-align: right; }
+        .telegram-summary, .telegram-summary > div, .telegram-summary > div > div { min-width: 0; }
+        .telegram-summary > div:first-child { flex: 1 1 24rem; align-items: flex-start; }
+        .telegram-summary > div:first-child > div:first-child { flex-shrink: 0; }
+        .telegram-summary > div:first-child > div:last-child { flex: 1; }
+        .telegram-summary > div:first-child > div:last-child > div { flex-wrap: wrap; }
+        .telegram-summary > div:last-child { flex-wrap: wrap; gap: .5rem; }
+        #detectedChatsContainer .flex-1 { min-width: 0; }
+        #detectedChatsList button { text-align: start; }
+        #adminAuthModal { height: var(--admin-viewport-height, 100dvh); top: var(--admin-viewport-top, 0px); bottom: auto; overflow-y: auto; align-items: flex-start; }
+        #adminAuthModal > div { margin-block: auto; flex-shrink: 0; }
+        #adminAuthModal form input, .swal2-popup input { font-size: 16px !important; }
+        #adminAuthModal > div > div:last-child { flex-wrap: wrap; gap: .75rem; }
+        .swal2-container { height: var(--admin-viewport-height, 100dvh) !important; top: var(--admin-viewport-top, 0px) !important; bottom: auto !important; padding: .75rem !important; }
+        .swal2-popup { display: flex !important; flex-direction: column; width: min(32rem, 100%) !important; min-width: 0; max-height: calc(var(--admin-viewport-height, 100dvh) - 1.5rem); padding: 1rem !important; }
+        .swal2-title { flex-shrink: 0; max-height: min(8rem, calc(var(--admin-viewport-height, 100dvh) * .25)); overflow-y: auto; overflow-wrap: anywhere; padding: .5rem !important; font-size: clamp(1.1rem, 3vw, 1.65rem) !important; }
+        .swal2-html-container { min-height: 0; overflow: auto !important; margin: .75rem 0 !important; padding: .25rem !important; overflow-wrap: anywhere; }
+        .swal2-actions { flex-shrink: 0; gap: .5rem; margin: .5rem 0 0 !important; width: 100%; }
+        .swal2-actions button { margin: 0 !important; min-height: 44px; }
+        .swal2-input { min-width: 0; max-width: 100%; }
+        .swal2-validation-message { flex-shrink: 0; margin: .5rem 0 0 !important; }
+        @media (max-height: 500px) {
+            .swal2-icon { width: 2rem !important; height: 2rem !important; margin: 0 auto !important; font-size: .5rem !important; flex-shrink: 0; }
+            .swal2-popup { padding: .5rem !important; }
+            .swal2-title { font-size: 1rem !important; }
+        }
+        @media (max-width: 1023px) {
+            main { padding-block: 1.25rem !important; }
+            .admin-table-wrap { overflow: visible; }
+            .admin-table, .admin-table tbody { display: block; }
+            .admin-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+            .admin-table tbody { padding: .75rem; background: #f8fafc; }
+            .admin-table tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: .75rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: white; margin-bottom: .75rem; }
+            .admin-table tr:last-child { margin-bottom: 0; }
+            .admin-table td { display: block; min-width: 0; padding: .5rem .25rem; text-align: start; border: 0; }
+            .admin-table td[data-label]::before { content: attr(data-label); display: block; font-family: 'Cairo', sans-serif; font-size: .6875rem; font-weight: 600; color: #64748b; margin-bottom: .3rem; }
+            .admin-table td:last-child > div.flex { justify-content: flex-start; gap: .5rem; }
+            .admin-table td[colspan] { grid-column: 1 / -1; text-align: center; }
+            #quotesSection > div:not(.admin-stats) > div:first-child,
+            #telegramSection > div:not(.telegram-summary) > div:first-child { padding: 1rem; }
+        }
+        @media (min-width: 768px) {
+            .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .admin-nav svg { display: block; }
+            .admin-nav button { font-size: .875rem; }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .admin-table tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+            .admin-table td:last-child { grid-column: 1 / -1; }
+        }
+        @media (min-width: 1024px) {
+            .admin-header { position: sticky; }
+            .admin-header .admin-header-actions { display: flex; flex-wrap: wrap; width: auto; }
+            .admin-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .admin-table-wrap { overflow-x: auto; }
+            .admin-quotes-table { min-width: 70rem; }
+            .admin-recipients-table { min-width: 60rem; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
     <!-- Authentication Modal (Shown if unauthenticated) -->
-    <div id="adminAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="adminAuthModal" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-center">
             <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-purple-200 shadow-inner">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
             </div>
-            <h2 class="text-xl font-black text-slate-900 mb-1">تسجيل دخول لوحة الإدارة</h2>
+            <h2 id="adminLoginTitle" class="text-xl font-black text-slate-900 mb-1">تسجيل دخول لوحة الإدارة</h2>
             <p class="text-xs text-slate-500 mb-6">يرجى إدخال كلمة مرور الإدارة لعرض التقارير وسجلات النظام</p>
 
             <form id="adminLoginForm" class="space-y-4" onsubmit="handleAdminLogin(event)">
                 <div class="text-right">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
-                    <input type="password" id="adminPasswordInput" autofocus required
+                    <label for="adminPasswordInput" class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
+                    <input type="password" id="adminPasswordInput" autocomplete="current-password" autofocus required
                         placeholder="••••••••••••"
                         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
                 </div>
@@ -54,9 +147,9 @@
     <!-- Main Dashboard Content -->
     <div id="adminDashboardContent" class="hidden">
         <!-- Header -->
-        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <header class="admin-header bg-slate-900 text-white shadow-md top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
-                <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="admin-brand flex items-center space-x-3 space-x-reverse">
                     <div class="bg-purple-600 p-2 rounded-lg text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -67,7 +160,7 @@
                         <p class="text-xs text-slate-400">نظام عروض الأسعار | مصنع المنتجات الإسمنتية</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="admin-header-actions flex items-center space-x-3 space-x-reverse">
                     <button id="refreshBtn" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium border border-slate-700 flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         تحديث البيانات
@@ -87,7 +180,7 @@
         </header>
 
         <!-- Navigation Tabs -->
-        <div class="bg-white border-b border-slate-200">
+        <nav class="admin-nav bg-white border-b border-slate-200" aria-label="أقسام لوحة الإدارة">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 space-x-reverse">
                 <button id="tabQuotesBtn" onclick="switchAdminTab('quotes')" class="py-3.5 px-3 font-bold text-sm border-b-2 border-purple-600 text-purple-700 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
@@ -98,14 +191,14 @@
                     مستلمو التيليجرام
                 </button>
             </div>
-        </div>
+        </nav>
 
         <!-- Main Container -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <!-- Section: Quotes & Logs Monitoring -->
             <div id="quotesSection" class="space-y-8">
                 <!-- KPI Cards Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="admin-stats">
                     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
                             <span class="text-xs font-semibold text-slate-500 block mb-1">إجمالي عروض الأسعار</span>
@@ -159,22 +252,22 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                    <div class="admin-table-wrap overflow-x-auto" tabindex="0" role="region" aria-label="عروض الأسعار">
+                        <table class="admin-table admin-quotes-table w-full text-right text-sm" role="table" aria-label="عروض الأسعار">
+                            <thead role="rowgroup" class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
-                                    <th class="py-3 px-4 border-b">رقم العرض</th>
-                                    <th class="py-3 px-4 border-b">العميل</th>
-                                    <th class="py-3 px-4 border-b">منشئ العرض (الموظف)</th>
-                                    <th class="py-3 px-4 border-b">المشروع والموقع</th>
-                                    <th class="py-3 px-4 border-b">المصدر / الصفة</th>
-                                    <th class="py-3 px-4 border-b">عدد الأصناف</th>
-                                    <th class="py-3 px-4 border-b">إجمالي القيمة</th>
-                                    <th class="py-3 px-4 border-b">تاريخ الإنشاء</th>
-                                    <th class="py-3 px-4 border-b text-center">تيليجرام / التحميل</th>
+                                    <th scope="col" class="py-3 px-4 border-b">رقم العرض</th>
+                                    <th scope="col" class="py-3 px-4 border-b">العميل</th>
+                                    <th scope="col" class="py-3 px-4 border-b">منشئ العرض (الموظف)</th>
+                                    <th scope="col" class="py-3 px-4 border-b">المشروع والموقع</th>
+                                    <th scope="col" class="py-3 px-4 border-b">المصدر / الصفة</th>
+                                    <th scope="col" class="py-3 px-4 border-b">عدد الأصناف</th>
+                                    <th scope="col" class="py-3 px-4 border-b">إجمالي القيمة</th>
+                                    <th scope="col" class="py-3 px-4 border-b">تاريخ الإنشاء</th>
+                                    <th scope="col" class="py-3 px-4 border-b text-center">تيليجرام / التحميل</th>
                                 </tr>
                             </thead>
-                            <tbody id="quotesTableBody" class="divide-y divide-slate-100 text-xs">
+                            <tbody role="rowgroup" id="quotesTableBody" class="divide-y divide-slate-100 text-xs">
                                 <tr>
                                     <td colspan="9" class="py-8 text-center text-slate-400">جاري تحميل البيانات...</td>
                                 </tr>
@@ -193,18 +286,18 @@
                         <p class="text-xs text-slate-500 mt-0.5">تتبع عمليات إصدار وتحميل عروض الأسعار وعمليات النظام</p>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                    <div class="admin-table-wrap overflow-x-auto" tabindex="0" role="region" aria-label="سجل الحركات">
+                        <table class="admin-table w-full text-right text-sm" role="table" aria-label="سجل الحركات">
+                            <thead role="rowgroup" class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
-                                    <th class="py-2.5 px-4 border-b">#</th>
-                                    <th class="py-2.5 px-4 border-b">التوقيت</th>
-                                    <th class="py-2.5 px-4 border-b">المستخدم</th>
-                                    <th class="py-2.5 px-4 border-b">نوع الحركة</th>
-                                    <th class="py-2.5 px-4 border-b">البيان / المعرف</th>
+                                    <th scope="col" class="py-2.5 px-4 border-b">#</th>
+                                    <th scope="col" class="py-2.5 px-4 border-b">التوقيت</th>
+                                    <th scope="col" class="py-2.5 px-4 border-b">المستخدم</th>
+                                    <th scope="col" class="py-2.5 px-4 border-b">نوع الحركة</th>
+                                    <th scope="col" class="py-2.5 px-4 border-b">البيان / المعرف</th>
                                 </tr>
                             </thead>
-                            <tbody id="logsTableBody" class="divide-y divide-slate-100 text-xs">
+                            <tbody role="rowgroup" id="logsTableBody" class="divide-y divide-slate-100 text-xs">
                                 <tr>
                                     <td colspan="5" class="py-6 text-center text-slate-400">جاري تحميل السجلات...</td>
                                 </tr>
@@ -217,7 +310,7 @@
             <!-- Section: Telegram Recipients Management -->
             <div id="telegramSection" class="hidden space-y-6">
                 <!-- Top Bot Info & Status Card -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div class="telegram-summary bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-sm">
                             <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.52 2.77-1.18 3.35-1.38 3.73-1.39.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
@@ -270,20 +363,20 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                    <div class="admin-table-wrap overflow-x-auto" tabindex="0" role="region" aria-label="مستلمو تيليجرام">
+                        <table class="admin-table admin-recipients-table w-full text-right text-sm" role="table" aria-label="مستلمو تيليجرام">
+                            <thead role="rowgroup" class="bg-slate-100/80 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                                 <tr>
-                                    <th class="py-3 px-4 border-b"># المعرف</th>
-                                    <th class="py-3 px-4 border-b">الاسم التعريفي (الوصف)</th>
-                                    <th class="py-3 px-4 border-b">معرف المحادثة (Chat ID)</th>
-                                    <th class="py-3 px-4 border-b">حالة الاستلام التلقائي</th>
-                                    <th class="py-3 px-4 border-b">إحصائيات التسليم</th>
-                                    <th class="py-3 px-4 border-b">تاريخ الإضافة</th>
-                                    <th class="py-3 px-4 border-b text-center">الإجراءات</th>
+                                    <th scope="col" class="py-3 px-4 border-b"># المعرف</th>
+                                    <th scope="col" class="py-3 px-4 border-b">الاسم التعريفي (الوصف)</th>
+                                    <th scope="col" class="py-3 px-4 border-b">معرف المحادثة (Chat ID)</th>
+                                    <th scope="col" class="py-3 px-4 border-b">حالة الاستلام التلقائي</th>
+                                    <th scope="col" class="py-3 px-4 border-b">إحصائيات التسليم</th>
+                                    <th scope="col" class="py-3 px-4 border-b">تاريخ الإضافة</th>
+                                    <th scope="col" class="py-3 px-4 border-b text-center">الإجراءات</th>
                                 </tr>
                             </thead>
-                            <tbody id="telegramRecipientsTableBody" class="divide-y divide-slate-100 text-xs">
+                            <tbody role="rowgroup" id="telegramRecipientsTableBody" class="divide-y divide-slate-100 text-xs">
                                 <tr>
                                     <td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل قائمة المستلمين...</td>
                                 </tr>
@@ -296,6 +389,39 @@
     </div>
 
     <script>
+        // Static labels preserve table relationships and label the same cells as cards.
+        function labelAdminRow(row, labels) {
+            row.setAttribute('role', 'row');
+            Array.from(row.childNodes).filter(cell => cell.nodeName === 'TD').forEach((cell, index) => {
+                cell.setAttribute('role', 'cell');
+                cell.setAttribute('data-label', labels[index]);
+            });
+        }
+
+        function showAdminTableError(id, columns) {
+            const tbody = document.getElementById(id);
+            tbody.innerHTML = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = columns;
+            cell.className = 'p-6 text-center text-rose-700';
+            cell.setAttribute('role', 'status');
+            cell.textContent = 'تعذر تحميل البيانات. يرجى المحاولة مجدداً باستخدام زر التحديث.';
+            row.appendChild(cell);
+            tbody.appendChild(row);
+        }
+
+        // Follow the visible viewport when a mobile keyboard reduces available space.
+        if (window.visualViewport) {
+            const updateAdminViewport = () => {
+                document.documentElement.style.setProperty('--admin-viewport-height', `${window.visualViewport.height}px`);
+                document.documentElement.style.setProperty('--admin-viewport-top', `${window.visualViewport.offsetTop}px`);
+            };
+            window.visualViewport.addEventListener('resize', updateAdminViewport);
+            window.visualViewport.addEventListener('scroll', updateAdminViewport);
+            updateAdminViewport();
+        }
+
         function sanitizeUrl(url) {
             if (!url || typeof url !== 'string') return '#';
             const trimmed = url.trim();
@@ -373,6 +499,8 @@
             const tgSec = document.getElementById('telegramSection');
             const qBtn = document.getElementById('tabQuotesBtn');
             const tBtn = document.getElementById('tabTelegramBtn');
+            qBtn.setAttribute('aria-current', tab === 'telegram' ? 'false' : 'page');
+            if (tBtn) tBtn.setAttribute('aria-current', tab === 'telegram' ? 'page' : 'false');
 
             quotesSec.classList.add('hidden');
             if (tgSec) tgSec.classList.add('hidden');
@@ -440,7 +568,7 @@
                     showAdminModal();
                     return;
                 }
-                if (!res.ok) return;
+                if (!res.ok) { showAdminTableError('quotesTableBody', 9); return; }
                 const quotes = await res.json();
                 const tbody = document.getElementById('quotesTableBody');
                 tbody.innerHTML = '';
@@ -464,6 +592,7 @@
                     const tdNum = document.createElement('td');
                     tdNum.className = "py-3 px-4 font-mono font-bold text-blue-900";
                     const divNum = document.createElement('div');
+                    divNum.dir = 'ltr';
                     divNum.textContent = q.quoteNumber || '';
                     tdNum.appendChild(divNum);
                     tr.appendChild(tdNum);
@@ -583,7 +712,7 @@
                                 badge.className = "px-2 py-0.5 text-[11px] bg-sky-100 text-sky-800 font-bold rounded flex items-center gap-1 border border-sky-200";
                                 badge.title = `${name} (${d.chatId}): تم التسليم بنجاح (معرف: ${d.telegramMessageId || '-'})`;
                                 badge.innerHTML = '<svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
-                                badge.appendChild(document.createTextNode(` ${name}`));
+                                badge.appendChild(document.createTextNode(` تم التسليم: ${name}`));
                                 actionsDiv.appendChild(badge);
                             } else if (d.status === 'Failed') {
                                 const retryBtn = document.createElement('button');
@@ -629,10 +758,12 @@
                     tdActions.appendChild(actionsDiv);
                     tr.appendChild(tdActions);
 
+                    labelAdminRow(tr, ['رقم العرض', 'العميل والتواصل', 'منشئ العرض', 'المشروع والموقع', 'المصدر / الصفة', 'عدد الأصناف', 'إجمالي القيمة', 'تاريخ الإنشاء', 'تيليجرام / التحميل']);
                     tbody.appendChild(tr);
                 });
             } catch (err) {
                 console.error('Quotes error:', err);
+                showAdminTableError('quotesTableBody', 9);
             }
         }
 
@@ -749,7 +880,7 @@
                     showAdminModal();
                     return;
                 }
-                if (!res.ok) return;
+                if (!res.ok) { showAdminTableError('logsTableBody', 5); return; }
                 const logs = await res.json();
                 const tbody = document.getElementById('logsTableBody');
                 tbody.innerHTML = '';
@@ -809,10 +940,12 @@
                     tdEntity.textContent = log.entityId || '-';
                     tr.appendChild(tdEntity);
 
+                    labelAdminRow(tr, ['المعرف', 'التوقيت (UTC)', 'المستخدم', 'نوع الحركة', 'البيان / المعرف']);
                     tbody.appendChild(tr);
                 });
             } catch (err) {
                 console.error('Logs error:', err);
+                showAdminTableError('logsTableBody', 5);
             }
         }
 
@@ -825,7 +958,7 @@
                     showAdminModal();
                     return;
                 }
-                if (!res.ok) return;
+                if (!res.ok) { showAdminTableError('telegramRecipientsTableBody', 7); return; }
                 const recipients = await res.json();
                 const tbody = document.getElementById('telegramRecipientsTableBody');
                 tbody.innerHTML = '';
@@ -857,7 +990,10 @@
 
                     const tdChat = document.createElement('td');
                     tdChat.className = "py-3 px-4 font-mono text-sky-800 font-bold";
-                    tdChat.textContent = rec.chatId || '';
+                    const chatId = document.createElement('bdi');
+                    chatId.dir = 'ltr';
+                    chatId.textContent = rec.chatId || '';
+                    tdChat.appendChild(chatId);
                     tr.appendChild(tdChat);
 
                     const tdStatus = document.createElement('td');
@@ -932,6 +1068,7 @@
                     tdActions.appendChild(actionsDiv);
                     tr.appendChild(tdActions);
 
+                    labelAdminRow(tr, ['المعرف', 'الاسم التعريفي', 'معرف المحادثة (Chat ID)', 'حالة الاستلام التلقائي', 'إحصائيات التسليم', 'تاريخ الإضافة', 'الإجراءات']);
                     tbody.appendChild(tr);
                 });
 
@@ -947,6 +1084,7 @@
                 }
             } catch (err) {
                 console.error('Telegram recipients error:', err);
+                showAdminTableError('telegramRecipientsTableBody', 7);
             }
         }
 
@@ -1074,12 +1212,12 @@
                 html: `
                     <div class="space-y-3 text-right text-sm" dir="rtl">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">معرف المحادثة (Chat ID) *</label>
+                            <label for="swalChatId" class="block text-xs font-bold text-slate-700 mb-1">معرف المحادثة (Chat ID) *</label>
                             <input id="swalChatId" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: 1284402479 أو -100...">
                             <p class="text-[11px] text-slate-500 mt-1">يمكن للمستلم الحصول على معرف حسابه بإرسال رسالة إلى @userinfobot في تيليجرام</p>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي للمستلم *</label>
+                            <label for="swalDisplayName" class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي للمستلم *</label>
                             <input id="swalDisplayName" class="swal2-input !m-0 !w-full !text-sm" placeholder="مثال: م/ عبدالله سيد (إدارة المبيعات)">
                         </div>
                     </div>
@@ -1137,7 +1275,7 @@
                 html: `
                     <div class="space-y-3 text-right text-sm" dir="rtl">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي *</label>
+                            <label for="swalEditDisplayName" class="block text-xs font-bold text-slate-700 mb-1">الاسم التعريفي *</label>
                             <input id="swalEditDisplayName" class="swal2-input !m-0 !w-full !text-sm">
                         </div>
                     </div>
