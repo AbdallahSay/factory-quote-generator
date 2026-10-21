@@ -86,6 +86,13 @@ async function snapshot(page, name) {
   const dialog = await page.locator('.swal2-popup').count() || await page.locator('#adminAuthModal').isVisible();
   await page.screenshot({ path: path.join(out, name + '.png'), fullPage: !dialog });
 }
+async function closeResult(page, title) {
+  // Fetch completion and popup replacement can exceed a fixed sleep in WebKit.
+  // Wait for the actual result, then for SweetAlert to restore dashboard accessibility.
+  await page.waitForFunction(expected => Swal.getTitle()?.textContent === expected && !Swal.isLoading(), title);
+  await page.evaluate(() => Swal.close());
+  await page.waitForSelector('.swal2-popup', { state: 'detached' });
+}
 async function run() {
   assert.equal(fs.readFileSync(path.join(root, 'frontend/admin.html'), 'utf8'), fs.readFileSync(path.join(root, 'backend/wwwroot/admin.html'), 'utf8'), 'admin frontends must remain identical');
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -139,11 +146,11 @@ async function functional(browser, base, engine) {
   await page.locator('#quotesTableBody button').first().click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.path.includes('retry-telegram?chatId=' + encodeURIComponent(recipients[1].chatId))));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم الإرسال بنجاح!');
   await page.locator('#quotesTableBody tr').nth(1).getByRole('button').click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.path.endsWith('/quotes/2/retry-telegram') && c.method === 'POST'));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم الإرسال بنجاح!');
   await page.locator('#tabTelegramBtn').click();
   await page.waitForSelector('#telegramRecipientsTableBody button');
   await page.getByRole('button', { name: 'إضافة مستلم جديد', exact: true }).click();
@@ -152,29 +159,29 @@ async function functional(browser, base, engine) {
   await page.locator('.swal2-confirm').click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.method === 'POST' && c.path.endsWith('/recipients') && c.body.includes('-100777777')));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم بنجاح!');
   await page.locator('#telegramRecipientsTableBody tr').nth(1).getByRole('button', { name: 'تعديل الاسم' }).click();
   await page.locator('#swalEditDisplayName').fill('اسم جديد آمن');
   await page.locator('.swal2-confirm').click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.path.endsWith('/recipients/2') && c.method === 'PUT'));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم بنجاح!');
   for (const [row, name, id] of [[0, 'تعطيل', 1], [1, 'تفعيل', 2]]) {
     await page.locator('#telegramRecipientsTableBody tr').nth(row).getByRole('button', { name, exact: true }).click();
     await page.locator('.swal2-confirm').click();
     await page.waitForTimeout(100);
     assert(calls.some(c => c.path.endsWith(`/recipients/${id}/toggle-active`) && c.method === 'POST'));
-    await page.evaluate(() => Swal.close());
+    await closeResult(page, 'تم بنجاح!');
   }
   await page.locator('#btnDiscoverChats').click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.path.endsWith('/discover-updates') && c.auth === 'Bearer synthetic-owner'));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم رصد المحادثات');
   await page.locator('#telegramRecipientsTableBody tr').nth(1).getByRole('button', { name: 'حذف', exact: true }).click();
   await page.locator('.swal2-confirm').click();
   await page.waitForTimeout(100);
   assert(calls.some(c => c.path.endsWith('/recipients/2') && c.method === 'DELETE'));
-  await page.evaluate(() => Swal.close());
+  await closeResult(page, 'تم بنجاح!');
   // Landscape and reduced visual viewport simulate the space available with a keyboard.
   for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 256 }, { width: 640, height: 450 }]) {
     await page.setViewportSize(viewport);
@@ -237,7 +244,7 @@ async function nativeZoom(base) {
     const f = await fixture({ newContext: async () => context }, base, { width: 1280, height: 900 });
     await worker.evaluate(async () => {
       const tabs = await chrome.tabs.query({});
-      const tab = tabs.find(tab => tab.url.includes('admin.html'));
+      const tab = tabs.find(tab => /\/admin(?:\.html)?$/.test(new URL(tab.url).pathname));
       await chrome.tabs.setZoom(tab.id, 2);
     });
     await f.page.waitForFunction(() => innerWidth === 640 && devicePixelRatio === 2);
